@@ -1918,7 +1918,7 @@ function interactPoi(p) {
   if (p.type === 'honours') {
     const latest = [...G.honours].pop();
     const h = latest && HONOURS.find(x => x.id === latest);
-    toast('🎖️ Career: ' + G.catches + ' caught, ' + G.escapes + ' escaped, ' + G.secretsFound.size + '/' + SECRET_TOTAL + ' secrets, ' + G.honours.size + '/' + HONOURS.length + ' honours.' + (h ? ' Latest: ' + h.name + '.' : ' The Palace is watching. Catch things.'));
+    toast('🎖️ Career: ' + G.catches + ' caught, ' + G.escapes + ' escaped, ' + G.secretsFound.size + ' secrets uncovered, ' + G.honours.size + ' honours.' + (h ? ' Latest: ' + h.name + '.' : ' The Palace is watching. Catch things.'));
     sClick();
     return;
   }
@@ -4060,7 +4060,7 @@ function menuLabels() {
   document.getElementById('menuShake').textContent = 'Screen shake: ' + (shakeOn ? 'ON' : 'OFF');
   document.getElementById('menuDiff').textContent = 'Difficulty: ' + DIFF().label;
   document.getElementById('menuTie').textContent = 'Bow tie: 🎀 ' + tieDef().name;
-  document.getElementById('menuMischief').textContent = '😼 Mischief (' + G.mischief.size + '/' + MISCHIEF.length + ')';
+  document.getElementById('menuMischief').textContent = '😼 Mischief';
 }
 function openMenu() {
   if (!G.running || G.paused || menuOpen) return;
@@ -4070,7 +4070,7 @@ function openMenu() {
     + (DAY.streak > 0 ? '\n🔥 streak: ' + DAY.streak : '')
     : '';
   document.getElementById('menuStats').textContent =
-    '🐭 ' + G.catches + '   🏅 ' + G.honours.size + '/' + HONOURS.length + '   🔍 ' + G.secretsFound.size + '/' + SECRET_TOTAL + '   PM #' + pmCount + dayLines;
+    '🐭 ' + G.catches + ' caught   🏅 ' + G.honours.size + ' honours   🔍 ' + G.secretsFound.size + ' secrets   PM #' + pmCount + dayLines;
   menuLabels();
   document.getElementById('menuRestart').textContent = 'Restart from Battersea';
   document.getElementById('menuWrap').classList.remove('hidden');
