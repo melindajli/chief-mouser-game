@@ -1424,6 +1424,10 @@ const sMeow = () => { tone(680, 520, 0.22, 'triangle', 0.1); tone(1360, 1040, 0.
 const sClick = () => tone(900, 700, 0.05, 'square', 0.05);
 const sLaser = () => tone(1200, 2400, 0.15, 'sawtooth', 0.05);
 const sStairs = () => { tone(300, 200, 0.1, 'triangle', 0.06); tone(260, 180, 0.1, 'triangle', 0.06, 0.12); };
+// feline delights: the stuttering bird-chatter, a happy trill/mrrp, a stretch groan
+const sChatter = () => { for (let i = 0; i < 6; i++) tone(1500 + Math.random() * 260, 1380, 0.03, 'square', 0.028, i * 0.055); };
+const sTrill = () => { tone(680, 1120, 0.12, 'sine', 0.05); tone(1120, 900, 0.1, 'sine', 0.03, 0.1); };
+const sStretch = () => { tone(480, 760, 0.36, 'sine', 0.05); };
 
 // ---------- Rain on the window: looping filtered noise, ducked indoors ----------
 let rainSrc = null, rainGain = null, rainFilt = null;
@@ -3030,6 +3034,9 @@ function wakeUp() {
   G.napping = false;
   G.napPos = null;
   G.napKind = null; G.radT = 0;
+  // the obligatory post-nap stretch, front paws out, back arched
+  G.catAnim = { name: 'hind', t: 0, dur: 4 / 6, fps: 6, stretch: true };
+  sStretch();
   toast(pick(TXT_WAKE));
 }
 
@@ -3249,6 +3256,8 @@ function update(dt) {
       if (Math.random() < dt * 3) tone(82, 76, 0.22, 'sine', 0.016); // a low, dignified purr
       const np = G.napPos || L;
       if (Math.random() < dt * 1.2) addFloat(np.x + 8, np.y - 14, 'z', '#8a83a0');
+      // making biscuits: a dozy knead of the blanket, with a small happy mrrp
+      if (Math.random() < dt * 0.3) { sTrill(); addFloat(np.x - 6, np.y - 10, 'mrrp', '#d6bce0'); }
       // deep enough into a nap, Larry dreams — and the dream asks a question
       // (one per nap, and not again for a while: dreams should stay a treat)
       if (!G.daily && G.intro.phase === 'done' && !G.dreamDone && (G.dreamCD || 0) <= 0) {
@@ -3265,8 +3274,29 @@ function update(dt) {
   if (G.idleAnim) {
     G.idleAnim.t += dt;
     if (G.idleAnim.t * 6 >= CANIM[G.idleAnim.name][1] || v.x || v.y) G.idleAnim = null;
-  } else if (!G.napping && !G.catAnim && L.idleT > 3 && Math.random() < dt * 0.12) {
-    G.idleAnim = { name: Math.random() < 0.5 ? 'yawn' : 'wash', t: 0 };
+  } else if (!G.napping && !G.catAnim && L.idleT > 3 && Math.random() < dt * 0.14) {
+    // a richer repertoire of idle fidgets — a groom, a yawn, a good stretch
+    G.idleAnim = { name: pick(['wash', 'wash', 'yawn', 'hind']), t: 0 };
+    if (G.idleAnim.name === 'hind') { sStretch(); }
+  }
+  G.chatterCD = Math.max(0, (G.chatterCD || 0) - dt);
+  G.affCD = Math.max(0, (G.affCD || 0) - dt);
+  if (!G.napping && !G.catAnim && !G.paused) {
+    // the involuntary chatter at prey he can't reach — a butterfly, a pigeon
+    if (G.chatterCD <= 0 && L.idleT > 1.2) {
+      const flit = (G.butterflies || []).find(b => dist(b.x, b.y, L.x, L.y) < 48);
+      if (flit && Math.random() < dt * 0.6) {
+        G.catAnim = { name: 'meow', t: 0, dur: 0.55, fps: 10 };
+        sChatter(); addFloat(L.x + 5, L.y - 16, 'ekekek!', '#cfe0f0'); G.chatterCD = 6;
+      }
+    }
+    // a slow blink and a lean at nearby staff — affection, feline-style
+    if (G.affCD <= 0 && L.idleT > 4) {
+      const near = (G.npcs || []).find(n => dist(n.x, n.y, L.x, L.y) < 26);
+      if (near && Math.random() < dt * 0.4) {
+        addFloat(L.x, L.y - 18, '♥', '#f2a6c4'); sTrill(); G.affCD = 9;
+      }
+    }
   }
   // nearby point of interest?
   {
@@ -3313,6 +3343,14 @@ function update(dt) {
     if (L.pounceT <= 0) { // touchdown
       L.landT = 0.12;
       addParticle(L.x, L.y + 5, '#cfc8b8', 5, 24);
+      // pouncing at a butterfly just sends it fluttering merrily off
+      for (const b of (G.butterflies || [])) {
+        if (dist(b.x, b.y, L.x, L.y) < 22) {
+          b.x = clamp(b.x + (Math.random() - 0.5) * 34, 2 * TILE, 45 * TILE);
+          b.y = clamp(b.y - 10 - Math.random() * 8, 1.5 * TILE, 7.5 * TILE);
+          addFloat(b.x, b.y - 6, '!', '#f0ece2');
+        }
+      }
       // agonizingly close?
       let nearest = 1e9;
       for (const mo of G.mice) nearest = Math.min(nearest, dist(mo.x, mo.y, L.x, L.y));
@@ -3821,6 +3859,9 @@ function drawLarry(L) {
       const c = Math.min(1, L.chargeT / 0.55);
       sqy = 1 - c * 0.16 + (c >= 1 ? Math.sin(G.time * 40) * 0.02 : 0); // coiled, trembling
       sqx = 1 + c * 0.1;
+    } else if (G.catAnim && G.catAnim.stretch) {
+      const s = Math.sin((G.catAnim.t / G.catAnim.dur) * Math.PI) * 0.17; // luxuriant stretch, then settle
+      sqx = 1 + s; sqy = 1 - s * 0.55;
     }
   }
   ctx.save();
