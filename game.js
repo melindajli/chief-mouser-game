@@ -131,6 +131,16 @@ function paintPackDecor() {
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
     g.drawImage(CAT_IMGS.larry, 0, 28 * 32, 32, 32, 0, 0, 96, 96);
+    // the Union Jack bow tie, worn with enormous dignity even on the menu
+    // (same pixels as drawBowTie('down') on the sit pose, at 3× scale)
+    g.save();
+    g.scale(3, 3);
+    g.translate(15, 18);
+    const t = TIES[0];
+    g.fillStyle = t.wing; g.fillRect(-4, -2, 3, 3); g.fillRect(1, -2, 3, 3);
+    g.fillStyle = t.accent; g.fillRect(-3, -1, 1, 1); g.fillRect(2, -1, 1, 1);
+    g.fillStyle = t.knot; g.fillRect(-1, -2, 2, 3);
+    g.restore();
     tc.textContent = '';
     tc.appendChild(c);
   }
