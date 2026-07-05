@@ -25,6 +25,7 @@ canvas#game { position:fixed; inset:0; width:100vw; height:100vh; image-renderin
 #stfill { height:100%; width:100%; background:linear-gradient(90deg,#7fd4a0,#4aa877); border-radius:3px; }
 #stfill.tired { background:linear-gradient(90deg,#d4907f,#a85a4a); }
 #summons { margin-top:7px; font-size:7px; line-height:1.7; color:#f0a0a0; max-width:150px; }
+#daybox { margin-top:7px; font-size:7px; line-height:1.7; color:#c9b98f; max-width:150px; }
 #hudRight { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px; text-align:right; max-width:58vw; }
 #pmline { font-size:8px; line-height:1.5; color:#ffd9a0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
@@ -40,9 +41,11 @@ canvas#game { position:fixed; inset:0; width:100vw; height:100vh; image-renderin
 #cardGadget .gname { font-size:10px; color:#e9c46a; margin-bottom:8px; }
 #cardGadget .gdesc { font-size:8px; line-height:1.8; color:#cfc8b8; }
 button { font-family:inherit; cursor:pointer; }
-#cardBtn, .bigbtn { font-size:10px; padding:13px 26px; border-radius:10px; border:2px solid #e9c46a;
+#cardBtn, #cardBtn2, .bigbtn { font-size:10px; padding:13px 26px; border-radius:10px; border:2px solid #e9c46a;
   background:#241d10; color:#ffe8b8; box-shadow:0 3px 0 #7a5f22; }
-#cardBtn:active, .bigbtn:active { transform:translateY(2px); box-shadow:0 1px 0 #7a5f22; }
+#cardBtn:active, #cardBtn2:active, .bigbtn:active { transform:translateY(2px); box-shadow:0 1px 0 #7a5f22; }
+#cardBtn2 { margin-left:10px; border-color:#9a8fd4; box-shadow:0 3px 0 #3d3566; }
+#cardBtn2:active { box-shadow:0 1px 0 #3d3566; }
 
 /* Title */
 #title { background:radial-gradient(ellipse at 50% 30%, #1b1730 0%, #0a0a12 70%); }
@@ -118,7 +121,7 @@ button { font-family:inherit; cursor:pointer; }
 #photoHint { font-size:7px; color:#8a83a0; margin:10px 0 4px; line-height:1.8; }
 #photoBtns { display:flex; gap:10px; justify-content:center; margin-top:8px; }
 #photoBtns .mbtn { display:inline-block; width:auto; padding:12px 18px; text-decoration:none; font-size:9px; }
-#menuStats { font-size:8px; color:#c9b98f; line-height:2; margin-bottom:14px; }
+#menuStats { font-size:8px; color:#c9b98f; line-height:2; margin-bottom:14px; white-space:pre-line; text-align:left; }
 .mbtn { display:block; width:100%; margin:10px 0; font-size:9px; padding:13px 10px; border-radius:10px;
   border:2px solid rgba(233,196,106,.6); background:#241d10; color:#ffe8b8; box-shadow:0 3px 0 #7a5f22; }
 .mbtn:active { transform:translateY(2px); box-shadow:0 1px 0 #7a5f22; }

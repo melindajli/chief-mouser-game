@@ -202,14 +202,23 @@ const MOUSE_SPRITES = {
   grey: buildMouse('#b4aea6', '#d8d3ca'),
   swift: buildMouse('#c09a6a', '#e6d2ae'),
   trick: buildMouse('#77716d', '#a39d98'),
+  still: buildMouse('#9aa2ad', '#c3c9d2'),
+  decoy: buildMouse('#c8a84e', '#ead9a2'),
+  raider: buildMouse('#8a6f52', '#b09877'),
   rat: buildRat(),
 };
 const MOUSE = MOUSE_SPRITES.grey; // gallery convenience
-// speed/xp multipliers; hp>1 means it shrugs off the first pounce
+// speed/xp multipliers; hp>1 means it shrugs off the first pounce.
+// Each late archetype teaches a read: the trickster jukes CHARGED leaps
+// (tap instead), the Very Still Mouse hides in plain sight (monocle/sonar),
+// the raiding pair punishes chasing the loud one (take the cheese-carrier).
 const MOUSE_TYPES = {
   grey: { spd: 1, xp: 1, hp: 1 },
   swift: { spd: 1.4, xp: 1.6, hp: 1 },
   trick: { spd: 1.1, xp: 2, hp: 1, dodge: true },
+  still: { spd: 1.5, xp: 2.2, hp: 1, freeze: true },
+  decoy: { spd: 0.95, xp: 0.6, hp: 1 },
+  raider: { spd: 1.08, xp: 2.4, hp: 1, carry: true },
   rat: { spd: 0.82, xp: 3, hp: 2 },
   ratking: { spd: 1.02, xp: 7, hp: 3 },
 };
@@ -667,8 +676,49 @@ function drawDecor(mc, d) {
     mc.fillStyle = '#6b4a2c'; mc.fillRect(px + 4, py + 1, 8, 6);
     mc.fillStyle = '#7d5836'; mc.fillRect(px + 5, py + 2, 6, 4);
     mc.fillStyle = '#4f3520'; mc.fillRect(px + 4, py + 6, 8, 1);
+  } else if (d.t === 'xmastree') {
+    mc.fillStyle = '#4f3a28'; mc.fillRect(px + 7, py + 13, 3, 3);      // pot & trunk
+    mc.fillStyle = '#2f5426'; mc.fillRect(px + 4, py + 9, 9, 4);       // tiers
+    mc.fillStyle = '#3d6a30'; mc.fillRect(px + 5, py + 5, 7, 4);
+    mc.fillStyle = '#4f8140'; mc.fillRect(px + 6, py + 2, 5, 3);
+    mc.fillStyle = '#e9c46a'; mc.fillRect(px + 8, py, 1, 2);           // the fairy's star
+    [[5, 10, '#cf2b3a'], [10, 11, '#e9c46a'], [7, 6, '#7fa8d4'], [9, 8, '#cf2b3a'], [6, 12, '#e9c46a']]
+      .forEach(([bx, by, c2]) => { mc.fillStyle = c2; mc.fillRect(px + bx, py + by, 1, 1); });
+  } else if (d.t === 'pumpkin') {
+    mc.fillStyle = '#c9702c'; mc.fillRect(px + 5, py + 9, 7, 6);
+    mc.fillStyle = '#e08a3c'; mc.fillRect(px + 6, py + 10, 2, 4);
+    mc.fillStyle = '#476b4e'; mc.fillRect(px + 8, py + 7, 1, 2);
+    mc.fillStyle = '#241d16'; mc.fillRect(px + 6, py + 11, 1, 1); mc.fillRect(px + 9, py + 11, 1, 1); mc.fillRect(px + 7, py + 13, 3, 1);
   }
 }
+
+/* =========================================================
+   The real calendar leaks in: seasons dress the house, and some days
+   the Foreign Office cat comes round. Same date-seed idea as the Daily
+   Sortie — everyone's No. 10 looks the same on the same day.
+   ========================================================= */
+const REAL_DATE = new Date();
+const SEASON_M = REAL_DATE.getMonth() + 1;
+const IS_WINTER = SEASON_M === 12 || SEASON_M <= 2;
+const IS_SPRING = SEASON_M >= 3 && SEASON_M <= 5;
+const IS_AUTUMN = SEASON_M >= 9 && SEASON_M <= 11;
+const IS_DECEMBER = SEASON_M === 12;
+const IS_OCTOBER = SEASON_M === 10;
+const IS_XMAS = IS_DECEMBER && REAL_DATE.getDate() >= 24 && REAL_DATE.getDate() <= 26;
+const IS_GOTCHA_DAY = SEASON_M === 2 && REAL_DATE.getDate() === 15; // hired 15 Feb 2011, on merit
+const DATE_SEED = REAL_DATE.getFullYear() * 10000 + SEASON_M * 100 + REAL_DATE.getDate();
+// roughly two days in five, Palmerston pays a visit (seeded: the same days for everyone)
+const PALM_VISIT = mulberry32(DATE_SEED ^ 0xCA7)() < 0.4;
+
+const TXT_XMASTREE = [
+  'The official No. 10 tree. You have completed your assessment: climbable. You are CHOOSING not to. Today.',
+  'Forty baubles. Each one a small, glittering provocation. You rise above. For now.',
+  'The fairy on top outranks the Chancellor. You outrank the fairy.',
+];
+const TXT_PUMPKIN = [
+  'Someone has carved a face into a vegetable and left it at the door of government. You respect it.',
+  'The pumpkin stares. You stare back. It blinks first. (It has no eyelids. A technicality.)',
+];
 
 /* =========================================================
    Maps of the real No. 10 (and one shelter)
@@ -868,6 +918,15 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   m.cats = [
     { x: 10, y: 4, set: 'tux', name: 'Palmerston', mode: 'wander', rect: [4, 2, 20, 7], quips: ['Palmerston, Foreign Office. This garden is neutral territory. FOR NOW.', 'We do not discuss the Incident of 2017.', 'Your bow tie is… adequate.', 'Hiss. (Diplomatically.)'] },
   ];
+  // the real calendar dresses the house
+  if (IS_DECEMBER) {
+    m.decor.push({ x: 25, y: 25, t: 'xmastree' }); // Entrance Hall, against the back wall
+    m.pois.push({ x: 25, y: 26, emoji: '🎄', type: 'text', texts: TXT_XMASTREE });
+  }
+  if (IS_OCTOBER) {
+    m.decor.push({ x: 25, y: 32, t: 'pumpkin' }); // on the famous doorstep
+    m.pois.push({ x: 25, y: 32, emoji: '🎃', type: 'text', texts: TXT_PUMPKIN });
+  }
   m.rainy = true;
 });
 
@@ -1129,6 +1188,7 @@ const BRIEFS = [
   { text: 'Catch 3 mice in the Kitchen', kind: 'catch', map: 'basement', n: 3 },
   { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1 },
   { text: 'Catch a trickster mouse', kind: 'catch', type: 'trick', n: 1 },
+  { text: 'Catch a Very Still Mouse', kind: 'catch', type: 'still', n: 1 },
   { text: 'Catch 2 mice in the Garden', kind: 'catch', region: 'The Garden', n: 2 },
   { text: 'Catch a mouse after dark', kind: 'catch', night: true, n: 1 },
   { text: 'Bat a yarn ball 8 times', kind: 'yarn', n: 8 },
@@ -1139,6 +1199,7 @@ const BRIEFS = [
 function briefPossible(d) {
   if (d.type === 'swift' && G.level < 3) return false;   // swift mice spawn from lv 3
   if (d.type === 'trick' && G.level < 5) return false;   // tricksters from lv 5
+  if (d.type === 'still' && G.level < 7) return false;   // Very Still Mice from lv 7
   return true;
 }
 function newBrief() {
@@ -1169,6 +1230,7 @@ function briefEvent(kind, info = {}) {
     G.fish += 3;
     G.briefsDone++;
     toast('📕 Brief complete. The Red Box approves. +30 XP · +3 🐟');
+    goalEvent('brief');
     sLevel();
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
     checkHonours();
@@ -1210,6 +1272,35 @@ const sMeow = () => { tone(680, 520, 0.22, 'triangle', 0.1); tone(1360, 1040, 0.
 const sClick = () => tone(900, 700, 0.05, 'square', 0.05);
 const sLaser = () => tone(1200, 2400, 0.15, 'sawtooth', 0.05);
 const sStairs = () => { tone(300, 200, 0.1, 'triangle', 0.06); tone(260, 180, 0.1, 'triangle', 0.06, 0.12); };
+
+// ---------- Rain on the window: looping filtered noise, ducked indoors ----------
+let rainSrc = null, rainGain = null, rainFilt = null;
+function rainAmbience() {
+  const want = G.running && !G.paused && G.raining && !muted;
+  if (!AC) return; // no audio until the first user gesture unlocks it
+  if (want && !rainSrc) {
+    const len = AC.sampleRate; // one second of noise, looped
+    const buf = AC.createBuffer(1, len, AC.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    rainSrc = AC.createBufferSource(); rainSrc.buffer = buf; rainSrc.loop = true;
+    rainFilt = AC.createBiquadFilter(); rainFilt.type = 'lowpass';
+    rainGain = AC.createGain(); rainGain.gain.value = 0;
+    rainSrc.connect(rainFilt).connect(rainGain).connect(AC.destination);
+    rainSrc.start();
+  }
+  if (rainGain) {
+    // outdoors it patters bright and close; through the sash windows it's a muffled wash
+    const outside = G.mapId === 'ground' && G.larry.y < 10 * TILE;
+    const target = want ? (outside ? 0.035 : 0.016) : 0;
+    rainFilt.frequency.setTargetAtTime(outside ? 2400 : 520, AC.currentTime, 0.4);
+    rainGain.gain.setTargetAtTime(target, AC.currentTime, 0.8);
+    if (!want && rainGain.gain.value < 0.001 && rainSrc) {
+      try { rainSrc.stop(); } catch (e) { }
+      rainSrc = null; rainGain = null; rainFilt = null;
+    }
+  }
+}
 
 // ---------- Adaptive music: a generative score that follows the mood ----------
 // calm wander → lazy pentatonic plucks · mouse nearby → sneaky under-layer
@@ -1354,6 +1445,7 @@ const G = {
   stam: 100, stamShown: -1,
   fish: 5, larder: 0,
   summons: null, summonsCD: 75, chefCD: 0,
+  dream: null, dreamT: 0, dreamDone: false, dreamCD: 0,
 };
 const has = g => {
   const need = { zoomies: 2, whiskers: 3, collar: 4, laser: 5, monocle: 6, cape: 7 };
@@ -1400,6 +1492,130 @@ function save() {
   } catch (e) { }
 }
 function loadSave() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return null; } }
+
+// ---------- The working day: the Morning Red Box and the Evening Paper ----------
+// Every real calendar day deals three goals from the box (seeded — the same
+// three for everyone). Finish all three and the Evening Paper goes to print:
+// the day's numbers, a headline, a streak, and a reward. Career mode only.
+const DAY_KEY = 'larry-day-v1';
+const DAY_GOALS = [
+  { id: 'mice', text: 'Catch {n} mice', n: 8, kind: 'catch' },
+  { id: 'night', text: 'Catch {n} mice after dark', n: 2, kind: 'catch', night: true },
+  { id: 'briefs', text: 'Clear {n} briefs from the Red Box', n: 2, kind: 'brief' },
+  { id: 'naps', text: 'Take {n} dignified naps', n: 2, kind: 'nap' },
+  { id: 'summons', text: 'Attend a summons (sit beautifully)', n: 1, kind: 'summons', min: 3 },
+  { id: 'press', text: 'Send the press home happy', n: 1, kind: 'press', min: 3 },
+  { id: 'swift', text: 'Catch {n} swift brown mice', n: 2, kind: 'catch', type: 'swift', min: 3 },
+  { id: 'trick', text: 'Catch a trickster (tap, don\'t wind up)', n: 1, kind: 'catch', type: 'trick', min: 5 },
+  { id: 'still', text: 'Spot and catch a Very Still Mouse', n: 1, kind: 'catch', type: 'still', min: 7 },
+  { id: 'fish', text: 'Bank {n} kippers', n: 6, kind: 'fish' },
+];
+const GOAL_PALM = { id: 'palm', text: 'Win a stare-off with Palmerston', n: 1, kind: 'palm' };
+let DAY = null;
+function dateStr(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function saveDay() { try { localStorage.setItem(DAY_KEY, JSON.stringify(DAY)); } catch (e) { } }
+function goalDef(id) { return id === 'palm' ? GOAL_PALM : DAY_GOALS.find(x => x.id === id); }
+function initDay() {
+  if (G.daily || G.intro.phase !== 'done') return;
+  let prev = null;
+  try { prev = JSON.parse(localStorage.getItem(DAY_KEY)); } catch (e) { }
+  const today = dateStr(REAL_DATE);
+  if (prev && prev.date === today) {
+    DAY = prev;
+    updateDayHUD();
+    if (!DAY.doneAll) {
+      const done = DAY.goals.filter(g => g.prog >= g.n).length;
+      toast('📦 The Red Box, resumed: ' + done + '/3 done today.');
+    }
+    return;
+  }
+  const yesterday = dateStr(new Date(REAL_DATE.getTime() - 86400000));
+  const carried = prev && (prev.lastDone === yesterday || prev.lastDone === today) ? (prev.streak || 0) : 0;
+  const streakLost = prev && prev.streak > 0 && !carried;
+  // deal three goals, seeded by the date, level-appropriate
+  const rnd = mulberry32(DATE_SEED ^ 0x5EED);
+  const pool = DAY_GOALS.filter(g => !g.min || G.level >= g.min);
+  const picks = [];
+  while (picks.length < 3 && pool.length) picks.push(pool.splice((rnd() * pool.length) | 0, 1)[0]);
+  if (PALM_VISIT && G.level >= 4) picks[0] = GOAL_PALM;
+  DAY = {
+    date: today, streak: carried, lastDone: prev ? prev.lastDone : null, doneAll: false,
+    goals: picks.map(g => ({ id: g.id, text: g.text.replace('{n}', g.n), n: g.n, prog: 0 })),
+    stats: { catch: 0, escape: 0, brief: 0, fish: 0, palm: 0 },
+    ap0: Math.round(G.approval),
+  };
+  saveDay();
+  updateDayHUD();
+  const lines = ['The morning box arrives. Today\'s items, in order of national importance:', '']
+    .concat(DAY.goals.map(g => '📕 ' + g.text));
+  lines.push('');
+  if (PALM_VISIT) lines.push('🎩 Intelligence: Palmerston is visiting today. The garden is NOT neutral.');
+  if (IS_XMAS) lines.push('🎄 It is also Christmas. The tree has been assessed. (Climbable.)');
+  if (IS_GOTCHA_DAY) { lines.push('🎉 And it is your Gotcha Day — hired 15 Feb 2011, on merit. The kitchen sends up 10 🐟.'); G.fish += 10; }
+  lines.push(DAY.streak > 0 ? '🔥 Streak: ' + DAY.streak + ' day' + (DAY.streak === 1 ? '' : 's') + '. The papers are counting.'
+    : streakLost ? 'The streak has lapsed. The nation, graciously, forgets.' : 'Finish all three and the Evening Paper prints something flattering.');
+  showCard('THE MORNING RED BOX', 'Today at No. 10', lines.join('\n'), null, null);
+}
+function updateDayHUD() {
+  const el = document.getElementById('daybox');
+  if (!el) return;
+  if (!DAY || G.daily || G.intro.phase !== 'done') { el.classList.add('hidden'); return; }
+  const done = DAY.goals.filter(g => g.prog >= g.n).length;
+  el.textContent = DAY.doneAll ? '📦 ✓ day well governed · 🔥 ' + DAY.streak : '📦 Red Box ' + done + '/3';
+  el.classList.remove('hidden');
+}
+function goalEvent(kind, info = {}) {
+  if (!DAY || G.daily || G.intro.phase !== 'done') return;
+  if (kind === 'catch') DAY.stats.catch++;
+  else if (kind === 'escape') DAY.stats.escape++;
+  else if (kind === 'brief') DAY.stats.brief++;
+  else if (kind === 'fish') DAY.stats.fish += info.n || 1;
+  else if (kind === 'palm') DAY.stats.palm = DAY.stats.palm || 0;
+  let changed = false;
+  for (const g of DAY.goals) {
+    if (g.prog >= g.n) continue;
+    const def = goalDef(g.id);
+    if (!def || def.kind !== kind) continue;
+    if (def.type && info.type !== def.type) continue;
+    if (def.night && !info.night) continue;
+    g.prog = Math.min(g.n, g.prog + (kind === 'fish' ? (info.n || 1) : 1));
+    changed = true;
+    if (g.prog >= g.n) {
+      const done = DAY.goals.filter(x => x.prog >= x.n).length;
+      if (done < 3) toast('📦 Red Box: ' + g.text + ' ✓ (' + done + '/3)');
+    }
+  }
+  if (changed && !DAY.doneAll && DAY.goals.every(g => g.prog >= g.n)) eveningPaper();
+  else updateDayHUD();
+  saveDay();
+}
+function eveningPaper() {
+  const yesterday = dateStr(new Date(REAL_DATE.getTime() - 86400000));
+  DAY.doneAll = true;
+  DAY.streak = (DAY.lastDone === yesterday ? (DAY.streak || 0) : 0) + 1;
+  DAY.lastDone = DAY.date;
+  G.fish += 6;
+  G.xp += 25;
+  const s = DAY.stats;
+  const apd = Math.round(G.approval) - DAY.ap0;
+  const heads = ['MOUSER DELIVERS', 'THE CAT GOVERNS ON', 'BOX TICKED, NATION SECURE', 'NOTHING GETS PAST HIM', 'COMPETENCE SPOTTED AT NO. 10'];
+  const body =
+    'The Evening Paper goes to print:\n\n' +
+    '🐭 ' + s.catch + ' caught · 💨 ' + s.escape + ' escaped\n' +
+    '📕 ' + s.brief + ' briefs cleared · 🐟 ' + s.fish + ' kippers banked\n' +
+    '📊 Approval ' + (apd >= 0 ? '+' : '') + apd + '% on the day' +
+    (s.palm ? '\n🎩 Palmerston: ' + s.palm + ' mice poached. Noted. Filed. Unforgiven.' : '') +
+    '\n\n🔥 Streak: ' + DAY.streak + ' day' + (DAY.streak === 1 ? '' : 's') + ' with the box cleared.' +
+    '\n\nReward: +6 🐟 · +25 XP. Larry may now nap with a completely clear conscience.';
+  showCard('THE EVENING PAPER', '"' + heads[(Math.random() * heads.length) | 0] + '"', body, null, () => {
+    while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+    updateHUD();
+    maybeShowCard();
+  });
+  [523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.11, 'triangle', 0.06, i * 0.09));
+  saveDay();
+  updateDayHUD();
+}
 
 // ---------- Input ----------
 const keys = {};
@@ -1585,6 +1801,7 @@ function interactPoi(p) {
   if (p.type === 'nap') {
     G.napping = true;
     G.larry.idleT = 0;
+    G.dreamT = 0; G.dreamDone = false; // a fresh nap may bring a fresh dream
     G.napKind = p.texts; G.radT = 0;
     // climb onto the thing: cat-tree platform, inside the box, onto the cushion
     G.napPos = p.texts === TXT_TOWER ? { x: (p.x + 0.5) * TILE, y: p.y * TILE + 1 }
@@ -1593,6 +1810,7 @@ function interactPoi(p) {
     toast((p.texts || TXT_NAP)[(Math.random() * (p.texts || TXT_NAP).length) | 0]);
     tone(500, 350, 0.3, 'sine', 0.05);
     briefEvent('nap');
+    goalEvent('nap');
     if (p.texts === TXT_BOX) earnHonour('box');
     return;
   }
@@ -1660,6 +1878,7 @@ function doPounce(power = 0) {
       G.xp += 20;
       toast('Palmerston withdraws. Diplomatically. +20 XP');
       earnHonour('standoff');
+      goalEvent('palm');
       sMeow();
       while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
       updateHUD();
@@ -1796,8 +2015,9 @@ const STEAL_LINES = [
 function pickMouseType(rnd = Math.random) {
   const r = rnd();
   if (G.level >= 6 && r < 0.1 && !G.mice.some(mo => mo.type === 'rat')) return 'rat';
-  if (G.level >= 5 && r < 0.3) return 'trick';
-  if (G.level >= 3 && r < 0.55) return 'swift';
+  if (G.level >= 7 && r < 0.24 && !G.mice.some(mo => mo.type === 'still')) return 'still';
+  if (G.level >= 5 && r < 0.42) return 'trick';
+  if (G.level >= 3 && r < 0.62) return 'swift';
   return 'grey';
 }
 function spawnMouse() {
@@ -1824,6 +2044,28 @@ function spawnMouse() {
       return;
     }
   }
+}
+// the raiding pair: a loud decoy and a quiet accomplice with the cheese.
+// Chase the squeaker and the cheddar walks out the door.
+function spawnPair() {
+  const m = curMap();
+  const [hx, hy] = m.holes[(Math.random() * m.holes.length) | 0];
+  const spots = [];
+  for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1]]) {
+    const tx = hx + dx, ty = hy + dy;
+    if (tx > 0 && ty > 0 && tx < m.w && ty < m.h && FLOORY(m.grid[ty][tx])) spots.push([tx, ty]);
+    if (spots.length >= 2) break;
+  }
+  if (spots.length < 2) return;
+  [['decoy', spots[0]], ['raider', spots[1]]].forEach(([type, [tx, ty]]) => {
+    G.mice.push({
+      x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, tx: 0, ty: 0,
+      state: 'wander', stateT: 0, dir: 1, animT: Math.random() * 9, scale: 0,
+      type, hp: 1, life: (type === 'decoy' ? 26 : 18) * DIFF().life, dodgeCD: 0, iframes: 0,
+    });
+  });
+  toast('🧀 A raiding pair! The squeaky one is a DISTRACTION — the quiet one has the cheese.');
+  tone(900, 1400, 0.1, 'sine', 0.05); tone(500, 350, 0.14, 'triangle', 0.05, 0.12);
 }
 function nearestHole(mo) {
   const m = curMap();
@@ -1892,8 +2134,9 @@ function updateMouse(mo, dt, idx) {
   else if (mo.state === 'lured' || mo.state === 'charmed' || mo.state === 'stunned') mo.state = 'flee';
   const dL = dist(mo.x, mo.y, L.x, L.y);
 
-  // tricksters sidestep an incoming pounce
-  if (T.dodge && mo.dodgeCD <= 0 && L.pounceT > 0.15 && dL < 46 && mo.state !== 'charmed' && mo.state !== 'stunned') {
+  // tricksters read a wound-up leap and sidestep it — a quick tap is too
+  // fast to juke, so uncharged pounces are the counter
+  if (T.dodge && mo.dodgeCD <= 0 && L.pounceT > 0.15 && L.lastPower > 0.3 && dL < 46 && mo.state !== 'charmed' && mo.state !== 'stunned') {
     const px2 = -(mo.y - L.y), py2 = (mo.x - L.x);
     const pm = Math.max(1, Math.hypot(px2, py2)), side = Math.random() < 0.5 ? 1 : -1;
     const jx = mo.x + px2 / pm * 16 * side, jy = mo.y + py2 / pm * 16 * side;
@@ -1901,6 +2144,24 @@ function updateMouse(mo, dt, idx) {
     mo.dodgeCD = 1.1;
     addParticle(mo.x, mo.y, '#cfc8b8', 3, 20);
     addFloat(mo.x, mo.y - 8, '!', '#f0d0a0');
+  }
+
+  // the Very Still Mouse: freezes when watched from a distance (near-
+  // invisible unless the monocle or sonar is on), bolts when you get close
+  if (T.freeze && mo.state !== 'charmed' && mo.state !== 'stunned' && mo.state !== 'lured' && mo.state !== 'leave') {
+    // only a calm mouse freezes — once it bolts, it stays bolted until it
+    // settles again (no flickering back to statue mid-flee)
+    if (mo.state === 'wander' && dL > 30 && dL < 95) mo.state = 'freeze';
+    else if (mo.state === 'freeze' && (dL <= 30 || dL >= 95)) {
+      mo.state = dL <= 30 ? 'flee' : 'wander';
+      if (dL <= 30) { addFloat(mo.x, mo.y - 8, '!!', '#f0d0a0'); tone(1600, 2400, 0.06, 'sine', 0.05); }
+    }
+  }
+
+  // the decoy squeaks for attention, and slopes off once its partner is gone
+  if (mo.type === 'decoy') {
+    if (Math.random() < dt * 0.9) addFloat(mo.x, mo.y - 10, '♪ squeak!', '#ead9a2');
+    if (Math.random() < dt && !G.mice.some(m2 => m2.type === 'raider')) mo.life = Math.min(mo.life, 0.1);
   }
 
   // heading home: mice that linger too long make for the nearest hole
@@ -1914,12 +2175,13 @@ function updateMouse(mo, dt, idx) {
     else mo.life = 10;
   }
 
-  if (mo.state !== 'lured' && mo.state !== 'charmed' && mo.state !== 'stunned' && mo.state !== 'leave' && dL < 62) mo.state = 'flee';
+  const calmDream = G.dream && G.dream.buff === 'calm';
+  if (mo.state !== 'lured' && mo.state !== 'charmed' && mo.state !== 'stunned' && mo.state !== 'leave' && mo.state !== 'freeze' && dL < (calmDream ? 52 : 62)) mo.state = 'flee';
   else if (mo.state === 'flee' && dL > 110) { mo.state = 'wander'; mouseTarget(mo); }
 
-  const fleeSpd = (55 + Math.min(20, G.level * 2)) * T.spd * DIFF().mSpd;
+  const fleeSpd = (55 + Math.min(20, G.level * 2)) * T.spd * DIFF().mSpd * (calmDream ? 0.93 : 1) * (mo.type === 'decoy' ? 0.55 : 1);
   let sp = 22 * T.spd, vx = 0, vy = 0;
-  if (mo.state === 'charmed' || mo.state === 'stunned') {
+  if (mo.state === 'charmed' || mo.state === 'stunned' || mo.state === 'freeze') {
     sp = 0;
     if (mo.state === 'charmed' && Math.random() < dt * 3) addParticle(mo.x, mo.y - 6, '#e77');
   } else if (mo.state === 'leave') {
@@ -1937,10 +2199,15 @@ function updateMouse(mo, dt, idx) {
       addParticle(mo.x, mo.y, '#8a8378', 5, 20);
       addFloat(mo.x, mo.y - 8, 'got away!', '#c9b7a0');
       G.escapes++;
-      // escapees raid the pantry on the way out — the Rat King's larder grows
-      if (!G.daily && Math.random() < 0.4) {
+      goalEvent('escape');
+      // only mice that actually got at the food provision the Rat King:
+      // cheese-carriers always, opportunists only down in the pantry itself.
+      // (An ordinary escape upstairs stings once, not three times.)
+      if (!G.daily && (T.carry || (G.mapId === 'basement' && Math.random() < 0.4))) {
         G.larder++;
-        toast(STEAL_LINES[G.larder % STEAL_LINES.length].replace('{n}', G.larder));
+        toast(T.carry
+          ? '🧀 The quiet one made it home WITH the cheddar. Somewhere below, the Rat King applauds. (Larder: ' + G.larder + ')'
+          : STEAL_LINES[G.larder % STEAL_LINES.length].replace('{n}', G.larder));
         tone(340, 220, 0.14, 'triangle', 0.05);
       }
       G.approval = Math.max(0, G.approval - (G.press.active && DIFF().pressPen ? 6 : 2));
@@ -2055,7 +2322,9 @@ function drawToy(t) {
 
 // ---------- The other cats of Whitehall ----------
 function setupRivals() {
-  G.rivals = (curMap().cats || []).map(c => ({
+  // Palmerston only comes round on visit days (date-seeded) — a rival you
+  // sometimes have is a better rival than one who lives on your lawn
+  G.rivals = (curMap().cats || []).filter(c => c.name !== 'Palmerston' || PALM_VISIT || G.intro.phase !== 'done').map(c => ({
     x: (c.x + 0.5) * TILE, y: (c.y + 0.5) * TILE,
     img: CAT_IMGS[c.set], name: c.name, quips: c.quips,
     mode: c.mode, state: c.mode === 'sleep' ? 'sleep' : 'sit',
@@ -2126,6 +2395,8 @@ function updateRival(c, dt) {
         toast('📰 "FOREIGN OFFICE CAT OUT-MOUSES LARRY" — early edition');
         tone(240, 120, 0.3, 'sawtooth', 0.06);
         if (G.press.active) G.press.bads++;
+        G.approval = Math.max(0, G.approval - 2);
+        if (DAY) { DAY.stats.palm = (DAY.stats.palm || 0) + 1; saveDay(); } // the Evening Paper keeps count
         c.state = 'sit'; c.t = 5; c.huntCD = 50;
       }
       return;
@@ -2171,9 +2442,10 @@ function drawRival(c) {
 function setupButterflies() {
   G.butterflies = [];
   if (G.mapId !== 'ground') return;
-  for (let i = 0; i < 3; i++) {
+  const n = IS_SPRING ? 5 : IS_WINTER ? 1 : 3; // spring brings company
+  for (let i = 0; i < n; i++) {
     G.butterflies.push({
-      x: (6 + i * 12) * TILE, y: (2 + (i % 3) * 2) * TILE,
+      x: (6 + i * (IS_SPRING ? 8 : 12)) * TILE, y: (2 + (i % 3) * 2) * TILE,
       t: i * 2.1, hue: i === 1 ? '#f0ece2' : '#e8a24c',
     });
   }
@@ -2238,6 +2510,7 @@ function updatePress(dt) {
       G.xp += 25;
       G.fish += 3;
       G.approval = Math.min(100, G.approval + 8);
+      goalEvent('press');
       sLevel();
       while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
     } else {
@@ -2282,6 +2555,10 @@ function catchMouse(i) {
   G.mice.splice(i, 1);
   G.catches++;
   G.fish += mo.type === 'ratking' ? 5 + G.larder : mo.type === 'rat' ? 2 : 1;
+  if (mo.type === 'raider') { // the cheddar comes home
+    G.fish += 2;
+    addFloat(mo.x, mo.y - 16, 'cheese recovered! +2 🐟', '#9fe8a0');
+  }
   G.approval = Math.min(100, G.approval + 0.6);
   if (G.isNight) G.nightCatches++;
   if (G.press.active) G.press.catches++;
@@ -2296,6 +2573,7 @@ function catchMouse(i) {
   }
   let gain = Math.round((12 + Math.floor(G.level * 1.5)) * T.xp);
   if (has('cape')) gain *= 2;
+  if (G.dream && G.dream.buff === 'xp') gain = Math.round(gain * 1.15);
   G.xp += gain;
   addParticle(mo.x, mo.y, '#e9c46a', 8, 40);
   addParticle(mo.x, mo.y, '#f3ead9', 5, 30);
@@ -2306,6 +2584,7 @@ function catchMouse(i) {
   if (G.larry.pounceT > 0 && G.larry.lastPower > 0.55 && !G.larry.perfectDone) {
     G.larry.perfectDone = true; // one bonus per leap
     G.xp += 8;
+    if (G.daily) G.daily.perfects = (G.daily.perfects || 0) + 1;
     addFloat(G.larry.x, G.larry.y - 24, 'PERFECT! +8', '#ffd98a');
     addParticle(mo.x, mo.y, '#ffd98a', 6, 40);
     tone(880, 1320, 0.12, 'triangle', 0.07);
@@ -2323,6 +2602,7 @@ function catchMouse(i) {
   sCatch();
   if (!G.daily) {
     briefEvent('catch', { map: G.mapId, type: mo.type, night: G.isNight, region: G.region });
+    goalEvent('catch', { type: mo.type, night: G.isNight });
     checkHonours();
   }
   // hat-trick: three catches inside eight seconds
@@ -2414,6 +2694,68 @@ function maybeShowCard() {
     });
 }
 
+// a story card with two choices — same card, second button
+function showChoice(kicker, title, body, aLabel, bLabel, cb) {
+  const btn = document.getElementById('cardBtn'), b2 = document.getElementById('cardBtn2');
+  const done = which => {
+    btn.textContent = 'Continue';
+    b2.classList.add('hidden');
+    cb(which);
+  };
+  showCard(kicker, title, body, null, () => done('a'));
+  btn.textContent = aLabel;
+  b2.textContent = bLabel;
+  b2.classList.remove('hidden');
+  b2.onclick = () => {
+    sClick();
+    document.getElementById('cardWrap').classList.add('hidden');
+    G.paused = false;
+    done('b');
+  };
+}
+
+// ---------- Dreams: naps ask a small question, the answer lingers ----------
+// Each buff is tiny and lasts until the next dream replaces it. The point is
+// that napping — the stamina mechanic — feels like a reward, not downtime.
+const DREAM_NOTES = {
+  xp: 'mice are worth a little more today (+15% XP)',
+  reach: 'pounces land a whisker further today',
+  stam: 'puff recovers faster today',
+  calm: 'mice relax around you today — they startle later',
+  zoom: 'Larry moves a touch quicker today',
+};
+const DREAMS = [
+  {
+    body: 'The Infinite Pantry again. Shelf after shelf, cheddar to the horizon, every wheel of it unguarded.',
+    a: ['🧀 Eat everything', 'xp'], b: ['🚪 Guard the door', 'reach'],
+  },
+  {
+    body: 'You dream you are enormous. Building-sized. You supervise Whitehall by lying on all of it at once.',
+    a: ['🏛️ Keep lying there', 'stam'], b: ['🐾 One colossal pounce', 'reach'],
+  },
+  {
+    body: 'The red dot appears. It apologises. For everything. It offers terms.',
+    a: ['🤝 Accept the truce', 'calm'], b: ['🔴 CHASE IT ANYWAY', 'zoom'],
+  },
+  {
+    body: 'You are at the lectern. The nation watches. You deliver one perfect, devastating meow and take no questions.',
+    a: ['🎤 Let it echo', 'xp'], b: ['🚶 Exit briskly, stage left', 'zoom'],
+  },
+  {
+    body: 'Palmerston, in the dream, admits your bow tie is better. He would never. That is how you know it is a dream.',
+    a: ['😌 Savour it', 'stam'], b: ['👀 Stay vigilant, even here', 'calm'],
+  },
+];
+function showDream() {
+  const d = DREAMS[(Math.random() * DREAMS.length) | 0];
+  showChoice('💤 MEANWHILE, IN THE DREAM', 'Larry dreams…', d.body, d.a[0], d.b[0], which => {
+    const buff = which === 'a' ? d.a[1] : d.b[1];
+    G.dream = { buff };
+    toast('💭 The dream lingers: ' + DREAM_NOTES[buff] + '.');
+    tone(660, 880, 0.2, 'sine', 0.04); tone(880, 660, 0.2, 'sine', 0.03, 0.22);
+  });
+}
+
 function spawnBoxes() {
   G.boxes = [];
   [[17, 30], [24, 29], [18, 28], [25, 32]].forEach(([x, y]) => G.boxes.push({ x: x * TILE, y: y * TILE, t: 30 }));
@@ -2449,7 +2791,7 @@ function visitorReaches() {
             showCard('LONDON SW1A 2AA', 'No. 10 Downing Street',
               'Your new office: four floors, a garden, a Cabinet, and — somewhere in the walls — an outrageous number of mice. ' + G.pm + ' carries you over the famous threshold for the cameras. Flashbulbs pop. You allow it. Time to get to work.',
               null,
-              () => { flashbulbs(); save(); });
+              () => { flashbulbs(); save(); initDay(); });
           });
         });
     });
@@ -2537,8 +2879,12 @@ function update(dt) {
   if (G.rainT <= 0) {
     const r = Math.random();
     const wasSnow = G.snowing;
-    G.raining = r > 0.5 && r <= 0.8;
-    G.snowing = r > 0.8;
+    // the real calendar leaks in: autumn is wet, winter can snow properly,
+    // the rest of the year mostly behaves
+    const snowP = IS_WINTER ? 0.26 : 0.02;
+    const rainP = IS_AUTUMN ? 0.45 : IS_SPRING ? 0.3 : 0.22;
+    G.snowing = r < snowP;
+    G.raining = !G.snowing && r < snowP + rainP;
     if (G.snowing && !wasSnow) toast('❄️ Snow over Westminster. The garden goes quiet.');
     G.rainT = 25 + Math.random() * 30;
   }
@@ -2559,8 +2905,15 @@ function update(dt) {
     if (G.daily.t <= 0) { dailyEnd(); return; }
   }
 
-  // approval: the nation is always keeping score
+  // approval: the nation is always keeping score — but it also forgets.
+  // Below 50, approval drifts gently back up while the press pack is away,
+  // so one bad stretch can't spiral into Rat King + crisis + summons at once.
   if (G.intro.phase === 'done' && !G.daily) {
+    if (G.approval < 50 && !G.press.active) {
+      const before = Math.round(G.approval);
+      G.approval = Math.min(50, G.approval + dt * 0.35);
+      if (Math.round(G.approval) !== before) updateHUD();
+    }
     if (G.approval < 30 && !G.crisis) {
       G.crisis = true;
       toast('📉 "CHIEF MOUSER IN CRISIS" — the columnists smell blood. Catch mice; let none escape.');
@@ -2582,7 +2935,7 @@ function update(dt) {
   }
 
   // puff: naps are now professionally justifiable
-  G.stam = Math.min(100, G.stam + (G.napping ? 12 : 2) * dt);
+  G.stam = Math.min(100, G.stam + (G.napping ? 12 : 2) * (G.dream && G.dream.buff === 'stam' ? 1.6 : 1) * dt);
   if (Math.abs(G.stam - G.stamShown) >= 1) {
     G.stamShown = G.stam;
     const sf = document.getElementById('stfill');
@@ -2612,6 +2965,7 @@ function update(dt) {
         G.approval = Math.min(100, G.approval + 4);
         G.xp += 15;
         toast('📸 You sat. You stared into the middle distance. The photograph is MAGNIFICENT. +5 🐟 +15 XP');
+        goalEvent('summons');
         [659, 784, 988].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
         while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
         updateHUD();
@@ -2652,6 +3006,23 @@ function update(dt) {
     tone(f, f * 1.25, 0.07, 'sine', 0.025);
     tone(f * 1.1, f * 0.9, 0.06, 'sine', 0.02, 0.1);
   }
+  // a raiding pair plots something (lv 9+): one squeaks, one carries
+  if (G.level >= 9 && !G.daily && G.intro.phase === 'done' && (G.mapId === 'basement' || G.mapId === 'ground')) {
+    G.pairCD = (G.pairCD === undefined ? 50 : G.pairCD) - dt;
+    if (G.pairCD <= 0) {
+      G.pairCD = 70 + Math.random() * 50;
+      if (!G.mice.some(m2 => m2.type === 'raider' || m2.type === 'decoy')) spawnPair();
+    }
+  }
+  // the division bell, somewhere across Whitehall — urgent for somebody else
+  if (!G.daily && G.intro.phase === 'done') {
+    G.bellCD = (G.bellCD === undefined ? 120 + Math.random() * 120 : G.bellCD - dt);
+    if (G.bellCD <= 0) {
+      G.bellCD = 240 + Math.random() * 240;
+      for (let i = 0; i < 6; i++) tone(1568, 1520, 0.09, 'square', 0.012, i * 0.16);
+      if (Math.random() < 0.4) toast("🔔 The division bell rings, far away. Somebody else's problem.");
+    }
+  }
   // the Rat King stirs
   if (G.level >= 8 && G.mapId === 'basement' && G.intro.phase === 'done' && !G.mice.some(m2 => m2.type === 'ratking')) {
     G.ratKingCD -= dt;
@@ -2691,6 +3062,12 @@ function update(dt) {
       if (Math.random() < dt * 3) tone(82, 76, 0.22, 'sine', 0.016); // a low, dignified purr
       const np = G.napPos || L;
       if (Math.random() < dt * 1.2) addFloat(np.x + 8, np.y - 14, 'z', '#8a83a0');
+      // deep enough into a nap, Larry dreams — and the dream asks a question
+      // (one per nap, and not again for a while: dreams should stay a treat)
+      if (!G.daily && G.intro.phase === 'done' && !G.dreamDone && (G.dreamCD || 0) <= 0) {
+        G.dreamT = (G.dreamT || 0) + dt;
+        if (G.dreamT > 3.5) { G.dreamDone = true; G.dreamCD = 140; showDream(); }
+      }
     }
   }
   // one-shot animations (eat, scratch, meow) and idle grooming
@@ -2717,6 +3094,7 @@ function update(dt) {
     if (btn.textContent !== want) btn.textContent = want;
   }
   L.pounceCD = Math.max(0, L.pounceCD - dt);
+  G.dreamCD = Math.max(0, (G.dreamCD || 0) - dt);
   G.transCD = Math.max(0, G.transCD - dt);
   G.zoomiesT = Math.max(0, G.zoomiesT - dt);
   G.sonarT = Math.max(0, G.sonarT - dt);
@@ -2734,7 +3112,7 @@ function update(dt) {
   document.getElementById('btnPounce').classList.toggle('cooling', L.pounceCD > 0);
   if (G.zoomiesT > 0 && Math.random() < dt * 20) addParticle(L.x, L.y + 5, '#e9c46a', 1, 12);
 
-  let sp = (has('zoomies') ? 78 : 70) + (G.zoomiesT > 0 ? 55 : 0);
+  let sp = (has('zoomies') ? 78 : 70) + (G.zoomiesT > 0 ? 55 : 0) + (G.dream && G.dream.buff === 'zoom' ? 8 : 0);
   if (G.stam < 25) sp *= 0.86; // a puffed cat trudges
   let mx = v.x, my = v.y;
   if (L.charging && L.pounceT <= 0 && !G.napping) {
@@ -2772,6 +3150,7 @@ function update(dt) {
   } else {
     L.idleT += dt;
     if (L.idleT > 7 && Math.random() < dt * 0.5) { addFloat(L.x + 8, L.y - 18, 'z', '#8a83a0'); }
+    if (L.idleT > 7 && Math.random() < dt * 0.7) tone(82, 76, 0.25, 'sine', 0.012); // content, off duty
   }
   if (L.cvx || L.cvy) {
     const nx = L.x + L.cvx * dt, ny = L.y + L.cvy * dt;
@@ -2819,7 +3198,7 @@ function update(dt) {
     }
   }
 
-  const reach = L.pounceT > 0 ? (L.superP ? 30 : 15 + L.lastPower * 6) : 8;
+  const reach = (L.pounceT > 0 ? (L.superP ? 30 : 15 + L.lastPower * 6) : 8) + (G.dream && G.dream.buff === 'reach' ? 3 : 0);
   if (!G.napping) for (let i = G.mice.length - 1; i >= 0; i--) {
     if (G.mice[i].iframes <= 0 && dist(G.mice[i].x, G.mice[i].y, L.x, L.y) < reach) catchMouse(i);
   }
@@ -2890,6 +3269,14 @@ function update(dt) {
     f.t -= dt; f.y -= 14 * dt;
     if (f.t <= 0) G.floats.splice(i, 1);
   }
+
+  // kippers banked today (one watcher instead of a hook at every payout)
+  if (G.prevFish === undefined) G.prevFish = G.fish;
+  if (G.fish > G.prevFish) goalEvent('fish', { n: G.fish - G.prevFish });
+  G.prevFish = G.fish;
+
+  // rain on the windows: a soft filtered wash, heavier-sounding indoors
+  rainAmbience();
 
   // camera eases after Larry instead of hard-locking
   const m = curMap();
@@ -3283,17 +3670,24 @@ function drawMouse(mo) {
   const rat = mo.type === 'rat' || king;
   ctx.save();
   ctx.translate(mo.x, mo.y);
+  // a frozen Very Still Mouse all but vanishes — unless the monocle or a
+  // sonar ping is lighting it up
+  if (mo.state === 'freeze') ctx.globalAlpha = (G.nv || G.sonarT > 0) ? 0.85 : 0.18;
   const sc = king ? 1.35 : 1;
   ctx.scale(mo.dir * mo.scale * sc, mo.scale * sc);
   ctx.fillStyle = 'rgba(0,0,0,0.22)';
   ctx.beginPath(); ctx.ellipse(0, 4, rat ? 7 : 5, 1.5, 0, 0, 7); ctx.fill();
-  const still = mo.state === 'charmed' || mo.state === 'stunned';
+  const still = mo.state === 'charmed' || mo.state === 'stunned' || mo.state === 'freeze';
   const hop = still ? 0 : Math.abs(Math.sin(mo.animT * 14)) * 1.4;
   ctx.strokeStyle = rat ? '#c9838a' : '#d78f92'; ctx.lineWidth = rat ? 1.1 : 0.8;
   ctx.beginPath(); ctx.moveTo(rat ? -8 : -6, 1 - hop);
   ctx.quadraticCurveTo(rat ? -12 : -9, -1 - hop + Math.sin(mo.animT * 10), rat ? -15 : -11, 1 - hop);
   ctx.stroke();
   ctx.drawImage(spr, rat ? -9 : -7, (rat ? -7 : -5) - hop);
+  if (mo.type === 'raider') { // the cheese, carried in plain sight
+    ctx.fillStyle = '#e9c46a'; ctx.fillRect(-3, -7 - hop, 4, 3);
+    ctx.fillStyle = '#c9a227'; ctx.fillRect(-2, -6 - hop, 1, 1); ctx.fillRect(0, -5 - hop, 1, 1);
+  }
   if (king) { // a tiny, non-negotiable crown
     ctx.fillStyle = '#e9c46a';
     ctx.fillRect(4, -10 - hop, 5, 2);
@@ -3415,9 +3809,14 @@ function dailyEnd() {
   const isBest = D.score > best;
   if (isBest) { best = D.score; try { localStorage.setItem(key, '' + best); } catch (e) { } }
   const statsLine = '🐭 ' + D.caught + ' caught · 💨 ' + D.escaped + ' escaped · 🔥 best streak ×' + D.bestCombo;
+  // the compact grid line is what actually gets pasted into the group chat
+  const grid = (D.caught ? '🐭'.repeat(Math.min(D.caught, 10)) + (D.caught > 10 ? '+' : '') : '—')
+    + (D.escaped ? ' 💨×' + D.escaped : '')
+    + (D.perfects ? ' ⭐×' + D.perfects : '')
+    + (D.bestCombo > 1 ? ' 🔥×' + D.bestCombo : '');
   D.shareText = '🐈 LARRY — Daily Sortie ' + dailySeedStr(D.seed) +
-    '\n' + statsLine +
-    '\n🏆 Score: ' + D.score + (isBest ? ' — personal best!' : ' (best today: ' + best + ')');
+    '\n' + grid +
+    '\n🏆 ' + D.score + (isBest ? ' — personal best!' : ' (best today: ' + best + ')');
   document.getElementById('dailyStats').textContent = statsLine;
   document.getElementById('dailyScore').textContent = D.score + (isBest ? ' ★ NEW BEST' : '');
   document.getElementById('dailyBest').textContent = 'Best today: ' + best + ' · ' + dailySeedStr(D.seed);
@@ -3482,6 +3881,7 @@ function startGame(fresh) {
   }
 
   bootWorld();
+  initDay(); // the morning Red Box (career mode, once the intro is done)
   if (fresh && G.intro.phase === 'shelter' && !location.search.includes('nocard')) {
     showCard('SOUTH LONDON, PRESENT DAY', 'Battersea',
       'The shelter is warm. The service is adequate. The other cats lack ambition. You are LARRY — currently between opportunities — and the mice in Cattery 4 have grown complacent. Show whoever is watching what you can do. (Catch 2 mice.)',
@@ -3532,8 +3932,12 @@ function menuLabels() {
 function openMenu() {
   if (!G.running || G.paused || menuOpen) return;
   menuOpen = true; G.paused = true; restartArmed = false;
+  const dayLines = DAY && !G.daily && G.intro.phase === 'done'
+    ? '\n' + DAY.goals.map(g => (g.prog >= g.n ? '✓ ' : '· ') + g.text + (g.n > 1 ? ' (' + Math.min(g.prog, g.n) + '/' + g.n + ')' : '')).join('\n')
+    + (DAY.streak > 0 ? '\n🔥 streak: ' + DAY.streak : '')
+    : '';
   document.getElementById('menuStats').textContent =
-    '🐭 ' + G.catches + '   🏅 ' + G.honours.size + '/' + HONOURS.length + '   🔍 ' + G.secretsFound.size + '/' + SECRET_TOTAL + '   PM #' + pmCount;
+    '🐭 ' + G.catches + '   🏅 ' + G.honours.size + '/' + HONOURS.length + '   🔍 ' + G.secretsFound.size + '/' + SECRET_TOTAL + '   PM #' + pmCount + dayLines;
   menuLabels();
   document.getElementById('menuRestart').textContent = 'Restart from Battersea';
   document.getElementById('menuWrap').classList.remove('hidden');

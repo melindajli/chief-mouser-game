@@ -115,8 +115,39 @@ challenge — playable by kids and adults alike.**
   that pause briefs and punish snubs; a permanently dim basement; and a
   Kitchen chef who competes for mice.
 
+- **The day-structure batch** (session bookends + goal ladder): every real
+  calendar day deals three goals from the **Morning Red Box** (date-seeded —
+  the same three for everyone; progress persists across sessions that day);
+  clearing all three prints the **Evening Paper** — the day's numbers, a
+  deadpan headline, a completion streak, and +6 🐟 +25 XP. Goals show in the
+  HUD (📦 n/3) and pause menu.
+- **Mouse counterplay types**: tricksters now juke only *charged* pounces
+  (taps are the counter — reads as skill, not unfairness); the **Very Still
+  Mouse** (lv 7+) freezes near-invisible when watched and bolts up close
+  (counter: monocle/sonar); the **raiding pair** (lv 9+) — a loud decoy and
+  a quiet cheese-carrier (catch the carrier: +2 🐟; lose it: guaranteed
+  larder).
+- **Death-spiral valve**: only cheese-carriers and pantry (basement) escapes
+  provision the Rat King, and approval below 50% drifts gently back up while
+  the press is away — one bad stretch no longer triple-punishes.
+- **The real calendar leaks in**: seasonal weather bias (wet autumn, snowy
+  winter, extra spring butterflies), a December tree and October pumpkin in
+  the Entrance Hall, Christmas and Gotcha Day (15 Feb) lines in the morning
+  box.
+- **Palmerston visits** (~2 days in 5, date-seeded): the Foreign Office cat
+  now only appears on visit days, announced in the morning box (with a
+  stare-off goal); his poached mice cost approval and are tallied,
+  unforgivingly, in the Evening Paper.
+- **Dream vignettes**: deep naps ask a one-line, two-choice dream question;
+  the answer leaves a small buff (reach/XP/puff/calm/zoom) until the next
+  dream. Naps are a reward now, not downtime.
+- **Emoji share grid** for the Daily Sortie (🐭🐭🐭 💨×1 ⭐×2 🔥×7) — the
+  line that actually gets pasted into the group chat.
+- **Sound depth**: rain-on-the-window noise wash (muffled indoors, bright in
+  the garden), a distant division bell (somebody else's problem), and a
+  content off-duty purr.
+
 Still open from the list: ghost cats, WebGL lighting, cloud saves,
 localization, remappable keys/colour-blind modes, save slots, NPC daily
-schedules, mouse counterplay types, stealth vision cones, daily mutators,
-Mouser's Logbook, dream vignettes, day-structure event waves, prestige
-("A New Reign"), session bookends, house map.
+schedules, stealth vision cones, daily mutators, Mouser's Logbook,
+day-structure event waves, prestige ("A New Reign"), house map.

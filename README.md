@@ -44,7 +44,17 @@ installable PWA that works offline.
 
 ## Features
 
-- Mice with wander/flee/lured AI, spawning from mouseholes per room
+- Mice with wander/flee/lured AI, spawning from mouseholes per room —
+  including archetypes with counterplay: tricksters juke charged pounces
+  (tap instead), the Very Still Mouse hides in plain sight (monocle), and
+  raiding pairs where the squeaky one is a distraction
+- **The Morning Red Box & the Evening Paper** — three date-seeded goals
+  each real day; clear them all and the Evening Paper prints your numbers,
+  a headline, and your streak
+- **Dreams** — deep naps ask a small two-choice question; the answer
+  lingers as a tiny buff until the next dream
+- The real calendar leaks in: seasonal weather, a December tree, an
+  October pumpkin, Gotcha Day — and some days Palmerston visits
 - XP + levels with story "dispatch" cards between them
 - Gadgets: Bureaucratic Zoomies, Sonic Whiskers, Diplomatic Collar,
   Laser Pointer of State, Night-Vision Monocle, Ceremonial Cape
