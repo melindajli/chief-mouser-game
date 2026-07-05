@@ -887,10 +887,26 @@ MAPS.shelter = makeMap('shelter', 22, 15, (m, set, rect) => {
   m.holes = [[21, 7], [0, 4]];
   m.lamps = [[11.5, 6.5]];
   m.regions = [[1, 1, 20, 13, 'Battersea — Cattery 4']];
-  m.npcs = [{ x: 17, y: 10, sprite: 'worker', rect: [14, 8, 20, 12], quips: ['He keeps staring at the mice…', 'Someone important is visiting today.', 'Cattery 4 has never been this quiet.'] }];
+  m.npcs = [{ x: 17, y: 10, sprite: 'worker', rect: [14, 8, 20, 12], quips: [
+    'He keeps staring at the mice like they owe him money.',
+    'Someone important is coming to see YOU today. Try to look employable.',
+    'Cattery 4 has never been this quiet. The mice suspect a merger.',
+    'Between us — you\'re wasted here. You should be running something.',
+    'Good luck at the interview. Whatever they offer, negotiate for more fish.',
+  ] }];
   m.cats = [
-    { x: 12, y: 4, set: 'white', name: 'Duchess', mode: 'sit', quips: ['Duchess judges your technique. Seven out of ten.', 'Duchess pretends not to care. Duchess cares.', 'Do write. Or better: send fish.'] },
-    { x: 18, y: 11, set: 'ginger', name: 'Biscuit', mode: 'sleep', quips: ['…zzz… (Biscuit dreams of a big garden.)', '…zzz… (Biscuit will miss you. Probably. …zzz.)'] },
+    { x: 12, y: 4, set: 'white', name: 'Duchess', mode: 'sit', quips: [
+      'Duchess judges your technique. Seven out of ten. The three is for enthusiasm.',
+      'Duchess pretends not to care. Duchess cares, enormously, in private.',
+      'Do write. Or better: send fish.',
+      'Downing Street? How dreadfully public, darling. Do enjoy the tourists.',
+      'One hears they change the management weekly there. How exhausting for the sofa.',
+    ] },
+    { x: 18, y: 11, set: 'ginger', name: 'Biscuit', mode: 'sleep', quips: [
+      '…zzz… (Biscuit dreams of a big garden.)',
+      '…zzz… (Biscuit will miss you. Probably. …zzz.)',
+      '…zzz… (do not wake Biscuit. Biscuit is off duty. Permanently.)',
+    ] },
   ];
   m.mouseCap = () => 3;
 });
@@ -988,12 +1004,40 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
     [13, 26, 30, 33, 'The Entrance Hall'],
   ];
   m.npcs = [
-    { x: 19, y: 31, sprite: 'guard', rect: [15, 29, 27, 33], quips: ['Morning, Chief Mouser.', 'All quiet on the doorstep.', 'The salad is behind the sofa. You did not hear that from me.'] },
-    { x: 15, y: 13, sprite: 'aide', rect: [12, 11, 19, 16], quips: ['Has anyone seen the briefing? ANYONE?', 'Minister, the cat outranks you.', 'The meeting moved. Again.'] },
-    { x: 30, y: 6, sprite: 'gardener', rect: [24, 2, 35, 8], quips: ['Mind the begonias.', 'Rain again. Good for the roses.', 'No digging. I know that look.'] },
+    { x: 19, y: 31, sprite: 'guard', rect: [15, 29, 27, 33], quips: [
+      'Morning, Chief Mouser. You outrank half the people walking through that door today.',
+      'All quiet on the doorstep.',
+      'Fourth removal van this year. I\'ve stopped learning the names. So did you.',
+      'Whoever\'s in charge this week, sir, YOU\'RE the fixed point.',
+      'Careful by the cameras — one snap of you asleep and it\'s the front page for a week.',
+      'If anyone asks, you were "in a meeting". You were on the radiator.',
+      'The mice have a clearer long-term plan than most of the building, if I\'m honest.',
+    ] },
+    { x: 15, y: 13, sprite: 'aide', rect: [12, 11, 19, 16], quips: [
+      'Has anyone seen the briefing? ANYONE?',
+      'Minister, the cat outranks you. No, I won\'t put that in writing.',
+      'The meeting moved. Again. To a room that may no longer exist.',
+      'We\'ve held three positions on this since breakfast. The cat has held one: nap.',
+      'Please don\'t sit on the red box. …Of course you\'re sitting on the red box.',
+      'Four PMs and one cat I\'ve served under. Only one of you was reassuring.',
+    ] },
+    { x: 30, y: 6, sprite: 'gardener', rect: [24, 2, 35, 8], quips: [
+      'Mind the begonias. They\'ve outlasted nine Prime Ministers; they\'ll outlast you.',
+      'Rain again. Good for the roses. Bad for the photo-ops.',
+      'No digging. I know that look.',
+      'Found a fresh mouse hole by the wall. Thought you\'d want first refusal.',
+      'This lawn\'s seen more resignations than garden parties, between you and me.',
+    ] },
   ];
   m.cats = [
-    { x: 10, y: 4, set: 'tux', name: 'Palmerston', mode: 'wander', rect: [4, 2, 20, 7], quips: ['Palmerston, Foreign Office. This garden is neutral territory. FOR NOW.', 'We do not discuss the Incident of 2017.', 'Your bow tie is… adequate.', 'Hiss. (Diplomatically.)'] },
+    { x: 10, y: 4, set: 'tux', name: 'Palmerston', mode: 'wander', rect: [4, 2, 20, 7], quips: [
+      'Palmerston, Foreign Office. This garden is neutral territory. FOR NOW.',
+      'We do not discuss the Incident of 2017.',
+      'Your bow tie is… adequate. For a domestic posting.',
+      'Hiss. (Diplomatically.)',
+      'The Foreign Office has the larger garden, you know. One simply mentions it.',
+      'One receives so many invitations. One declines them all. You should try it.',
+    ] },
   ];
   // the real calendar dresses the house
   if (IS_DECEMBER) {
@@ -1037,7 +1081,14 @@ MAPS.basement = makeMap('basement', 30, 20, (m, set, rect) => {
     [21, 1, 28, 7, 'The Pantry'],
     [21, 11, 28, 17, 'The Cellar'],
   ];
-  m.npcs = [{ x: 9, y: 4, sprite: 'chef', rect: [2, 2, 16, 7], quips: ['Mind the flour, paws.', 'One saucer of milk, coming up.', 'The pantry mice are ORGANISED, I tell you.'] }];
+  m.npcs = [{ x: 9, y: 4, sprite: 'chef', rect: [2, 2, 16, 7], quips: [
+    'Mind the flour, paws.',
+    'One saucer of milk, coming up. Don\'t tell the vet.',
+    'The pantry mice are ORGANISED, I tell you. They\'ve got a rota.',
+    'Cabinet lunch is at one. The mice have already RSVP\'d.',
+    'You catch \'em, I ask no questions. That\'s our arrangement.',
+    'They cut my budget again. YOU they\'d never cut. Job security, that.',
+  ] }];
   m.mouseCap = lvl => Math.min(5 + Math.floor(lvl * 0.8), 11);
 });
 
@@ -1099,9 +1150,21 @@ MAPS.first = makeMap('first', 44, 26, (m, set, rect) => {
     [27, 16, 38, 24, 'The Small Dining Room'],
     [1, 11, 42, 14, 'The Landing'],
   ];
-  m.npcs = [{ x: 20, y: 12, sprite: 'butler', rect: [4, 11, 40, 14], quips: ['The State Room is dusted, sir.', 'A new portrait arrives tomorrow. Another one.', 'Shall I fetch the good saucer?'] }];
+  m.npcs = [{ x: 20, y: 12, sprite: 'butler', rect: [4, 11, 40, 14], quips: [
+    'The State Room is dusted, sir.',
+    'A new portrait arrives tomorrow. Another one. We\'re nearly out of wall.',
+    'Shall I fetch the good saucer? The occasion, one feels, demands it.',
+    'One has served four administrations and one cat. The cat tips better.',
+    'Do signal if the ambassador bores you. I shall arrange an urgent nap.',
+  ] }];
   m.cats = [
-    { x: 34, y: 5, set: 'black', name: 'Gladstone', mode: 'sit', rect: [32, 2, 41, 8], quips: ['Gladstone, Treasury. I count mice as assets.', 'The Pillared Room is under audit. Move along.', 'Your XP is inflationary. Noted.'] },
+    { x: 34, y: 5, set: 'black', name: 'Gladstone', mode: 'sit', rect: [32, 2, 41, 8], quips: [
+      'Gladstone, Treasury. I count mice as assets.',
+      'The Pillared Room is under audit. Move along.',
+      'Your XP is inflationary. Noted. I\'ve written to someone about it.',
+      'Every treat you receive is, technically, unfunded. We shall allow it.',
+      'I have modelled your career. Forecast: insufferable, but stable.',
+    ] },
   ];
   m.mouseCap = lvl => Math.min(3 + Math.floor(lvl * 0.6), 7);
 });
@@ -1244,19 +1307,20 @@ const SUMMONS_SPOTS = [
 ];
 function startSummons() {
   const [mapId, region, why] = SUMMONS_SPOTS[(Math.random() * SUMMONS_SPOTS.length) | 0];
-  G.summons = { mapId, region, why, t: 50, att: 0, shown: -1 };
-  toast('📜 SUMMONS: ' + (G.pm || 'The PM') + ' requires you in ' + region + ' for ' + why + '. Attendance is not optional. (50s)');
+  // a photo-op is a quest, not a race: it stands until you wander over — no
+  // countdown, no penalty for taking your time (the main arc is never timed)
+  G.summons = { mapId, region, why, att: 0, shown: null };
+  toast('📜 PHOTO-OP: ' + (G.pm || 'The PM') + ' would like you in ' + region + ' for ' + why + '. Wander over whenever — there is, of course, a treat in it.');
   tone(392, 392, 0.15, 'square', 0.06); tone(523, 523, 0.15, 'square', 0.06, 0.18);
   updateSummonsHUD();
-  updateHUD(); // brief line gains its ⏸
 }
 function updateSummonsHUD() {
   const el = document.getElementById('summons');
   if (!G.summons) { el.classList.add('hidden'); return; }
-  const secs = Math.max(0, Math.ceil(G.summons.t));
-  if (secs === G.summons.shown) return;
-  G.summons.shown = secs;
-  el.textContent = '📜 ' + G.summons.region + (G.summons.att > 0.5 ? ' 📸 hold still…' : '') + ' · ' + secs + 's';
+  const txt = '📜 PHOTO-OP: ' + G.summons.region + (G.summons.att > 0.5 ? ' — 📸 hold still…' : ' — report when ready');
+  if (txt === G.summons.shown) return;
+  G.summons.shown = txt;
+  el.textContent = txt;
   el.classList.remove('hidden');
 }
 
@@ -1304,7 +1368,6 @@ function newBrief() {
 function briefEvent(kind, info = {}) {
   const b = G.brief;
   if (!b || G.intro.phase !== 'done') return;
-  if (G.summons) return; // the Red Box waits while politics has you
   const d = b.def;
   if (d.kind !== kind) return;
   if (d.map && info.map !== d.map) return;
@@ -2362,7 +2425,7 @@ function updateNpc(n, dt) {
   n.animT += dt;
   n.quipCD = Math.max(0, n.quipCD - dt);
   if (n.quipCD <= 0 && dist(n.x, n.y, G.larry.x, G.larry.y) < 30) {
-    toast(n.quips[(Math.random() * n.quips.length) | 0]);
+    toast(pick(n.quips));
     n.quipCD = 12;
   }
   if (n.pauseT > 0) { n.pauseT -= dt; return; }
@@ -2995,7 +3058,7 @@ function updateHUD() {
   if (G.brief) {
     const d = G.brief.def;
     // a persistent, labelled objective in the corner: finish it to get the next
-    bEl.textContent = (G.summons ? '⏸ TASK (paused): ' : '📕 TASK: ') + d.text + (d.n > 1 ? ' (' + G.brief.prog + '/' + d.n + ')' : '');
+    bEl.textContent = '📕 TASK: ' + d.text + (d.n > 1 ? ' (' + G.brief.prog + '/' + d.n + ')' : '');
     bEl.classList.remove('hidden');
   } else bEl.classList.add('hidden');
 }
@@ -3089,10 +3152,9 @@ function update(dt) {
   }
   if (G.summons) {
     const S = G.summons;
-    S.t -= dt;
     if (G.mapId === S.mapId && G.region === S.region) {
       S.att += dt;
-      if (S.att >= 4) { // attended, sat beautifully
+      if (S.att >= 4) { // attended, sat beautifully — no rush, no penalty for taking your time
         G.summons = null;
         G.summonsCD = 110 + Math.random() * 70;
         G.fish += 5;
@@ -3105,20 +3167,13 @@ function update(dt) {
         updateHUD();
       }
     } else S.att = Math.max(0, S.att - dt * 2); // wandered off mid-photo
-    if (G.summons && S.t <= 0) { // snubbed the delegation
-      G.summons = null;
-      G.summonsCD = 90 + Math.random() * 60;
-      G.approval = Math.max(0, G.approval - 8);
-      toast('📰 "CHIEF MOUSER SNUBS DELEGATION" — the diplomatic damage is described as "immense".');
-      tone(300, 150, 0.4, 'sawtooth', 0.06);
-      updateHUD();
-    }
     updateSummonsHUD();
   }
 
   // the Red Box delivers the NEXT task only once the current one is done —
-  // objectives never time out or get reshuffled; you finish before you move on
-  if (G.intro.phase === 'done' && !G.brief && !G.summons) {
+  // objectives never time out or get reshuffled; you finish before you move on.
+  // Briefs and the photo-op are independent quests; neither blocks the other.
+  if (G.intro.phase === 'done' && !G.brief) {
     G.briefCD -= dt;
     if (G.briefCD <= 0) newBrief();
   }
