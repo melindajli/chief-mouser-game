@@ -328,6 +328,13 @@ const TXT_UMBRELLA = [
   'You inspect the umbrella stand. It inspects you back. A draw.',
   'One is still faintly damp. You avoid it with the disdain of a professional.',
 ];
+const TXT_DOORSTEP = [
+  'The most famous doorstep in the country. You sit upon it as though it were built for you. It was.',
+  'You settle on the step. Across the road, thirty cameras rise as one. You do not smile. You never smile. It only makes them keener.',
+  'The black door behind you, the world in front. You hold the pose. The nation, briefly, feels reassured.',
+  'A tour guide points you out. Forty phones turn. You gaze into the middle distance, historically.',
+  'Warm stone, cold morning, flashing bulbs. You have decided this step is, technically, your porch.',
+];
 
 function buildMouse(body, belly) {
   const s = mkS(14, 10);
@@ -393,7 +400,7 @@ function buildPerson(suit, hat) {
 const P_VISITOR = buildPerson('#5a5f6b'), P_GUARD = buildPerson('#2b2f3a', 'police'),
   P_AIDE = buildPerson('#4a5568'), P_CHEF = buildPerson('#c9c5ba', 'chef'),
   P_BUTLER = buildPerson('#23242a'), P_GARDENER = buildPerson('#4e6b3c'),
-  P_WORKER = buildPerson('#5c86a0');
+  P_WORKER = buildPerson('#5c86a0'), P_PRESS = buildPerson('#8a7a5c');
 
 function buildCanopy() {
   const s = mkS(26, 20);
@@ -460,6 +467,18 @@ function drawFloorBase(mc, grid, x, y, ch) {
       mc.fillStyle = '#e9c46a'; mc.fillRect(fx, fy, 2, 2);
       mc.fillStyle = '#4a7f3c'; mc.fillRect(fx + 1, fy + 4, 1, 3);
     }
+  } else if (ch === 'k') { // Downing Street pavement: grey flagstones
+    mc.fillStyle = '#8f8b83'; mc.fillRect(px, py, TILE, TILE);
+    mc.fillStyle = '#7c7870';
+    mc.fillRect(px, py + TILE - 1, TILE, 1); mc.fillRect(px + TILE - 1, py, 1, TILE);
+    if (((x + y) % 2)) mc.fillRect(px, py + 7, TILE, 1);
+    mc.fillStyle = '#9c988f'; mc.fillRect(px, py, TILE, 1);
+    if (h > 0.88) { mc.fillStyle = '#84807897'; mc.fillRect(px + 4, py + 5, 3, 2); }
+  } else if (ch === 'z') { // the tarmac road
+    mc.fillStyle = '#3b3a40'; mc.fillRect(px, py, TILE, TILE);
+    mc.fillStyle = '#343339';
+    for (let i = 0; i < 5; i++) mc.fillRect(px + ((hash2(x + i, y) * 15) | 0), py + ((hash2(y, x + i) * 15) | 0), 1, 1);
+    mc.fillStyle = 'rgba(255,255,255,0.03)'; mc.fillRect(px, py, TILE, 1);
   } else { // wood
     const shade = 0.92 + hash2(x, 0) * 0.16;
     const r = (166 * shade) | 0, g2 = (117 * shade) | 0, b = (69 * shade) | 0;
@@ -487,6 +506,7 @@ function floorUnder(grid, x, y) {
 
 function wallStyle(grid, x, y, mapId) {
   if (mapId === 'shelter') return 'block';
+  if (mapId === 'street') return 'georgian';
   if (mapId === 'basement') return 'stone';
   if (mapId === 'ground') {
     if (y >= 34) return 'brick';
@@ -506,6 +526,12 @@ function drawWall(mc, grid, x, y, mapId) {
   const frontFacing = grid[y + 1] && FLOORY(grid[y + 1][x]);
   const style = wallStyle(grid, x, y, mapId);
   if (!frontFacing) { // wall cap
+    if (style === 'georgian') { // façade: keep the black brick running the full height
+      mc.fillStyle = '#1e1c21'; mc.fillRect(px, py, TILE, TILE);
+      mc.fillStyle = '#161418';
+      for (let r = 0; r < 4; r++) { mc.fillRect(px, py + r * 4 + 3, TILE, 1); mc.fillRect(px + ((r % 2) ? 4 : 11), py + r * 4, 1, 3); }
+      return;
+    }
     mc.fillStyle = style === 'brick' ? '#26232a' : '#3b352d';
     mc.fillRect(px, py, TILE, TILE);
     mc.fillStyle = 'rgba(255,255,255,0.04)';
@@ -520,6 +546,15 @@ function drawWall(mc, grid, x, y, mapId) {
       mc.fillRect(px + ((r % 2) ? 4 : 10), py + r * 4, 1, 3);
     }
     mc.fillStyle = 'rgba(255,255,255,0.06)'; mc.fillRect(px, py, TILE, 1);
+  } else if (style === 'georgian') { // the famous black-painted brick of No. 10
+    mc.fillStyle = '#211f24'; mc.fillRect(px, py, TILE, TILE);
+    mc.fillStyle = '#181619';
+    for (let r = 0; r < 4; r++) {
+      mc.fillRect(px, py + r * 4 + 3, TILE, 1);            // mortar courses
+      mc.fillRect(px + ((r % 2) ? 4 : 11), py + r * 4, 1, 3); // staggered joints
+    }
+    mc.fillStyle = 'rgba(255,255,255,0.05)'; mc.fillRect(px, py, TILE, 1);
+    mc.fillStyle = 'rgba(0,0,0,0.25)'; mc.fillRect(px, py + TILE - 1, TILE, 1);
   } else if (style === 'stone') {
     mc.fillStyle = '#8f887c'; mc.fillRect(px, py, TILE, TILE);
     mc.fillStyle = '#7b7468';
@@ -841,6 +876,55 @@ function drawDecor(mc, d) {
     mc.fillStyle = '#e08a3c'; mc.fillRect(px + 6, py + 10, 2, 4);
     mc.fillStyle = '#476b4e'; mc.fillRect(px + 8, py + 7, 1, 2);
     mc.fillStyle = '#241d16'; mc.fillRect(px + 6, py + 11, 1, 1); mc.fillRect(px + 9, py + 11, 1, 1); mc.fillRect(px + 7, py + 13, 3, 1);
+  } else if (d.t === 'no10') {
+    // THE door of No. 10 — cream surround, fanlight, black door, white "10"
+    const X = px, Y = py;
+    mc.fillStyle = '#e6ddc7'; mc.fillRect(X + 1, Y + 3, 30, 45);       // stone surround
+    mc.fillStyle = '#f2ead3'; mc.fillRect(X + 1, Y + 3, 30, 1);
+    mc.fillStyle = '#d6cbb0'; mc.fillRect(X + 1, Y + 46, 30, 2);
+    mc.fillStyle = '#20303f'; mc.beginPath(); mc.arc(X + 16, Y + 15, 10, Math.PI, 0); mc.fill();  // fanlight
+    mc.strokeStyle = '#e6ddc7'; mc.lineWidth = 1;
+    for (let a = 1; a < 4; a++) { const ang = Math.PI + a * (Math.PI / 4); mc.beginPath(); mc.moveTo(X + 16, Y + 15); mc.lineTo(X + 16 + Math.cos(ang) * 10, Y + 15 + Math.sin(ang) * 10); mc.stroke(); }
+    mc.fillStyle = '#cfe0ee'; mc.fillRect(X + 9, Y + 9, 3, 2);
+    mc.fillStyle = '#17161a'; mc.fillRect(X + 6, Y + 15, 20, 31);      // black door
+    mc.fillStyle = '#26242c';                                          // raised panels
+    [[9, 19], [16, 19], [9, 28], [16, 28], [9, 37], [16, 37]].forEach(([bx, by]) => mc.fillRect(X + bx, Y + by, 6, 7));
+    mc.fillStyle = '#0e0d10';
+    [[9, 19], [16, 19], [9, 28], [16, 28], [9, 37], [16, 37]].forEach(([bx, by]) => { mc.fillRect(X + bx, Y + by + 6, 6, 1); mc.fillRect(X + bx + 5, Y + by, 1, 7); });
+    mc.fillStyle = '#f0ece0';                                          // the white "10"
+    mc.fillRect(X + 11, Y + 16, 1, 6); mc.fillRect(X + 10, Y + 17, 1, 1);
+    mc.fillRect(X + 14, Y + 16, 4, 6); mc.fillStyle = '#17161a'; mc.fillRect(X + 15, Y + 17, 2, 4);
+    mc.fillStyle = '#c9a227'; mc.fillRect(X + 15, Y + 25, 2, 2);       // lion knocker (brass)
+    mc.fillRect(X + 11, Y + 31, 10, 2);                                // letterbox
+    mc.fillStyle = '#8a6612'; mc.fillRect(X + 12, Y + 32, 8, 1);
+    mc.fillStyle = '#d8cfb6'; mc.fillRect(X + 3, Y + 45, 26, 3);       // the step
+    mc.fillStyle = '#c2b997'; mc.fillRect(X + 3, Y + 47, 26, 1);
+  } else if (d.t === 'sash') {
+    mc.fillStyle = '#e6ddc7'; mc.fillRect(px + 1, py + 1, 14, 17);     // Georgian sash window
+    mc.fillStyle = '#3a5a72'; mc.fillRect(px + 3, py + 3, 10, 13);
+    mc.fillStyle = '#cfe0ee'; mc.fillRect(px + 3, py + 3, 5, 6);
+    mc.fillStyle = '#e6ddc7'; mc.fillRect(px + 7, py + 3, 1, 13); mc.fillRect(px + 3, py + 9, 10, 1);
+    mc.fillStyle = '#d6cbb0'; mc.fillRect(px, py, 16, 1);
+  } else if (d.t === 'no10lamp') {
+    mc.fillStyle = '#1a1a1e'; mc.fillRect(px + 7, py, 2, 6);           // overthrow bracket
+    mc.fillRect(px + 3, py + 5, 10, 1);
+    mc.fillStyle = '#141416'; mc.fillRect(px + 4, py + 6, 8, 7);       // lantern
+    mc.fillStyle = '#ffe6a2'; mc.fillRect(px + 5, py + 7, 6, 5);       // warm glow
+    mc.fillStyle = '#1a1a1e'; mc.fillRect(px + 7, py + 6, 2, 7);
+    mc.fillStyle = '#101012'; mc.fillRect(px + 5, py + 12, 6, 2);
+  } else if (d.t === 'railing') {
+    mc.fillStyle = '#141317';
+    for (let i = 1; i < TILE; i += 3) { mc.fillRect(px + i, py + 1, 1, 12); mc.fillRect(px + i, py, 1, 2); } // spiked bars
+    mc.fillRect(px, py + 3, TILE, 2); mc.fillRect(px, py + 11, TILE, 1);
+  } else if (d.t === 'bollard') {
+    mc.fillStyle = '#1a1a1e'; mc.fillRect(px + 5, py + 4, 6, 11);
+    mc.fillStyle = '#2a2a30'; mc.fillRect(px + 5, py + 4, 2, 11);
+    mc.fillStyle = '#0e0d10'; mc.fillRect(px + 4, py + 3, 8, 2);
+    mc.fillStyle = '#b8891f'; mc.fillRect(px + 5, py + 6, 6, 1);
+  } else if (d.t === 'doormat') {
+    mc.fillStyle = '#5a3a20'; mc.fillRect(px + 2, py + 9, 12, 6);
+    mc.fillStyle = '#6e4a2c'; mc.fillRect(px + 3, py + 10, 10, 4);
+    mc.fillStyle = '#4a2e18'; for (let i = 4; i < 13; i += 2) mc.fillRect(px + i, py + 10, 1, 4);
   }
 }
 
@@ -1068,7 +1152,9 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   m.transitions = [
     { x: 3, y: 11, to: 'first', tx: 4, ty: 12 },
     { x: 3, y: 15, to: 'basement', tx: 3, ty: 2 },
+    { x: 22, y: 33, to: 'street', tx: 10, ty: 6 },   // out the famous front door
   ];
+  m.decor.push({ x: 22, y: 33, t: 'doormat' });      // the exit, marked
   m.regions = [
     [1, 1, 46, 8, 'The Garden'],
     [25, 10, 46, 18, 'The Cabinet Room'],
@@ -1244,7 +1330,51 @@ MAPS.first = makeMap('first', 44, 26, (m, set, rect) => {
   m.mouseCap = lvl => Math.min(3 + Math.floor(lvl * 0.6), 7);
 });
 
-const NPC_SPRITES = { worker: P_WORKER, guard: P_GUARD, aide: P_AIDE, chef: P_CHEF, butler: P_BUTLER, gardener: P_GARDENER };
+// --- Downing Street: the famous front of No. 10 ---
+MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
+  rect(1, 4, 20, 10, 'k');                 // the pavement (grey flagstones)
+  rect(1, 11, 20, 13, 'z');                // the road
+  m.decor.push(
+    { x: 10, y: 1, t: 'no10' },            // THE door of No. 10 (2 wide × 3 tall)
+    { x: 10, y: 0, t: 'no10lamp' },        // the overthrow lamp above it
+    { x: 5, y: 1, t: 'sash' }, { x: 7, y: 1, t: 'sash' },
+    { x: 14, y: 1, t: 'sash' }, { x: 16, y: 1, t: 'sash' },
+    { x: 6, y: 5, t: 'bollard' }, { x: 15, y: 5, t: 'bollard' },
+    { x: 10, y: 4, t: 'doormat' },
+  );
+  for (let x = 1; x <= 20; x++) m.decor.push({ x, y: 10, t: 'railing' });   // railings at the kerb
+  // sit on the most famous doorstep in the country
+  m.pois = [{ x: 11, y: 5, emoji: '📸', type: 'text', texts: TXT_DOORSTEP }];
+  m.holes = [[1, 12], [20, 12]];           // a couple of gutter mouseholes
+  m.lamps = [[3.5, 3.5], [18.5, 3.5]];
+  m.regions = [[0, 0, 21, 14, 'Downing Street']];
+  m.transitions = [
+    { x: 10, y: 4, to: 'ground', tx: 22, ty: 32 },   // back in through the door
+    { x: 11, y: 4, to: 'ground', tx: 22, ty: 32 },
+  ];
+  m.npcs = [
+    { x: 13, y: 5, sprite: 'officer', rect: [12, 5, 15, 6], quips: [
+      'Morning. Mind the step.',
+      'Quiet shift. Just you, me, and forty photographers.',
+      'They\'re here for you, not the door. Everyone knows that.',
+      'Best behaviour for the cameras, Chief Mouser. …Or don\'t. They\'ll love it either way.',
+    ] },
+    { x: 7, y: 12, sprite: 'press', rect: [3, 12, 9, 13], quips: [
+      'Over here! Give us a look, Larry!',
+      'One for the front page? Course you will.',
+      'That\'s the shot. That\'s DEFINITELY the shot.',
+    ] },
+    { x: 14, y: 12, sprite: 'press', rect: [11, 12, 18, 13], quips: [
+      'Chief Mouser! CHIEF MOUSER! …He blinked at me. Print it.',
+      'Ten years on that step and never once posed. A legend.',
+      'Hold the front page — cat sits down. STOP THE PRESSES.',
+    ] },
+  ];
+  m.rainy = true;
+  m.mouseCap = () => 3;
+});
+
+const NPC_SPRITES = { worker: P_WORKER, guard: P_GUARD, aide: P_AIDE, chef: P_CHEF, butler: P_BUTLER, gardener: P_GARDENER, press: P_PRESS, officer: P_GUARD };
 const SECRET_TOTAL = Object.values(MAPS).reduce((n, m) => n + m.pois.filter(p => p.type === 'secret').length, 0);
 
 // ---------- The Honours List ----------
@@ -2709,7 +2839,7 @@ function updateButterfly(b, dt) {
 }
 
 // ---------- The Press: periodic scrutiny with consequences ----------
-const P_PRESS = buildPerson('#8a7a5c');
+// P_PRESS is defined up with the other person sprites (used by the street map too)
 const HEADLINES_GOOD = [
   '📰 "LARRY DOES IT AGAIN" — every front page',
   '📰 "CHIEF MOUSER SAVES THE NATION (AGAIN)"',
