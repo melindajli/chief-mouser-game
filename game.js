@@ -3170,6 +3170,47 @@ function flashbulbs() {
     setTimeout(() => { if (G.running && G.mapId === 'ground') { addParticle(21.5 * TILE + (Math.random() - 0.5) * 40, 33.4 * TILE, '#ffffff', 3, 26); tone(1800, 1200, 0.04, 'square', 0.03); } }, i * 260 + Math.random() * 150);
   }
 }
+// a barrage of camera flashes around a point on the current map
+function pressFlashes(cx, cy, n = 14) {
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => {
+      if (!G.running) return;
+      const a = Math.random() * Math.PI * 2, r = 24 + Math.random() * 46;
+      addParticle(cx + Math.cos(a) * r, cy + Math.sin(a) * r - 12, '#ffffff', 3, 22);
+      tone(1900, 1150, 0.04, 'square', 0.03);
+    }, i * 190 + Math.random() * 120);
+  }
+}
+
+// ---------- The doorstep press conference: Larry meets the world's media ----------
+function beginPressIntro() {
+  G.larry.dir = 'down'; G.larry.flip = false; G.larry.idleT = 6; // face the cameras, sit
+  const CARDS = [
+    ['DOWNING STREET — LIVE', 'The World\'s Press',
+      'You are carried over the threshold and set down on the most famous doorstep in Britain. Thirty cameras go off at once; a wall of microphones descends. Somebody bellows, "LARRY! THIS WAY, LARRY!"\n\nUntil roughly an hour ago you were a stray in a Battersea shelter with strong opinions about a cardboard box. You have agreed to NONE of this.'],
+    ['THE QUESTIONS BEGIN', 'On How It Feels',
+      '"Chief Mouser! How does it FEEL, serving at the very heart of government?"\n\nYou consider the question. You consider the microphone. You briefly consider batting the microphone. You rise above it — barely — and give them one long, unbothered blink.\n\n(Privately: you do not know what a civil servant is. You know what tuna is. You are prepared to negotiate.)'],
+    ['ON THE RECORD', 'Priorities for the Term',
+      '"And your priorities in office, Larry?"\n\nIn strict order: the warm radiator, the sunny windowsill, and whoever is presently holding the tuna. You are fairly sure that is the entire job. You are fairly sure you are already better at it than most of the building.\n\n(You decline to take follow-ups. Legends do not do follow-ups.)'],
+    ['THE LIFESTYLE PIECE', 'Quite the Upgrade',
+      '"A Battersea rescue, now living at No. 10 — bit bougie for a shelter cat, isn\'t it?"\n\nIt IS drafty. It IS full of important people who trip on the doorstep. You do not know which fork is for statecraft, and you have owned a bow tie for all of forty minutes.\n\nBut the food, they keep telling you, is free. And endless. …You could, conceivably, get used to that.'],
+    ['TOMORROW\'S FRONT PAGE', 'Just Larry',
+      'You sit. You face the flashbulbs dead-on and say absolutely nothing, with tremendous authority.\n\nBy morning it runs on every front page — one word, no surname: LARRY. You have not spoken a syllable. You never will. It will not matter.\n\nBehind you, someone holds the great black door open. Time to inspect the house. It is yours now; you simply have not told them yet.'],
+  ];
+  let i = 0;
+  const step = () => {
+    if (i >= CARDS.length) {
+      save(); initDay();
+      toast('🚪 Walk up to the black door of No. 10 whenever you\'re ready to head inside.');
+      pressFlashes(G.larry.x, G.larry.y, 8);
+      return;
+    }
+    const [kick, title, body] = CARDS[i++];
+    tone(1900, 1200, 0.04, 'square', 0.04); // a camera shutter as each beat lands
+    showCard(kick, title, body, null, step);
+  };
+  step();
+}
 
 // ---------- The intro: Battersea, the visitor, the adoption ----------
 function beginVisitor() {
@@ -3190,13 +3231,12 @@ function visitorReaches() {
           G.bowtie = true;
           G.pm = nextPM(); G.pmDays = 1; G.dayIdx = Math.floor(G.time / DAYLEN);
           startFade(() => {
-            switchMap('ground', 21.5 * TILE, 31 * TILE);
+            // arrive OUT FRONT, on the famous doorstep, to a wall of press
+            switchMap('street', 11 * TILE, 6.5 * TILE);
             G.intro.phase = 'done';
             G.visitor = null;
-            showCard('LONDON SW1A 2AA', 'No. 10 Downing Street',
-              'Your new office: four floors, a garden, a Cabinet, and — somewhere in the walls — an outrageous number of mice. ' + G.pm + ' carries you over the famous threshold for the cameras. Flashbulbs pop. You allow it. Time to get to work.',
-              null,
-              () => { flashbulbs(); save(); initDay(); });
+            pressFlashes(11 * TILE, 6.5 * TILE);        // a beat of flashes, live, before the questions
+            setTimeout(beginPressIntro, 750);
           });
         });
     });
