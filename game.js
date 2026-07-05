@@ -1259,7 +1259,7 @@ function updateSummonsHUD() {
 
 // ---------- Red Box briefs: little missions with XP attached ----------
 const BRIEFS = [
-  { text: 'Catch 3 mice in the Kitchen', kind: 'catch', map: 'basement', n: 3 },
+  { text: 'Catch 3 mice in the Kitchen (downstairs, down the Grand Staircase)', kind: 'catch', map: 'basement', n: 3 },
   { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1 },
   { text: 'Catch a trickster mouse', kind: 'catch', type: 'trick', n: 1 },
   { text: 'Catch a Very Still Mouse', kind: 'catch', type: 'still', n: 1 },
@@ -1267,7 +1267,7 @@ const BRIEFS = [
   { text: 'Catch a mouse after dark', kind: 'catch', night: true, n: 1 },
   { text: 'Bat a yarn ball 8 times', kind: 'yarn', n: 8 },
   { text: 'Take one (1) dignified nap', kind: 'nap', n: 1 },
-  { text: 'Catch a mouse on the First Floor', kind: 'catch', map: 'first', n: 1 },
+  { text: 'Catch a mouse on the First Floor (upstairs, up the Grand Staircase)', kind: 'catch', map: 'first', n: 1 },
 ];
 // only hand out briefs that are actually completable right now
 function briefPossible(d) {
@@ -1531,10 +1531,13 @@ const has = g => {
   return G.level >= need[g];
 };
 // exponential ramp while the gadgets flow (lv 1–10), then a gentle linear
-// climb — late levels should cost ~20 catches, not 140
+// climb — late levels should cost ~30 catches, not 140. Base + exponent were
+// raised (55→85, 1.28→1.24) so early levels don't fly past in the first
+// minutes: the story DISPATCH cards fire on level-up, and levelling too fast
+// meant they interrupted constantly. Late game stays roughly where it was.
 const xpNeed = l => l <= 10
-  ? Math.floor(55 * Math.pow(1.28, l - 1))
-  : Math.floor(55 * Math.pow(1.28, 9) + (l - 10) * 90);
+  ? Math.floor(85 * Math.pow(1.24, l - 1))
+  : Math.floor(85 * Math.pow(1.24, 9) + (l - 10) * 95);
 
 // ---------- Difficulty & bow ties ----------
 const DIFFS = {
