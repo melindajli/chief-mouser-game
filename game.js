@@ -1133,7 +1133,7 @@ function earnHonour(id) {
   const h = HONOURS.find(x => x.id === id);
   if (!h) return;
   G.honours.add(id);
-  toast('🎖️ Honour earned: ' + h.name + ' (' + G.honours.size + '/' + HONOURS.length + ')');
+  toast('🎖️ Honour earned: ' + h.name + '.');
   [659, 880, 1047, 1319].forEach((f, i) => tone(f, f, 0.13, 'triangle', 0.06, i * 0.09));
   save();
 }
@@ -1159,7 +1159,7 @@ function earnMischief(id) {
   G.mischief.add(id);
   G.xp += 12;
   G.fish += 2;
-  toast('😼 MISCHIEF ' + G.mischief.size + '/' + MISCHIEF.length + ': ' + it.text + ' ✓ (+12 XP · +2 🐟)');
+  toast('😼 MISCHIEF: ' + it.text + ' ✓ (+12 XP · +2 🐟)');
   [523, 622, 740, 880].forEach((f, i) => tone(f, f, 0.09, 'triangle', 0.06, i * 0.07));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   checkHonours();
@@ -1261,16 +1261,27 @@ function updateSummonsHUD() {
 }
 
 // ---------- Red Box briefs: little missions with XP attached ----------
+// Each Red Box brief carries a `why` — the in-world reason it landed on your
+// desk — shown when it's issued. `text` is the short objective for the HUD.
 const BRIEFS = [
-  { text: 'Catch 3 mice in the Kitchen (downstairs, down the Grand Staircase)', kind: 'catch', map: 'basement', n: 3 },
-  { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1 },
-  { text: 'Catch a trickster mouse', kind: 'catch', type: 'trick', n: 1 },
-  { text: 'Catch a Very Still Mouse', kind: 'catch', type: 'still', n: 1 },
-  { text: 'Catch 2 mice in the Garden', kind: 'catch', region: 'The Garden', n: 2 },
-  { text: 'Catch a mouse after dark', kind: 'catch', night: true, n: 1 },
-  { text: 'Bat a yarn ball 8 times', kind: 'yarn', n: 8 },
-  { text: 'Take one (1) dignified nap', kind: 'nap', n: 1 },
-  { text: 'Catch a mouse on the First Floor (upstairs, up the Grand Staircase)', kind: 'catch', map: 'first', n: 1 },
+  { text: 'Clear 3 mice from the Kitchen', kind: 'catch', map: 'basement', n: 3,
+    why: 'The chef reports the Cabinet lunch is under siege. Clear 3 mice from the Kitchen (downstairs, down the Grand Staircase).' },
+  { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1,
+    why: 'A brown blur keeps outrunning the traps in the corridors. Catch one swift mouse and settle the matter.' },
+  { text: 'Catch a trickster mouse', kind: 'catch', type: 'trick', n: 1,
+    why: 'One mouse has learned to read a pounce and dodge it. Catch a trickster — a quick tap beats a wind-up.' },
+  { text: 'Catch a Very Still Mouse', kind: 'catch', type: 'still', n: 1,
+    why: 'Something is hiding in plain sight in the state rooms, holding perfectly still. Find the Very Still Mouse.' },
+  { text: 'Catch 2 mice in the Garden', kind: 'catch', region: 'The Garden', n: 2,
+    why: 'The gardener has found fresh burrows out by the pond. Catch 2 mice in the Garden before they settle in.' },
+  { text: 'Catch a mouse after dark', kind: 'catch', night: true, n: 1,
+    why: 'The night shift reports the mice turn bold once the lights go out. Catch one after dark to remind them who patrols.' },
+  { text: 'Bat the yarn ball 8 times', kind: 'yarn', n: 8,
+    why: "A film crew is shooting a piece on the nation's favourite cat. Give them their footage: bat the yarn ball 8 times for the cameras." },
+  { text: 'Take one dignified nap', kind: 'nap', n: 1,
+    why: 'The Palace vet has formally prescribed rest. Take one (1) dignified nap, strictly for the official record.' },
+  { text: 'Catch a mouse on the First Floor', kind: 'catch', map: 'first', n: 1,
+    why: 'An ambassador arrives upstairs tomorrow and expects the state rooms spotless. Catch a mouse on the First Floor (up the Grand Staircase).' },
 ];
 // only hand out briefs that are actually completable right now
 function briefPossible(d) {
@@ -1285,7 +1296,8 @@ function newBrief() {
   do { def = pool[(Math.random() * pool.length) | 0]; } while (G.lastBrief === def.text && pool.length > 1);
   G.lastBrief = def.text;
   G.brief = { def, prog: 0 };
-  toast('📕 New brief in the Red Box: ' + def.text.toLowerCase() + '.');
+  // the Red Box explains itself, then parks the objective in the corner until done
+  toast('📕 NEW RED BOX TASK — ' + (def.why || def.text));
   tone(500, 700, 0.15, 'triangle', 0.06);
   updateHUD();
 }
@@ -1306,7 +1318,7 @@ function briefEvent(kind, info = {}) {
     G.xp += 30;
     G.fish += 3;
     G.briefsDone++;
-    toast('📕 Brief complete. The Red Box approves. +30 XP · +3 🐟');
+    toast('📕 TASK COMPLETE — the Red Box approves. +30 XP · +3 🐟. The next task will arrive shortly.');
     goalEvent('brief');
     sLevel();
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -1917,7 +1929,7 @@ function interactPoi(p) {
       addParticle((p.x + 0.5) * TILE, (p.y + 0.5) * TILE, '#ffe8b8', 12, 44);
       [784, 1047, 1319].forEach((f, i) => tone(f, f, 0.12, 'sine', 0.06, i * 0.08));
       save();
-      toast('✨ ' + p.fact + '  (secret ' + G.secretsFound.size + '/' + SECRET_TOTAL + ')');
+      toast('✨ ' + p.fact);
     } else {
       // a found secret doesn't repeat itself — it rotates the fact file
       sClick();
@@ -2982,7 +2994,8 @@ function updateHUD() {
   const bEl = document.getElementById('brief');
   if (G.brief) {
     const d = G.brief.def;
-    bEl.textContent = (G.summons ? '⏸ ' : '📕 ') + d.text + (d.n > 1 ? ' (' + G.brief.prog + '/' + d.n + ')' : '');
+    // a persistent, labelled objective in the corner: finish it to get the next
+    bEl.textContent = (G.summons ? '⏸ TASK (paused): ' : '📕 TASK: ') + d.text + (d.n > 1 ? ' (' + G.brief.prog + '/' + d.n + ')' : '');
     bEl.classList.remove('hidden');
   } else bEl.classList.add('hidden');
 }
@@ -3103,19 +3116,11 @@ function update(dt) {
     updateSummonsHUD();
   }
 
-  // the Red Box delivers a new brief now and then
+  // the Red Box delivers the NEXT task only once the current one is done —
+  // objectives never time out or get reshuffled; you finish before you move on
   if (G.intro.phase === 'done' && !G.brief && !G.summons) {
     G.briefCD -= dt;
     if (G.briefCD <= 0) newBrief();
-  }
-  // a stale brief gets quietly reshuffled — no objective may stall the pipeline
-  // (partial progress buys extra time, but nothing is exempt forever)
-  if (G.brief) {
-    G.brief.age = (G.brief.age || 0) + dt;
-    if (G.brief.age > (G.brief.prog > 0 ? 300 : 150)) {
-      G.brief = null; G.briefCD = 6;
-      toast('📕 The Red Box has been reshuffled. New brief incoming.');
-    }
   }
   // warm shimmer above the famous radiator
   if (G.mapId === 'ground' && Math.random() < dt * 1.6) {
