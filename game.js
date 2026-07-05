@@ -3792,7 +3792,7 @@ function startDaily() {
   G.summons = null; G.summonsCD = 1e9;
   G.fish = 10; G.stam = 100; G.larder = 0; // fixed ration: gadget budgeting is part of the puzzle
   bootWorld();
-  toast('📅 DAILY SORTIE — 120 seconds, seeded mice, same run for everyone today. GO!');
+  toast('📅 TODAY\'S SORTIE — 120 seconds. Everyone in the world gets these exact mice today. Set a score worth sharing. GO!');
   tone(523, 784, 0.25, 'triangle', 0.07);
 }
 function dailySeedStr(seed) {

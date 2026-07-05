@@ -55,6 +55,8 @@ button { font-family:inherit; cursor:pointer; }
 #subtitle { font-size:9px; line-height:2; color:#c9b98f; margin:14px 0 4px; letter-spacing:2px; }
 #titleDoor { font-size:8px; color:#8a83a0; margin-bottom:26px; }
 .bigbtn { display:block; margin:12px auto; min-width:220px; }
+#dailySub { font-size:7px; color:#9a92b8; line-height:1.9; margin:-4px auto 4px; max-width:300px; }
+#dailyShareHint { color:#9a92b8; }
 #hint { margin-top:22px; font-size:7px; color:#6f6890; line-height:2; }
 
 /* Touch controls */
