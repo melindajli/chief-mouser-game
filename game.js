@@ -1380,6 +1380,11 @@ function rainAmbience() {
 // calm wander → lazy pentatonic plucks · mouse nearby → sneaky under-layer
 // speeds up · Rat King or the press → tense drone. All synthesized, tiny volume.
 let musicOn = true, musNext = 0, musStep = 0, musIdx = 2;
+// screen shake is off by default — the little judder on every catch reads as
+// jitter, especially when a toast pops at the same moment. Opt back in via the
+// pause menu; the choice persists in its own key (survives dailies + restarts).
+let shakeOn = false;
+try { shakeOn = localStorage.getItem('larry-shake') === 'on'; } catch (e) { }
 const MUS_SCALE = [220, 246.94, 293.66, 329.63, 392, 440, 493.88, 587.33];
 function musicTick() {
   if (!musicOn || muted || !AC || !G.running || G.paused) return;
@@ -3404,8 +3409,8 @@ function draw() {
   const tod = (G.time / 150) % 1;
   const dark = G.daily ? 0 : 0.5 - 0.5 * Math.cos(tod * Math.PI * 2); // sorties are played in honest daylight
 
-  const shX = G.shake > 0 ? (Math.random() - 0.5) * 5 : 0;
-  const shY = G.shake > 0 ? (Math.random() - 0.5) * 5 : 0;
+  const shX = (shakeOn && G.shake > 0) ? (Math.random() - 0.5) * 5 : 0;
+  const shY = (shakeOn && G.shake > 0) ? (Math.random() - 0.5) * 5 : 0;
   const camX = G.camX + shX, camY = G.camY + shY;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#0b0b10';
@@ -4031,6 +4036,7 @@ let menuOpen = false, restartArmed = false;
 function menuLabels() {
   document.getElementById('menuSound').textContent = muted ? 'Sound: OFF' : 'Sound: ON';
   document.getElementById('menuMusic').textContent = musicOn ? 'Music: ON' : 'Music: OFF';
+  document.getElementById('menuShake').textContent = 'Screen shake: ' + (shakeOn ? 'ON' : 'OFF');
   document.getElementById('menuDiff').textContent = 'Difficulty: ' + DIFF().label;
   document.getElementById('menuTie').textContent = 'Bow tie: 🎀 ' + tieDef().name;
   document.getElementById('menuMischief').textContent = '😼 Mischief (' + G.mischief.size + '/' + MISCHIEF.length + ')';
@@ -4059,6 +4065,11 @@ bindBtn(document.getElementById('btnMenu'), () => { audio(); menuOpen ? closeMen
 bindBtn(document.getElementById('menuResume'), closeMenu);
 bindBtn(document.getElementById('menuSound'), toggleMute);
 bindBtn(document.getElementById('menuMusic'), () => { musicOn = !musicOn; menuLabels(); sClick(); });
+bindBtn(document.getElementById('menuShake'), () => {
+  shakeOn = !shakeOn;
+  try { localStorage.setItem('larry-shake', shakeOn ? 'on' : 'off'); } catch (e) { }
+  menuLabels(); sClick();
+});
 bindBtn(document.getElementById('menuDiff'), () => {
   if (G.daily) { toast('📅 Difficulty is locked during a Daily Sortie — same run for everyone.'); return; }
   const ks = Object.keys(DIFFS);
