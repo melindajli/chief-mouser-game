@@ -147,7 +147,19 @@ challenge — playable by kids and adults alike.**
   the garden), a distant division bell (somebody else's problem), and a
   content off-duty purr.
 
+- **Pacing pass**: XP curve raised so early levels take ~6–10 catches (was
+  ~4–7) and the story cards stop stacking up; gadgets now arrive every OTHER
+  level (2, 4, 6, 8, 10, 12) instead of one-per-level 2–7, with the Garter
+  finale shifted to L17; the "Day N in office" counter is tied to the actual
+  day/night cycle (a real dawn = a new day, cycle lengthened to 200s) instead
+  of ticking every six seconds; screen shake defaults off with a pause-menu
+  toggle.
+- **House map** (🗺️ in the pause menu): a pop-out schematic of No. 10 —
+  each floor's real plan (First Floor / Ground Floor / Basement) scaled down
+  from its map canvas, room names listed, current floor outlined and Larry
+  marked where he stands.
+
 Still open from the list: ghost cats, WebGL lighting, cloud saves,
 localization, remappable keys/colour-blind modes, save slots, NPC daily
 schedules, stealth vision cones, daily mutators, Mouser's Logbook,
-day-structure event waves, prestige ("A New Reign"), house map.
+day-structure event waves, prestige ("A New Reign").

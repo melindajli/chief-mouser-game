@@ -33,6 +33,9 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', resi
 resize();
 
 const TILE = 16;
+// one full day/night cycle, in seconds. The "Day N in office" counter is now
+// tied to this (a real dawn = a new day) instead of ticking every few seconds.
+const DAYLEN = 200;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 // pick a random entry, never the same one twice in a row — repeated lines
@@ -1470,22 +1473,26 @@ const FLAVOUR = [
 
 function beatFor(level) {
   switch (level) {
+    // ---- the gadget years: one arrives every OTHER level (2–12), so the
+    //      toy-box fills up gradually instead of all in the first few minutes ----
     case 2: return { title: 'A Gift from Security', body: 'The officers at the door have been watching your work. They are impressed. They also have a locker full of confiscated novelty items.', gadget: 'zoomies' };
-    case 3: return { title: 'The Van Outside', body: 'A removal van idles on Downing Street. {OLD} has {EXIT} A new PM arrives within the hour: {NEW}. Their portrait is already going up on the staircase. You remain. You always remain.', gadget: 'whiskers', pmChange: true };
-    case 4: return { title: 'The Delegation', body: 'A foreign delegation visited the Terracotta Room today. They ignored the Foreign Secretary entirely and queued to meet you. One of them left a gift.', gadget: 'collar' };
-    case 5: return { title: 'Another Van', body: 'You know the drill by now. {OLD} {EXIT} Incoming: {NEW}, who has promised "strong and stable saucers of milk". We shall see.', gadget: 'laser', pmChange: true };
-    case 6: return { title: 'A Package from MI-Paw', body: 'It arrived in the Pantry in a plain brown box marked "CATNIP — DO NOT OPEN". It was not catnip. It was better.', gadget: 'monocle' };
-    case 7: return { title: 'By Royal Appointment', body: 'And meanwhile — the van again. {OLD} {EXIT} {NEW} moves in tomorrow. But today, TODAY, a ceremony was held in the garden. For you.', gadget: 'cape', pmChange: true };
-    // ---- act three: the legend years ----
-    case 8: return { title: 'Reports from Below', body: 'The kitchen staff refuse to fetch the good cheese after dark. The junior mice have started PAYING TRIBUTE. Somewhere beneath the Cellar, something enormous is holding court. MI-Paw stamps the file: KING RAT — AT LARGE. Keep an eye on the basement.' };
+    case 3: return { title: 'The Van Outside', body: 'A removal van idles on Downing Street. {OLD} has {EXIT} A new PM arrives within the hour: {NEW}. Their portrait is already going up on the staircase. You remain. You always remain.', pmChange: true };
+    case 4: return { title: 'A Package from MI-Paw', body: 'It arrived in the Pantry in a plain brown box marked "CATNIP — DO NOT OPEN". It was not catnip. It was a set of standard-issue sonic whiskers, and they are magnificent.', gadget: 'whiskers' };
+    case 5: return { title: 'Another Van', body: 'You know the drill by now. {OLD} {EXIT} Incoming: {NEW}, who has promised "strong and stable saucers of milk". We shall see.', pmChange: true };
+    case 6: return { title: 'The Delegation', body: 'A foreign delegation visited the Terracotta Room today. They ignored the Foreign Secretary entirely and queued to meet you. One of them left a gift.', gadget: 'collar' };
+    case 7: return { title: 'Reports from Below', body: 'The kitchen staff refuse to fetch the good cheese after dark. The junior mice have started PAYING TRIBUTE. Somewhere beneath the Cellar, something enormous is holding court. MI-Paw stamps the file: KING RAT — AT LARGE. Keep an eye on the basement.' };
+    case 8: return { title: 'The Cabinet Requisition', body: 'A red dot has been appearing on the Cabinet Room wall during meetings, reducing ministers to helpless distraction. Nobody could find the source. The source has now been requisitioned. It is yours.', gadget: 'laser' };
     case 9: return { title: 'The Palmerston Incident', body: '{OLD} {EXIT} Incoming: {NEW}. Meanwhile: the Foreign Office cat has been seen in YOUR garden, at YOUR pond, watching YOUR pigeons. He left a single feather on the terrace. This means war. Diplomatic war. (Win the stare-off.)', pmChange: true };
-    case 10: return { title: 'The State Visit', body: 'A motorcade. Flags. A visiting head of state who, live on camera, walked straight past the receiving line and crouched to greet YOU. Two protocol officers fainted. The photograph is already framed in the Press Office.' };
-    case 11: return { title: 'The Van, and a Committee', body: '{OLD} {EXIT} Incoming: {NEW}. Downstairs, the mice have formed a negotiating committee. Their demands: unrestricted pantry access and a formal apology. Your counter-offer is scheduled for tonight. The counter-offer is you.', pmChange: true };
-    case 12: return { title: 'The Christmas Card', body: "This year's official No. 10 Christmas card is a photograph of you on the Grand Staircase. The Prime Minister appears in the background, slightly out of focus. Nobody involved considers this an accident." };
-    case 13: return { title: 'A Question in the House', body: '{OLD} {EXIT} Incoming: {NEW}. Also today, an MP formally asked the House whether the Chief Mouser is now "doing more governing than the government". The Speaker ruled the question "self-evidently true" and moved on.', pmChange: true };
-    case 14: return { title: 'The Biography', body: 'An unauthorised biography has entered its third printing: "LARRY: THE POWER BEHIND THE DOOR". Serialised in three papers. You have not read it. You do not read about yourself. You simply occur, and history keeps up.' };
+    case 10: return { title: 'Night Duty', body: 'MI-Paw has been watching your after-dark patrols with quiet approval. A flat package arrives, unmarked: their finest optics, cut for a cat. The Cellar holds no shadows for you now.', gadget: 'monocle' };
+    case 11: return { title: 'The State Visit', body: 'A motorcade. Flags. A visiting head of state who, live on camera, walked straight past the receiving line and crouched to greet YOU. Two protocol officers fainted. The photograph is already framed in the Press Office.' };
+    case 12: return { title: 'By Royal Appointment', body: 'A ceremony was held in the garden. For you. You are presented with a ceremonial cape, By Appointment. You wear it as though you were born in it — which, arguably, you were.', gadget: 'cape' };
+    // ---- act three: the legend years ----
+    case 13: return { title: 'The Van, and a Committee', body: '{OLD} {EXIT} Incoming: {NEW}. Downstairs, the mice have formed a negotiating committee. Their demands: unrestricted pantry access and a formal apology. Your counter-offer is scheduled for tonight. The counter-offer is you.', pmChange: true };
+    case 14: return { title: 'The Christmas Card', body: "This year's official No. 10 Christmas card is a photograph of you on the Grand Staircase. The Prime Minister appears in the background, slightly out of focus. Nobody involved considers this an accident." };
+    case 15: return { title: 'A Question in the House', body: '{OLD} {EXIT} Incoming: {NEW}. Also today, an MP formally asked the House whether the Chief Mouser is now "doing more governing than the government". The Speaker ruled the question "self-evidently true" and moved on.', pmChange: true };
+    case 16: return { title: 'The Biography', body: 'An unauthorised biography has entered its third printing: "LARRY: THE POWER BEHIND THE DOOR". Serialised in three papers. You have not read it. You do not read about yourself. You simply occur, and history keeps up.' };
     // ---- the finale (a credits card follows; the game continues after) ----
-    case 15: return { title: 'By Order of the Crown', body: 'A letter arrives bearing a seal you have only seen on television. The Palace "notes with approval the continued excellence of the Chief Mouser" and confers upon you the ORDER OF THE GARTER (FELINE DIVISION). The ceremony is held in the garden. Even Palmerston attends. He nods. Once.', finale: true };
+    case 17: return { title: 'By Order of the Crown', body: 'A letter arrives bearing a seal you have only seen on television. The Palace "notes with approval the continued excellence of the Chief Mouser" and confers upon you the ORDER OF THE GARTER (FELINE DIVISION). The ceremony is held in the garden. Even Palmerston attends. He nods. Once.', finale: true };
     default: {
       if (level % 2 === 1) return { title: 'The Van. Again.', body: '{OLD} {EXIT} Incoming: {NEW}. The staircase is running out of wall for the portraits. You have been replaced zero times.', pmChange: true };
       return { title: 'Meanwhile, at No. 10…', body: FLAVOUR[(level / 2 | 0) % FLAVOUR.length] + ' The mice grow bolder. So do you.' };
@@ -1501,7 +1508,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   level: 1, xp: 0, catches: 0,
-  pm: null, pmDays: 1, pmDayT: 0,
+  pm: null, pmDays: 1, dayIdx: undefined,
   bowtie: false,
   intro: { phase: 'shelter', catches: 0 },
   visitor: null,
@@ -1527,7 +1534,7 @@ const G = {
   dream: null, dreamT: 0, dreamDone: false, dreamCD: 0,
 };
 const has = g => {
-  const need = { zoomies: 2, whiskers: 3, collar: 4, laser: 5, monocle: 6, cape: 7 };
+  const need = { zoomies: 2, whiskers: 4, collar: 6, laser: 8, monocle: 10, cape: 12 };
   return G.level >= need[g];
 };
 // exponential ramp while the gadgets flow (lv 1–10), then a gentle linear
@@ -2790,7 +2797,7 @@ function maybeShowCard() {
     c.gadget ? { name: 'NEW GADGET: ' + GADGETS[c.gadget].name, desc: GADGETS[c.gadget].desc } : null,
     () => {
       if (c.newPM) {
-        G.pm = c.newPM; G.pmDays = 1; G.pmDayT = 0;
+        G.pm = c.newPM; G.pmDays = 1; G.dayIdx = Math.floor(G.time / DAYLEN);
         if (G.mapId === 'ground') { spawnBoxes(); flashbulbs(); }
         if (pmCount === 10) {
           G.cardQueue.unshift({
@@ -2897,7 +2904,7 @@ function visitorReaches() {
         { name: 'ISSUED: 🎀 Union Jack Bow Tie', desc: 'Dress code is dress code. You wear it with enormous dignity.' },
         () => {
           G.bowtie = true;
-          G.pm = nextPM(); G.pmDays = 1; G.pmDayT = 0;
+          G.pm = nextPM(); G.pmDays = 1; G.dayIdx = Math.floor(G.time / DAYLEN);
           startFade(() => {
             switchMap('ground', 21.5 * TILE, 31 * TILE);
             G.intro.phase = 'done';
@@ -2984,7 +2991,7 @@ function updateHUD() {
 function update(dt) {
   const L = G.larry;
   G.time += dt;
-  const tod = (G.time / 150) % 1;
+  const tod = (G.time / DAYLEN) % 1;
   const dark = G.daily ? 0 : 0.5 - 0.5 * Math.cos(tod * Math.PI * 2); // sorties are played in honest daylight
   document.getElementById('clock').textContent = dark > 0.55 ? '🌙' : (G.snowing ? '❄️' : G.raining ? '🌧️' : '☀️');
 
@@ -3155,9 +3162,15 @@ function update(dt) {
     }
   }
 
+  // "Day N in office" advances with the sun, not a stopwatch: each dawn the
+  // current PM clocks another day (naps fast-forward time, so sleeping counts)
   if (G.pm && !G.daily) {
-    G.pmDayT += dt;
-    if (G.pmDayT > 6) { G.pmDayT = 0; G.pmDays++; document.getElementById('pmday').textContent = 'Day ' + G.pmDays; }
+    const dayIdx = Math.floor(G.time / DAYLEN);
+    if (G.dayIdx === undefined) G.dayIdx = dayIdx;
+    if (dayIdx > G.dayIdx) {
+      G.pmDays += dayIdx - G.dayIdx; G.dayIdx = dayIdx;
+      document.getElementById('pmday').textContent = 'Day ' + G.pmDays;
+    }
   }
 
   if (G.fadeDir === 1) {
@@ -3409,7 +3422,7 @@ const darkCanvas = document.createElement('canvas');
 function draw() {
   const L = G.larry;
   const m = curMap();
-  const tod = (G.time / 150) % 1;
+  const tod = (G.time / DAYLEN) % 1;
   const dark = G.daily ? 0 : 0.5 - 0.5 * Math.cos(tod * Math.PI * 2); // sorties are played in honest daylight
 
   const shX = (shakeOn && G.shake > 0) ? (Math.random() - 0.5) * 5 : 0;
@@ -3861,7 +3874,7 @@ function bootWorld() {
   document.getElementById('btnMenu').classList.remove('hidden');
   buildGadgetBar();
   refreshGadgetBar();
-  if (G.level >= 6) G.nv = true;
+  if (has('monocle')) G.nv = true; // night vision on once the monocle is earned
   G.running = true;
   const m = curMap();
   G.camX = clamp(G.larry.x - VW / 2, 0, Math.max(0, m.w * TILE - VW));
@@ -4101,6 +4114,68 @@ function openMischief() {
   sClick();
 }
 bindBtn(document.getElementById('menuMischief'), openMischief);
+
+// ---------- House map: a pop-out schematic of No. 10, floor by floor ----------
+const HOUSE_FLOORS = [
+  { id: 'first', label: 'FIRST FLOOR' },
+  { id: 'ground', label: 'GROUND FLOOR' },
+  { id: 'basement', label: 'BASEMENT' },
+];
+const floorLabel = id => (HOUSE_FLOORS.find(f => f.id === id) || {}).label || '';
+function openHouseMap() {
+  document.getElementById('menuWrap').classList.add('hidden');
+  menuOpen = false; G.paused = true;
+  const onFloor = HOUSE_FLOORS.some(f => f.id === G.mapId);
+  document.getElementById('mapHere').textContent = onFloor
+    ? (G.region || '—') + ' · ' + floorLabel(G.mapId).toLowerCase()
+    : 'not in the house';
+  const host = document.getElementById('mapFloors');
+  host.textContent = '';
+  for (const f of HOUSE_FLOORS) {
+    const m = MAPS[f.id];
+    if (!m || !m.canvas) continue;
+    const here = G.mapId === f.id;
+    const div = document.createElement('div');
+    div.className = 'mapfloor' + (here ? ' here' : '');
+    const label = document.createElement('div');
+    label.className = 'flabel';
+    label.textContent = f.label;
+    if (here) { const you = document.createElement('span'); you.className = 'fyou'; you.textContent = ' — 🐈 you are here'; label.appendChild(you); }
+    div.appendChild(label);
+    // scale the pre-rendered floor plan down to fit; mark Larry on his floor
+    const TW = 320, scale = TW / (m.w * TILE), TH = Math.round(m.h * TILE * scale);
+    const c = document.createElement('canvas');
+    c.width = TW; c.height = TH;
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.drawImage(m.canvas, 0, 0, m.w * TILE, m.h * TILE, 0, 0, TW, TH);
+    if (here) {
+      const mx = G.larry.x * scale, my = G.larry.y * scale;
+      g.fillStyle = 'rgba(11,11,16,0.9)'; g.beginPath(); g.arc(mx, my, 6.5, 0, 7); g.fill();
+      g.fillStyle = '#9fe8a0'; g.beginPath(); g.arc(mx, my, 4.5, 0, 7); g.fill();
+      g.fillStyle = '#0b0b10'; g.beginPath(); g.arc(mx, my, 1.8, 0, 7); g.fill();
+    }
+    div.appendChild(c);
+    const rooms = document.createElement('div');
+    rooms.className = 'frooms';
+    (m.regions || []).forEach((r, i) => {
+      if (i) rooms.appendChild(document.createTextNode(' · '));
+      const name = r[4];
+      if (here && name === G.region) { const b = document.createElement('b'); b.style.color = '#9fe8a0'; b.textContent = name; rooms.appendChild(b); }
+      else rooms.appendChild(document.createTextNode(name));
+    });
+    div.appendChild(rooms);
+    host.appendChild(div);
+  }
+  document.getElementById('mapWrap').classList.remove('hidden');
+  sClick();
+}
+bindBtn(document.getElementById('menuMap'), openHouseMap);
+bindBtn(document.getElementById('mapClose'), () => {
+  document.getElementById('mapWrap').classList.add('hidden');
+  G.paused = false;
+  sClick();
+});
 
 // ---------- Save codes: the career as a portable string ----------
 function exportCode() {
