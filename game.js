@@ -35,6 +35,18 @@ resize();
 const TILE = 16;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
+// pick a random entry, never the same one twice in a row — repeated lines
+// are the fastest way to break the writing's spell
+const _lastPick = new WeakMap();
+function pick(arr) {
+  if (!arr || !arr.length) return undefined;
+  if (arr.length === 1) return arr[0];
+  const last = _lastPick.get(arr);
+  let i;
+  do { i = (Math.random() * arr.length) | 0; } while (i === last);
+  _lastPick.set(arr, i);
+  return arr[i];
+}
 function hash2(x, y) { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >> 13)) * 1274126177; return ((h ^ (h >> 16)) >>> 0) / 4294967296; }
 
 /* =========================================================
@@ -168,9 +180,47 @@ const C_OUT = '#241d16', C_MID = '#8d785c', C_DARK = '#5f4e3a';
 
 
 // ---------- Points of interest: nap spots, books, art ----------
-const TXT_NAP = ['You have a very important nap. The nation is safer for it.', 'Twenty minutes of statecraft (asleep).', 'You dream of an infinite Pantry.', 'Someone will need this spot later. It is warm now. Theirs is a future problem.'];
-const TXT_WAKE = ['Refreshed. Dangerous.', 'Awake. Allegedly.', 'You rise. The room adjusts.'];
-const TXT_BOWL = ['Chicken. Again. You register a formal complaint by knocking the bowl over.', 'You eat precisely half, to preserve the mystery.', 'Acceptable. You knock one biscuit under the counter for later. Statecraft.'];
+const TXT_NAP = [
+  'You have a very important nap. The nation is safer for it.',
+  'Twenty minutes of statecraft (asleep).',
+  'You dream of an infinite Pantry.',
+  'Someone will need this spot later. It is warm now. Theirs is a future problem.',
+  'You assume the position of maximum authority: horizontal.',
+  'The inbox can wait. The inbox is mice. The mice can wait.',
+  'Eyes closed. Ears on. This is called "vigilance".',
+  'A nap, minuted as "strategic review".',
+];
+const TXT_WAKE = [
+  'Refreshed. Dangerous.', 'Awake. Allegedly.', 'You rise. The room adjusts.',
+  'Back on duty. The nation exhales.', 'You stretch. Somewhere, a mouse shudders.',
+  'Consciousness resumes, on your terms.', 'Rebooted. Fully patched.',
+];
+// the rotating fact file: real Larry, lightly minuted. Revisited secrets
+// draw from this pool instead of repeating themselves.
+const LARRY_FACTS = [
+  'Larry fact: recruited from Battersea in 2011 — the only member of government hired strictly on merit.',
+  'Larry fact: the first cat to hold the OFFICIAL title Chief Mouser to the Cabinet Office. The capitals matter.',
+  'Larry fact: he is employed by the Cabinet Office, not the Prime Minister. Elections change nothing. For him.',
+  'Larry fact: he has outlasted six Prime Ministers and counting. None of them saw it coming. He did.',
+  'Larry fact: in 2019 he napped under a visiting president\'s armoured limousine and simply declined to move. The motorcade waited.',
+  'Larry fact: President Obama petted him in 2016. Larry permitted it. History records who approached whom.',
+  'Larry fact: the famous front door has no outside handle — Larry stares at it until a human opens it. The system works.',
+  'Larry fact: his 2016 scuffle with Palmerston of the Foreign Office cost him his collar. The Foreign Office denies everything.',
+  'Larry fact: officially born in 2007. Beyond that, his age is a matter of national security.',
+  'Larry fact: once slept through a mouse walking directly past him during a live broadcast. Described by aides as "a choice".',
+  'Larry fact: Battersea listed him as a stray with "a strong predatory drive". The understatement of the century.',
+  'Larry fact: his Wikipedia page is longer than most ministers\'. It is also more accurate.',
+  'Larry fact: Downing Street once issued an official statement that he was "doing fine" after tabloid concern. The tabloids apologised to HIM.',
+  'Larry fact: tourists photograph the window radiator daily hoping to see him. He knows. He poses. Occasionally.',
+];
+const TXT_BOWL = [
+  'Chicken. Again. You register a formal complaint by knocking the bowl over.',
+  'You eat precisely half, to preserve the mystery.',
+  'Acceptable. You knock one biscuit under the counter for later. Statecraft.',
+  'You inspect the bowl from four angles before committing. Due diligence.',
+  'Fish-shaped biscuits. The shape does not fool you. You eat them anyway.',
+  'You eat with the quiet confidence of someone whose food is hand-delivered by the Crown.',
+];
 const TXT_BOOKS = ['"The Subtle Art of Sitting on Keyboards" — a classic.', '"A History of the Door of No. 10", 400 pages. You nap on it briefly. Absorbed.', 'Hansard, Vol. 402. You shred one corner. Improved it.', '"Diplomacy for Beginners". Someone underlined "never blink first". Amateurs.'];
 const TXT_PAINTING = ['A landscape. You could catch that painted duck. Easily.', 'A former PM on a horse. The horse looks the more sensible of the two.', 'Priceless, apparently. It does not move. Boring.', 'You consider the brushwork. You consider scratching it. You rise above.'];
 const TXT_CLOCK = ['The pendulum swings. You could stop it. You are CHOOSING not to. For now.', 'Tick. Tock. It taunts you. It has taunted cats since 1735.'];
@@ -180,8 +230,22 @@ const TXT_POSTER = ['"ADOPT ME" — your old poster. You keep it up. For the bra
 const TXT_TOWER = ['You ascend the tower. You survey your domain. All of it. Yours.', 'High ground acquired. The mice below scatter, wisely.', 'From up here you can see the Foreign Office. You choose not to.'];
 const TXT_BOX = ['If it fits, you sits. It fits. Governance can wait.', 'The box arrived containing important documents. It now contains you. An upgrade.', 'Cardboard: the only honest furniture in this building.'];
 const TXT_SCRATCH = ['You maintain the claws. The post absorbs the policy disagreements.', 'Scratch. Scratch. Scratch. The Treasury can hear it. Good.', 'Claw maintenance complete. Threat level: restored.'];
-const TXT_WINDOW = ['You watch Whitehall from the window seat. Pedestrians. Pigeons. Politics.', 'Sun patch located. Occupied. Bliss.', 'A tourist waves at you. You permit it.'];
-const TXT_RADIATOR = ['THE radiator. THE window. Tourists outside take four thousand photos a day of exactly this spot.', 'Warm metal, world view, plausible deniability. The perfect office.', 'From here you can see everyone who matters arrive. They cannot see whether you are awake. Power.'];
+const TXT_WINDOW = [
+  'You watch Whitehall from the window seat. Pedestrians. Pigeons. Politics.',
+  'Sun patch located. Occupied. Bliss.',
+  'A tourist waves at you. You permit it.',
+  'A pigeon lands on the sill, sees you, and files a flight plan elsewhere.',
+  'Someone important hurries past with a folder. You blink at them, slowly. They needed that.',
+  'The glass is cool. The seat is warm. The arrangement is permanent.',
+];
+const TXT_RADIATOR = [
+  'THE radiator. THE window. Tourists outside take four thousand photos a day of exactly this spot.',
+  'Warm metal, world view, plausible deniability. The perfect office.',
+  'From here you can see everyone who matters arrive. They cannot see whether you are awake. Power.',
+  'A camera flash from the street. You do not move. Legends do not fidget.',
+  'The radiator gurgles. You gurgle back, internally. An understanding.',
+  'Heat below, empire beyond, nothing required of you. This is the job.',
+];
 const TXT_PIANO = ['You walk across the keys. Chopin, ruined. Improved.', 'The piano tuner has asked that you stop. The piano tuner is not in charge here.'];
 const TXT_LECTERN = ['A new lectern appears outside every few months. You have personally inspected every single one. With claws.', 'Someone practises a very serious speech at this thing roughly quarterly. You provide support by sitting exactly where the cameras point.'];
 const TXT_LETTERBOX = ['The letterbox rattles. You stare at it, unblinking, for forty minutes. This is called "security".', 'Post arrives. None of it is addressed to you. An oversight, surely. You sit on it until claimed.'];
@@ -1617,7 +1681,7 @@ function eveningPaper() {
     (s.palm ? '\n🎩 Palmerston: ' + s.palm + ' mice poached. Noted. Filed. Unforgiven.' : '') +
     '\n\n🔥 Streak: ' + DAY.streak + ' day' + (DAY.streak === 1 ? '' : 's') + ' with the box cleared.' +
     '\n\nReward: +6 🐟 · +25 XP. Larry may now nap with a completely clear conscience.';
-  showCard('THE EVENING PAPER', '"' + heads[(Math.random() * heads.length) | 0] + '"', body, null, () => {
+  showCard('THE EVENING PAPER', '"' + pick(heads) + '"', body, null, () => {
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
     updateHUD();
     maybeShowCard();
@@ -1817,7 +1881,7 @@ function interactPoi(p) {
     G.napPos = p.texts === TXT_TOWER ? { x: (p.x + 0.5) * TILE, y: p.y * TILE + 1 }
       : (p.texts === TXT_BOX || p.texts === TXT_WINDOW) ? { x: (p.x + 0.5) * TILE, y: (p.y + 0.45) * TILE }
         : null;
-    toast((p.texts || TXT_NAP)[(Math.random() * (p.texts || TXT_NAP).length) | 0]);
+    toast(pick(p.texts || TXT_NAP));
     tone(500, 350, 0.3, 'sine', 0.05);
     briefEvent('nap');
     goalEvent('nap');
@@ -1838,17 +1902,21 @@ function interactPoi(p) {
       addParticle((p.x + 0.5) * TILE, (p.y + 0.5) * TILE, '#ffe8b8', 12, 44);
       [784, 1047, 1319].forEach((f, i) => tone(f, f, 0.12, 'sine', 0.06, i * 0.08));
       save();
-    } else sClick();
-    toast('✨ ' + p.fact + (first ? '  (secret ' + G.secretsFound.size + '/' + SECRET_TOTAL + ')' : ''));
+      toast('✨ ' + p.fact + '  (secret ' + G.secretsFound.size + '/' + SECRET_TOTAL + ')');
+    } else {
+      // a found secret doesn't repeat itself — it rotates the fact file
+      sClick();
+      toast('✨ ' + pick(LARRY_FACTS));
+    }
     return;
   }
   if (p.type === 'piano') {
-    toast(p.texts[(Math.random() * p.texts.length) | 0]);
+    toast(pick(p.texts));
     [392, 523, 587, 494, 659, 784].forEach((f, i) => tone(f, f, 0.16, 'triangle', 0.06, i * 0.11));
     return;
   }
   if (p.type === 'scratch') {
-    toast(p.texts[(Math.random() * p.texts.length) | 0]);
+    toast(pick(p.texts));
     G.catAnim = { name: 'scratchL', t: 0, dur: 11 / 8, fps: 8 };
     addParticle((p.x + 0.5) * TILE, (p.y + 0.5) * TILE - 4, '#c9b28a', 6, 30);
     tone(220, 140, 0.08, 'sawtooth', 0.05);
@@ -1857,7 +1925,7 @@ function interactPoi(p) {
     return;
   }
   if (p.type === 'eat') {
-    toast(p.texts[(Math.random() * p.texts.length) | 0]);
+    toast(pick(p.texts));
     G.catAnim = { name: 'eat', t: 0, dur: 8 / 5, fps: 5 };
     if (G.stam < 100) addFloat(G.larry.x, G.larry.y - 18, '+30 puff', '#7fd4a0');
     G.stam = Math.min(100, G.stam + 30);
@@ -1873,7 +1941,7 @@ function interactPoi(p) {
     sClick();
     return;
   }
-  toast(p.texts[(Math.random() * p.texts.length) | 0]);
+  toast(pick(p.texts));
   sClick();
 }
 function doPounce(power = 0) {
@@ -2021,6 +2089,9 @@ const STEAL_LINES = [
   '🧀 A mouse made off with the good cheddar. Somewhere below, the Rat King smiles. (Larder: {n})',
   '🥧 The pork pie for Thursday has been… redistributed. The Rat King grows bold. (Larder: {n})',
   "🍰 A corner of the PM's birthday cake is GONE. This is personal now. (Larder: {n})",
+  '🥖 The state-dinner baguette has left the building. The chef is inconsolable. (Larder: {n})',
+  '🫖 Someone got into the biscuit tin marked CABINET USE ONLY. The audacity. (Larder: {n})',
+  '🧈 The good butter. THE GOOD BUTTER. The Rat King dines like a lord tonight. (Larder: {n})',
 ];
 function pickMouseType(rnd = Math.random) {
   const r = rnd();
@@ -2207,7 +2278,7 @@ function updateMouse(mo, dt, idx) {
     vx = (txp - mo.x) / dw; vy = (typ - mo.y) / dw;
     if (dist(mo.x, mo.y, mo.hx, mo.hy) < 6) { // gone
       addParticle(mo.x, mo.y, '#8a8378', 5, 20);
-      addFloat(mo.x, mo.y - 8, 'got away!', '#c9b7a0');
+      addFloat(mo.x, mo.y - 8, pick(GOTAWAY_LINES), '#c9b7a0');
       G.escapes++;
       goalEvent('escape');
       // only mice that actually got at the food provision the Rat King:
@@ -2347,7 +2418,7 @@ function updateRival(c, dt) {
   c.animT += dt;
   c.quipCD = Math.max(0, c.quipCD - dt);
   if (c.quipCD <= 0 && dist(c.x, c.y, G.larry.x, G.larry.y) < 28) {
-    toast(c.name + ': "' + c.quips[(Math.random() * c.quips.length) | 0] + '"');
+    toast(c.name + ': "' + pick(c.quips) + '"');
     c.quipCD = 14;
     if (c.state === 'sit' && !c.anim) c.anim = { name: 'meow', t: 0 };
   }
@@ -2470,8 +2541,25 @@ function updateButterfly(b, dt) {
 
 // ---------- The Press: periodic scrutiny with consequences ----------
 const P_PRESS = buildPerson('#8a7a5c');
-const HEADLINES_GOOD = ['📰 "LARRY DOES IT AGAIN" — every front page', '📰 "CHIEF MOUSER SAVES THE NATION (AGAIN)"', '📰 "THE ONLY COMPETENT ONE AT NO. 10" — sources'];
-const HEADLINES_BAD = ['📰 "MOUSE ESCAPES UNDER LARRY\'S NOSE" — exclusive', '📰 "IS LARRY LOSING HIS TOUCH?" asks columnist', '📰 "CATASTROPHE AT NO. 10" — page one'];
+const HEADLINES_GOOD = [
+  '📰 "LARRY DOES IT AGAIN" — every front page',
+  '📰 "CHIEF MOUSER SAVES THE NATION (AGAIN)"',
+  '📰 "THE ONLY COMPETENT ONE AT NO. 10" — sources',
+  '📰 "PAWS OF STEEL" — an eight-page pullout',
+  '📰 "GOVERNMENT WORKING, CONFIRMS CAT"',
+  '📰 "LARRY 1, CHAOS 0" — the back page too',
+  '📰 "A SAFE PAIR OF PAWS" — leader column, glowing',
+  '📰 "WHO NEEDS A CABINET?" asks influential columnist',
+];
+const HEADLINES_BAD = [
+  '📰 "MOUSE ESCAPES UNDER LARRY\'S NOSE" — exclusive',
+  '📰 "IS LARRY LOSING HIS TOUCH?" asks columnist',
+  '📰 "CATASTROPHE AT NO. 10" — page one',
+  '📰 "ASLEEP AT THE WHEEL (AND ON IT)" — damning',
+  '📰 "THE MOUSE THAT GOT AWAY: A NATION ASKS HOW"',
+  '📰 "CHIEF MOUSER? CHIEF SNOOZER" — the sketch, cruel',
+  '📰 "NINE LIVES, ZERO EXCUSES" — furious editorial',
+];
 function updatePress(dt) {
   const P = G.press;
   if (G.intro.phase !== 'done') return;
@@ -2511,12 +2599,12 @@ function updatePress(dt) {
     if (P.bads > 0 && !DIFF().pressPen) {
       toast('📰 The press got their photos and toddled off. No harm done. (Kitten mode is kind.)');
     } else if (P.bads > 0) {
-      toast(HEADLINES_BAD[(Math.random() * HEADLINES_BAD.length) | 0]);
+      toast(pick(HEADLINES_BAD));
       G.xp = Math.max(0, G.xp - 15);
       G.approval = Math.max(0, G.approval - 10);
       tone(300, 150, 0.4, 'sawtooth', 0.06);
     } else if (P.catches >= 2) {
-      toast(HEADLINES_GOOD[(Math.random() * HEADLINES_GOOD.length) | 0]);
+      toast(pick(HEADLINES_GOOD));
       G.xp += 25;
       G.fish += 3;
       G.approval = Math.min(100, G.approval + 8);
@@ -2544,7 +2632,15 @@ function addParticle(x, y, color, n = 1, spread = 20) {
   for (let i = 0; i < n; i++) G.particles.push({ x, y, vx: (Math.random() - 0.5) * spread, vy: (Math.random() - 0.5) * spread - 8, t: 0.5 + Math.random() * 0.4, color });
 }
 function addFloat(x, y, text, color = '#ffe8b8') { G.floats.push({ x, y, t: 1.3, text, color }); }
-const CATCH_LINES = ['A gift for the Cabinet!', 'Order! Order!', 'Purrfect.', 'Filed under: dealt with.', 'For King and Kibble!'];
+const CATCH_LINES = [
+  'A gift for the Cabinet!', 'Order! Order!', 'Purrfect.', 'Filed under: dealt with.',
+  'For King and Kibble!', 'Policy, delivered.', 'The motion carries.', 'Minuted.',
+  'Another U-turn. Theirs.', 'Committee adjourned.', 'Vetted. Vetoed.', 'Efficiency savings!',
+  'Take THAT to the Lords.', 'Constituency work.', 'Nationalised.', 'A strong mandate.',
+  'Question time is over.', 'Redacted.',
+];
+const GOTAWAY_LINES = ['got away!', 'gone!', 'into the skirting!', 'escaped custody!', 'resigned!', 'off the record!'];
+const NEARMISS_LINES = ['SO close!', 'a whisker off!', 'it HEARD you!', 'next time.', 'noted. hunted.', 'inquiry launched!'];
 
 // ---------- Catch & level ----------
 function catchMouse(i) {
@@ -2608,7 +2704,7 @@ function catchMouse(i) {
       G.larder = 0;
     }
   }
-  if (G.intro.phase === 'done' && Math.random() < 0.22) addFloat(G.larry.x, G.larry.y - 16, CATCH_LINES[(Math.random() * CATCH_LINES.length) | 0], '#9fd6ff');
+  if (G.intro.phase === 'done' && Math.random() < 0.22) addFloat(G.larry.x, G.larry.y - 16, pick(CATCH_LINES), '#9fd6ff');
   sCatch();
   if (!G.daily) {
     briefEvent('catch', { map: G.mapId, type: mo.type, night: G.isNight, region: G.region });
@@ -2757,7 +2853,7 @@ const DREAMS = [
   },
 ];
 function showDream() {
-  const d = DREAMS[(Math.random() * DREAMS.length) | 0];
+  const d = pick(DREAMS);
   showChoice('💤 MEANWHILE, IN THE DREAM', 'Larry dreams…', d.body, d.a[0], d.b[0], which => {
     const buff = which === 'a' ? d.a[1] : d.b[1];
     G.dream = { buff };
@@ -2844,7 +2940,7 @@ function wakeUp() {
   G.napping = false;
   G.napPos = null;
   G.napKind = null; G.radT = 0;
-  toast(TXT_WAKE[(Math.random() * TXT_WAKE.length) | 0]);
+  toast(pick(TXT_WAKE));
 }
 
 // ---------- HUD ----------
@@ -3140,7 +3236,7 @@ function update(dt) {
       let nearest = 1e9;
       for (const mo of G.mice) nearest = Math.min(nearest, dist(mo.x, mo.y, L.x, L.y));
       if (nearest > 15 && nearest < 28 && Math.random() < 0.7) {
-        addFloat(L.x, L.y - 18, 'SO close!', '#f0d0a0');
+        addFloat(L.x, L.y - 18, pick(NEARMISS_LINES), '#f0d0a0');
         tone(500, 350, 0.09, 'triangle', 0.05);
       }
     }
