@@ -224,15 +224,70 @@ const TXT_BOWL = [
   'Fish-shaped biscuits. The shape does not fool you. You eat them anyway.',
   'You eat with the quiet confidence of someone whose food is hand-delivered by the Crown.',
 ];
-const TXT_BOOKS = ['"The Subtle Art of Sitting on Keyboards" — a classic.', '"A History of the Door of No. 10", 400 pages. You nap on it briefly. Absorbed.', 'Hansard, Vol. 402. You shred one corner. Improved it.', '"Diplomacy for Beginners". Someone underlined "never blink first". Amateurs.'];
-const TXT_PAINTING = ['A landscape. You could catch that painted duck. Easily.', 'A former PM on a horse. The horse looks the more sensible of the two.', 'Priceless, apparently. It does not move. Boring.', 'You consider the brushwork. You consider scratching it. You rise above.'];
-const TXT_CLOCK = ['The pendulum swings. You could stop it. You are CHOOSING not to. For now.', 'Tick. Tock. It taunts you. It has taunted cats since 1735.'];
-const TXT_FIRE = ['Warm. Approved. You allocate it two more minutes of your schedule.', 'You stare into the flames like a tiny furry chancellor weighing a budget.'];
-const TXT_POND = ['You watch the fish. The fish watch you. Stalemate.', 'The koi files a complaint about surveillance. Noted. Ignored.'];
-const TXT_POSTER = ['"ADOPT ME" — your old poster. You keep it up. For the brand.', 'A kitten poster. It says HANG IN THERE. You did.'];
-const TXT_TOWER = ['You ascend the tower. You survey your domain. All of it. Yours.', 'High ground acquired. The mice below scatter, wisely.', 'From up here you can see the Foreign Office. You choose not to.'];
-const TXT_BOX = ['If it fits, you sits. It fits. Governance can wait.', 'The box arrived containing important documents. It now contains you. An upgrade.', 'Cardboard: the only honest furniture in this building.'];
-const TXT_SCRATCH = ['You maintain the claws. The post absorbs the policy disagreements.', 'Scratch. Scratch. Scratch. The Treasury can hear it. Good.', 'Claw maintenance complete. Threat level: restored.'];
+const TXT_BOOKS = [
+  '"The Subtle Art of Sitting on Keyboards" — a classic.',
+  '"A History of the Door of No. 10", 400 pages. You nap on it briefly. Absorbed.',
+  'Hansard, Vol. 402. You shred one corner. Improved it.',
+  '"Diplomacy for Beginners". Someone underlined "never blink first". Amateurs.',
+  'A first edition, spine cracked to exactly the width of one cat. Fate.',
+  'You knock a bookmark from its page. A historian will one day be baffled. Good.',
+];
+const TXT_PAINTING = [
+  'A landscape. You could catch that painted duck. Easily.',
+  'A statesman on a horse. The horse looks the more sensible of the two.',
+  'Priceless, apparently. It does not move. Boring.',
+  'You consider the brushwork. You consider scratching it. You rise above.',
+  'The eyes follow you around the room. You have decided you are flattered.',
+  'A stern old face in oils. You hold its gaze until it, metaphorically, looks away.',
+];
+const TXT_CLOCK = [
+  'The pendulum swings. You could stop it. You are CHOOSING not to. For now.',
+  'Tick. Tock. It taunts you. It has taunted cats since 1735.',
+  'You have synchronised your naps to its chimes. Precision statecraft.',
+  'A grandfather clock. You never met the grandfather. You assume he was tall.',
+  'It strikes the hour; you strike a pose. Between you, the nation runs on time.',
+];
+const TXT_FIRE = [
+  'Warm. Approved. You allocate it two more minutes of your schedule.',
+  'You stare into the flames like a tiny furry chancellor weighing a budget.',
+  'The best seat in the building, and entirely unelected. As are you.',
+  'You claim the hearth-rug. Possession is nine-tenths; you supply the tenth by lying on it.',
+  'A log settles with a crack. You do not flinch. You considered it, then declined.',
+];
+const TXT_POND = [
+  'You watch the fish. The fish watch you. Stalemate.',
+  'The koi files a complaint about surveillance. Noted. Ignored.',
+  'You dip one paw. The water is cold, the fish are smug. This is not over.',
+  'Reflections of clouds — and one enormous, patient face. Yours.',
+  'The goldfish have a name for you. It is not a kind one. You wear it with pride.',
+];
+const TXT_POSTER = [
+  '"ADOPT ME" — your old poster. You keep it up. For the brand.',
+  'A kitten poster reading HANG IN THERE. You did.',
+  'Battersea, your alma mater. You do not do reunions. You send the odd postcard.',
+  'Small print at the foot: "good with children, cameras, and heads of state".',
+];
+const TXT_TOWER = [
+  'You ascend the tower. You survey your domain. All of it. Yours.',
+  'High ground acquired. The mice below scatter, wisely.',
+  'From up here you can see the Foreign Office. You choose not to.',
+  'The summit. You plant no flag; your presence is the flag.',
+  'You gaze down upon the room and everyone in it. Literally. For now, only literally.',
+];
+const TXT_BOX = [
+  'If it fits, you sits. It fits. Governance can wait.',
+  'The box arrived containing important documents. It now contains you. An upgrade.',
+  'Cardboard: the only honest furniture in this building.',
+  'A box precisely one size too small. You are undeterred. You are mostly in.',
+  'They will search for the box for weeks. It was always going to end this way.',
+];
+const TXT_SCRATCH = [
+  'You maintain the claws. The post absorbs the policy disagreements.',
+  'Scratch. Scratch. Scratch. The Treasury can hear it. Good.',
+  'Claw maintenance complete. Threat level: restored.',
+  'You leave your mark, as every great figure must — only sharper.',
+  'The post has served faithfully. You reward it with further destruction.',
+];
 const TXT_WINDOW = [
   'You watch Whitehall from the window seat. Pedestrians. Pigeons. Politics.',
   'Sun patch located. Occupied. Bliss.',
@@ -249,10 +304,30 @@ const TXT_RADIATOR = [
   'The radiator gurgles. You gurgle back, internally. An understanding.',
   'Heat below, empire beyond, nothing required of you. This is the job.',
 ];
-const TXT_PIANO = ['You walk across the keys. Chopin, ruined. Improved.', 'The piano tuner has asked that you stop. The piano tuner is not in charge here.'];
-const TXT_LECTERN = ['A new lectern appears outside every few months. You have personally inspected every single one. With claws.', 'Someone practises a very serious speech at this thing roughly quarterly. You provide support by sitting exactly where the cameras point.'];
-const TXT_LETTERBOX = ['The letterbox rattles. You stare at it, unblinking, for forty minutes. This is called "security".', 'Post arrives. None of it is addressed to you. An oversight, surely. You sit on it until claimed.'];
-const TXT_UMBRELLA = ["Four abandoned umbrellas. Westminster's true national archive.", 'It will rain. It always rains. The umbrellas know.'];
+const TXT_PIANO = [
+  'You walk across the keys. Chopin, ruined. Improved.',
+  'The piano tuner has asked that you stop. The piano tuner is not in charge here.',
+  'A slow, deliberate stroll up the octaves. The critics are calling it "brave".',
+  'You sit upon middle C. The most important note. It is now yours.',
+];
+const TXT_LECTERN = [
+  'A new lectern appears outside every few months. You have personally inspected every single one. With claws.',
+  'Someone practises a very serious speech at this thing quarterly. You assist by sitting exactly where the cameras point.',
+  'The wood smells of nerves and furniture polish. You approve of one of these.',
+  'You rest your chin upon it, gravely. The photograph will be filed under "statesmanlike".',
+];
+const TXT_LETTERBOX = [
+  'The letterbox rattles. You stare at it, unblinking, for forty minutes. This is called "security".',
+  'Post arrives. None of it addressed to you. An oversight, surely. You sit on it until claimed.',
+  'A hand pushes an envelope through. You are ready. You are ALWAYS ready.',
+  'The famous brass flap. Cold to the nose. You boop it anyway. For morale.',
+];
+const TXT_UMBRELLA = [
+  "Four abandoned umbrellas. Westminster's true national archive.",
+  'It will rain. It always rains. The umbrellas know.',
+  'You inspect the umbrella stand. It inspects you back. A draw.',
+  'One is still faintly damp. You avoid it with the disdain of a professional.',
+];
 
 function buildMouse(body, belly) {
   const s = mkS(14, 10);
@@ -1005,28 +1080,28 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   ];
   m.npcs = [
     { x: 19, y: 31, sprite: 'guard', rect: [15, 29, 27, 33], quips: [
-      'Morning, Chief Mouser. You outrank half the people walking through that door today.',
+      'Morning, Chief Mouser.',
       'All quiet on the doorstep.',
-      'Fourth removal van this year. I\'ve stopped learning the names. So did you.',
-      'Whoever\'s in charge this week, sir, YOU\'RE the fixed point.',
-      'Careful by the cameras — one snap of you asleep and it\'s the front page for a week.',
+      'Caught a mouse by the boot-scraper last night. Left it for you. Professional courtesy.',
+      'Careful by the cameras, sir — one snap of you asleep and it\'s the front page for a week.',
       'If anyone asks, you were "in a meeting". You were on the radiator.',
-      'The mice have a clearer long-term plan than most of the building, if I\'m honest.',
+      'Post\'s late again. You\'ll want to supervise the letterbox. You always do.',
+      'They come and go through that door. You stay. Steadies the ship, having you here.',
     ] },
     { x: 15, y: 13, sprite: 'aide', rect: [12, 11, 19, 16], quips: [
       'Has anyone seen the briefing? ANYONE?',
       'Minister, the cat outranks you. No, I won\'t put that in writing.',
       'The meeting moved. Again. To a room that may no longer exist.',
-      'We\'ve held three positions on this since breakfast. The cat has held one: nap.',
+      'We\'ve held three positions on this since breakfast. You\'ve held one: nap.',
       'Please don\'t sit on the red box. …Of course you\'re sitting on the red box.',
-      'Four PMs and one cat I\'ve served under. Only one of you was reassuring.',
+      'Someone\'s been feeding you ham under the table. I am choosing not to have seen it.',
     ] },
     { x: 30, y: 6, sprite: 'gardener', rect: [24, 2, 35, 8], quips: [
-      'Mind the begonias. They\'ve outlasted nine Prime Ministers; they\'ll outlast you.',
+      'Mind the begonias. Delicate things.',
       'Rain again. Good for the roses. Bad for the photo-ops.',
       'No digging. I know that look.',
       'Found a fresh mouse hole by the wall. Thought you\'d want first refusal.',
-      'This lawn\'s seen more resignations than garden parties, between you and me.',
+      'The pigeons and I have an understanding. You\'re welcome to renegotiate it.',
     ] },
   ];
   m.cats = [
@@ -1087,7 +1162,7 @@ MAPS.basement = makeMap('basement', 30, 20, (m, set, rect) => {
     'The pantry mice are ORGANISED, I tell you. They\'ve got a rota.',
     'Cabinet lunch is at one. The mice have already RSVP\'d.',
     'You catch \'em, I ask no questions. That\'s our arrangement.',
-    'They cut my budget again. YOU they\'d never cut. Job security, that.',
+    'There\'s a bit of leftover salmon with your name on it. Literally — I labelled it.',
   ] }];
   m.mouseCap = lvl => Math.min(5 + Math.floor(lvl * 0.8), 11);
 });
@@ -1152,9 +1227,9 @@ MAPS.first = makeMap('first', 44, 26, (m, set, rect) => {
   ];
   m.npcs = [{ x: 20, y: 12, sprite: 'butler', rect: [4, 11, 40, 14], quips: [
     'The State Room is dusted, sir.',
-    'A new portrait arrives tomorrow. Another one. We\'re nearly out of wall.',
+    'The chandelier was polished this morning. Do try not to sit on it.',
     'Shall I fetch the good saucer? The occasion, one feels, demands it.',
-    'One has served four administrations and one cat. The cat tips better.',
+    'One has learned to iron a newspaper flat. You then sit upon it. We persevere.',
     'Do signal if the ambassador bores you. I shall arrange an urgent nap.',
   ] }];
   m.cats = [
@@ -3034,8 +3109,8 @@ function wakeUp() {
   G.napping = false;
   G.napPos = null;
   G.napKind = null; G.radT = 0;
-  // the obligatory post-nap stretch, front paws out, back arched
-  G.catAnim = { name: 'hind', t: 0, dur: 4 / 6, fps: 6, stretch: true };
+  // the obligatory post-nap stretch — profile, back arched, leaning forward
+  G.catAnim = { name: 'standRight', t: 0, dur: 0.9, fps: 1, stretch: true };
   sStretch();
   toast(pick(TXT_WAKE));
 }
@@ -3275,9 +3350,9 @@ function update(dt) {
     G.idleAnim.t += dt;
     if (G.idleAnim.t * 6 >= CANIM[G.idleAnim.name][1] || v.x || v.y) G.idleAnim = null;
   } else if (!G.napping && !G.catAnim && L.idleT > 3 && Math.random() < dt * 0.14) {
-    // a richer repertoire of idle fidgets — a groom, a yawn, a good stretch
-    G.idleAnim = { name: pick(['wash', 'wash', 'yawn', 'hind']), t: 0 };
-    if (G.idleAnim.name === 'hind') { sStretch(); }
+    // a richer repertoire of idle fidgets — a groom, a yawn, or a good stretch
+    if (Math.random() < 0.28) { G.catAnim = { name: 'standRight', t: 0, dur: 0.9, fps: 1, stretch: true }; sStretch(); }
+    else G.idleAnim = { name: pick(['wash', 'wash', 'yawn']), t: 0 };
   }
   G.chatterCD = Math.max(0, (G.chatterCD || 0) - dt);
   G.affCD = Math.max(0, (G.affCD || 0) - dt);
@@ -3836,7 +3911,8 @@ function drawLarry(L) {
   }
   const dirAnim = p => L.dir === 'side' ? (L.flip ? p + 'Left' : p + 'Right') : L.dir === 'up' ? p + 'Up' : p + 'Down';
   let anim, frame;
-  if (G.napping) { anim = 'sleepL'; frame = (G.time * 1.6) % 2; }
+  if (G.napping) { anim = 'sleep3'; frame = (G.time * 1.6) % 2; }  // curled cosy, not rump-to-camera
+  else if (G.catAnim && G.catAnim.stretch) { anim = L.flip ? 'standLeft' : 'standRight'; frame = 0; } // profile, arched by the transform below
   else if (G.catAnim) { anim = G.catAnim.name; frame = G.catAnim.t * G.catAnim.fps; }
   else if (L.pounceT > 0) {
     anim = dirAnim('paw');
@@ -3859,14 +3935,19 @@ function drawLarry(L) {
       const c = Math.min(1, L.chargeT / 0.55);
       sqy = 1 - c * 0.16 + (c >= 1 ? Math.sin(G.time * 40) * 0.02 : 0); // coiled, trembling
       sqx = 1 + c * 0.1;
-    } else if (G.catAnim && G.catAnim.stretch) {
-      const s = Math.sin((G.catAnim.t / G.catAnim.dur) * Math.PI) * 0.17; // luxuriant stretch, then settle
-      sqx = 1 + s; sqy = 1 - s * 0.55;
     }
   }
   ctx.save();
   ctx.translate(px2, py2);
-  ctx.scale(sqx, sqy);
+  if (G.catAnim && G.catAnim.stretch) {
+    // a proper play-bow stretch: reach long, arch the back, dip the front and
+    // lean forward, then ease back — read in profile
+    const e = Math.sin(clamp(G.catAnim.t / G.catAnim.dur, 0, 1) * Math.PI);
+    const dir = L.flip ? -1 : 1;
+    ctx.transform(1 + e * 0.30, 0, -dir * e * 0.36, 1 - e * 0.06, dir * e * 5, e * 2);
+  } else {
+    ctx.scale(sqx, sqy);
+  }
   ctx.translate(-px2, -py2);
   if (has('cape') && !G.napping) {
     ctx.fillStyle = '#7c2d3e';
