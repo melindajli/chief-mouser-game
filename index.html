@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b10">
+<title>LARRY — Chief Mouser to the Cabinet Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="panel" id="hudLeft">
+    <div class="hudrow"><span id="lvl">LV 1</span><span id="mice">🐭 0</span><span id="fish" class="hidden">🐟 5</span></div>
+    <div id="xpbar"><div id="xpfill"></div></div>
+    <div id="stbar"><div id="stfill"></div></div>
+    <div id="summons" class="hidden"></div>
+    <div id="brief" class="hidden"></div>
+  </div>
+  <div class="panel" id="hudRight">
+    <div id="pmline">PM: —</div>
+    <div class="hudrow small"><span id="pmday">Day 1</span><span id="approval" class="hidden"></span><span id="clock">☀️</span></div>
+  </div>
+</div>
+
+<!-- Story card -->
+<div id="cardWrap" class="overlay hidden">
+  <div id="card">
+    <div id="cardKicker">DISPATCH</div>
+    <h2 id="cardTitle">No. 10 Downing Street</h2>
+    <p id="cardBody"></p>
+    <div id="cardGadget" class="hidden">
+      <div class="gname"></div>
+      <div class="gdesc"></div>
+    </div>
+    <button id="cardBtn">Continue</button>
+  </div>
+</div>
+
+<!-- Title screen -->
+<div id="title" class="overlay">
+  <div id="titleInner">
+    <div id="titleCat"></div>
+    <h1>LARRY</h1>
+    <div id="subtitle">CHIEF MOUSER<br>TO THE CABINET OFFICE</div>
+    <div id="titleDoor">— From Battersea to No. 10 Downing Street —</div>
+    <button id="btnNew" class="bigbtn">New Game</button>
+    <button id="btnContinue" class="bigbtn hidden">Continue</button>
+    <button id="btnDaily" class="bigbtn">📅 Daily Sortie</button>
+    <div id="hint">Tap where to walk · or drag to steer · WASD on desktop<br>Pounce: 🐾 / SPACE — hold to charge a longer leap</div>
+  </div>
+</div>
+
+<!-- Room name toast -->
+<div id="toast" class="hidden"></div>
+
+<!-- Touch controls -->
+<div id="stick" class="hidden"><div id="stickNub"></div></div>
+<div id="gadgets" class="hidden"></div>
+<div id="btns" class="hidden">
+  <button id="btnPounce" class="abtn">🐾</button>
+</div>
+<button id="btnMute">🔊</button>
+<button id="btnMenu" class="hidden">⚙️</button>
+
+<!-- Pause menu -->
+<div id="menuWrap" class="overlay hidden">
+  <div id="menu">
+    <div id="menuTitle">PAWS</div>
+    <div id="menuStats"></div>
+    <button id="menuResume" class="mbtn">Resume</button>
+    <button id="menuPhoto" class="mbtn">📸 Photo Mode</button>
+    <button id="menuMischief" class="mbtn">😼 Mischief</button>
+    <button id="menuSave" class="mbtn">💾 Save Code</button>
+    <button id="menuTie" class="mbtn">Bow tie: 🎀 Union Jack</button>
+    <button id="menuDiff" class="mbtn">Difficulty: 🐱 Mouser</button>
+    <button id="menuSound" class="mbtn">Sound: ON</button>
+    <button id="menuMusic" class="mbtn">Music: ON</button>
+    <button id="menuRestart" class="mbtn danger">Restart from Battersea</button>
+    <div id="menuHint">Move: tap or drag · WASD on desktop · 🎮 pads work too<br>Pounce: 🐾 / SPACE (hold to charge!) · Meow: tap Larry / Q · Menu: ESC</div>
+  </div>
+</div>
+
+<!-- Photo mode -->
+<div id="photoWrap" class="overlay hidden">
+  <div id="photoInner">
+    <img id="photoImg" alt="Larry, photographed for the nation">
+    <div id="photoHint">Long-press the photo to save it on a phone</div>
+    <div id="photoBtns">
+      <a id="photoSave" class="mbtn" download="larry-no10.png">💾 Save PNG</a>
+      <button id="photoClose" class="mbtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- The List of Mischief -->
+<div id="mischiefWrap" class="overlay hidden">
+  <div id="mischief">
+    <div class="paneltitle">THE LIST OF MISCHIEF</div>
+    <div id="mischiefSub">Official duties. Unofficially.</div>
+    <div id="mischiefList"></div>
+    <button id="mischiefClose" class="mbtn">Back to work</button>
+  </div>
+</div>
+
+<!-- Save code: export / import career -->
+<div id="saveWrap" class="overlay hidden">
+  <div id="savebox">
+    <div class="paneltitle">SAVE CODE</div>
+    <div id="saveSub">Your whole career in one string. Copy it somewhere safe, or paste one to restore — it also moves Larry between devices.</div>
+    <textarea id="saveCode" readonly rows="4" spellcheck="false"></textarea>
+    <button id="saveCopy" class="mbtn">📋 Copy my code</button>
+    <textarea id="saveIn" rows="3" spellcheck="false" placeholder="…paste a code here to restore"></textarea>
+    <button id="saveLoad" class="mbtn danger">Restore from pasted code</button>
+    <button id="saveClose" class="mbtn">Close</button>
+  </div>
+</div>
+
+<!-- Daily Sortie results -->
+<div id="dailyWrap" class="overlay hidden">
+  <div id="daily">
+    <div class="paneltitle">TIME!</div>
+    <div id="dailyStats" class="dailyline"></div>
+    <div id="dailyScore"></div>
+    <div id="dailyBest" class="dailyline"></div>
+    <button id="dailyCopy" class="mbtn">📋 Share result</button>
+    <button id="dailyDone" class="mbtn">Back to No. 10</button>
+  </div>
+</div>
+
+<script src="sheets.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

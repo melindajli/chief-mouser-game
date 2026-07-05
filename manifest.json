@@ -1,0 +1,14 @@
+{
+  "name": "LARRY — Chief Mouser to the Cabinet Office",
+  "short_name": "LARRY",
+  "description": "A cosy pixel-art game about the real Chief Mouser of No. 10 Downing Street.",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#0b0b10",
+  "theme_color": "#0b0b10",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
