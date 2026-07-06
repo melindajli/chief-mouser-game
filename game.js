@@ -1532,40 +1532,61 @@ function updateSummonsHUD() {
 // ---------- Red Box briefs: little missions with XP attached ----------
 // Each Red Box brief carries a `why` — the in-world reason it landed on your
 // desk — shown when it's issued. `text` is the short objective for the HUD.
-const BRIEFS = [
+// The Red Box runs a SERIALIZED campaign, not a random shuffle: one long
+// story of the mice organising — from probing the new cat, to a trained
+// resistance, to an all-out siege directed from beneath the Cellar. Tasks are
+// issued in order (G.briefStage); the escalating `why` texts continue the plot.
+const CAMPAIGN = [
+  { text: 'Catch 2 mice — first day in post', kind: 'catch', n: 2,
+    why: 'Your first morning as Chief Mouser. The Cabinet Office would like proof you can, in fact, catch mice. Catch two, anywhere. Set the tone for the reign.' },
   { text: 'Clear 3 mice from the Kitchen', kind: 'catch', map: 'basement', n: 3,
-    why: 'The chef reports the Cabinet lunch is under siege. Clear 3 mice from the Kitchen (downstairs, down the Grand Staircase).' },
-  { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1,
-    why: 'A brown blur keeps outrunning the traps in the corridors. Catch one swift mouse and settle the matter.' },
-  { text: 'Catch a trickster mouse', kind: 'catch', type: 'trick', n: 1,
-    why: 'One mouse has learned to read a pounce and dodge it. Catch a trickster — a quick tap beats a wind-up.' },
-  { text: 'Catch a Very Still Mouse', kind: 'catch', type: 'still', n: 1,
-    why: 'Something is hiding in plain sight in the state rooms, holding perfectly still. Find the Very Still Mouse.' },
-  { text: 'Catch 2 mice in the Garden', kind: 'catch', region: 'The Garden', n: 2,
-    why: 'The gardener has found fresh burrows out by the pond. Catch 2 mice in the Garden before they settle in.' },
-  { text: 'Catch a mouse after dark', kind: 'catch', night: true, n: 1,
-    why: 'The night shift reports the mice turn bold once the lights go out. Catch one after dark to remind them who patrols.' },
+    why: 'Word has gone round the skirting boards that the new cat is untested. The mice strike the Kitchen first, to see what you do. Clear three (downstairs, down the Grand Staircase).' },
   { text: 'Cut through the red tape', kind: 'yarn', n: 8,
-    why: 'A ball of ministerial red tape has come unspooled and is rolling loose through the corridors of power. Cut through it the only way anyone at No. 10 truly can — with your paws, decisively, until it stops moving.' },
+    why: 'Your first true adversary at No. 10 is not a mouse. A ball of ministerial red tape has come loose in the corridors — and the mice are watching to see whether bureaucracy defeats you as it defeats everyone else. Cut through it.' },
+  { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1,
+    why: 'They send a fast one — a scout, testing your speed while the rest watch from the dark. Catch the swift brown mouse and end the experiment before they draw conclusions.' },
+  { text: 'Catch 2 mice in the Garden', kind: 'catch', region: 'The Garden', n: 2,
+    why: 'Emboldened, the mice open a second front: fresh burrows out by the pond. This is coordination now, not chance. Do not let them dig in — catch two.' },
+  { text: 'Catch a mouse after dark', kind: 'catch', night: true, n: 1,
+    why: 'They have studied your habits. The raids now come after lights-out, when they are certain you are asleep. Catch one after dark and disabuse them of the notion.' },
+  { text: 'Catch a trickster mouse', kind: 'catch', type: 'trick', n: 1,
+    why: 'This is no longer a rabble. A trickster appears — it reads your pounce and sidesteps it. Something below is TRAINING them. Catch it: a quick tap beats a wind-up.' },
   { text: 'Take one strategic nap', kind: 'nap', n: 1,
-    why: 'The summit is deadlocked and nothing you do can help. Deploy your signature manoeuvre: a single dignified, load-bearing nap. The nation, inexplicably, finds it reassuring.' },
+    why: 'Intelligence suggests the mice mean to exhaust you — to keep you chasing shadows until you drop. Deny them. Take one dignified, strategic nap, and let them wonder what you know that they do not.' },
   { text: 'Catch a mouse on the First Floor', kind: 'catch', map: 'first', n: 1,
-    why: 'An ambassador arrives upstairs tomorrow and expects the state rooms spotless. Catch a mouse on the First Floor (up the Grand Staircase).' },
+    why: 'They have breached the First Floor, where ambassadors dine and states are received. This cannot be borne. Catch one upstairs (up the Grand Staircase) and make the point in the room where points are made.' },
+  { text: 'Catch a Very Still Mouse', kind: 'catch', type: 'still', n: 1,
+    why: 'One mouse has sat motionless for days, memorising your routes — a saboteur, a spy for whatever now rules below the Cellar. Find the Very Still Mouse before it reports back.' },
+  // ---- the siege proper: from here the campaign loops, escalating ----
+  { text: 'Retake the Kitchen (3 mice)', kind: 'catch', map: 'basement', n: 3,
+    why: 'The Kitchen has fallen a SECOND time — and this time they came in numbers, brazen and drilled. Retake it. Clear three. They must learn there is no second chance with you.' },
+  { text: 'Cut through the red tape', kind: 'yarn', n: 8,
+    why: 'The mice have discovered PAPERWORK. Red tape spools loose through every corridor, nearly to the Cabinet Room. Cut through it before the government notices the mice run it better than they do.' },
+  { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1,
+    why: 'A coordinated night assault, floor to floor, directed by something large beneath the Cellar. Catch one after dark and send the message back up the chain: the night is still, and will remain, yours.' },
+  { text: 'Hold the Garden (2 mice)', kind: 'catch', region: 'The Garden', n: 2,
+    why: 'The siege spills outdoors; every wall of the house is being tested at once. Hold the Garden — catch two — and hold the line. They will not find it undefended while you draw breath.' },
 ];
-// only hand out briefs that are actually completable right now
+const BRIEF_LOOP_FROM = 10; // once the campaign is done, cycle the "siege" tail forever
+const HOLDING_BRIEF = { text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2,
+  why: 'The picture below is still forming. Keep the pressure on while it clears — catch two more on your rounds.' };
+// swift mice spawn from lv3, tricksters lv5, Very Still Mice lv7
 function briefPossible(d) {
-  if (d.type === 'swift' && G.level < 3) return false;   // swift mice spawn from lv 3
-  if (d.type === 'trick' && G.level < 5) return false;   // tricksters from lv 5
-  if (d.type === 'still' && G.level < 7) return false;   // Very Still Mice from lv 7
+  if (d.type === 'swift' && G.level < 3) return false;
+  if (d.type === 'trick' && G.level < 5) return false;
+  if (d.type === 'still' && G.level < 7) return false;
   return true;
 }
 function newBrief() {
-  const pool = BRIEFS.filter(briefPossible);
-  let def;
-  do { def = pool[(Math.random() * pool.length) | 0]; } while (G.lastBrief === def.text && pool.length > 1);
-  G.lastBrief = def.text;
+  const len = CAMPAIGN.length;
+  const idx = G.briefStage < len ? G.briefStage
+    : BRIEF_LOOP_FROM + (G.briefStage - BRIEF_LOOP_FROM) % (len - BRIEF_LOOP_FROM);
+  let def = CAMPAIGN[idx];
+  // if the next story beat needs a mouse we can't spawn yet, hold it and run a
+  // holding-pattern patrol instead — the campaign never skips a beat
+  if (!briefPossible(def)) def = HOLDING_BRIEF;
+  else G.briefStage++;
   G.brief = { def, prog: 0 };
-  // the Red Box explains itself, then parks the objective in the corner until done
   toast('📕 NEW RED BOX TASK — ' + (def.why || def.text));
   tone(500, 700, 0.15, 'triangle', 0.06);
   updateHUD();
@@ -1801,7 +1822,7 @@ const G = {
   toolCD: {}, zoomiesT: 0, sonarT: 0, sonarRingT: -1, nv: false, superArmed: false, shake: 0,
   press: { active: false, t: 0, cd: 35, catches: 0, bads: 0 }, paps: [],
   nearPoi: null, napping: false, napPos: null, catAnim: null, idleAnim: null,
-  secretsFound: new Set(), brief: null, briefCD: 14, lastBrief: null, catchTimes: [], isNight: false,
+  secretsFound: new Set(), brief: null, briefCD: 14, lastBrief: null, briefStage: 0, catchTimes: [], isNight: false,
   honours: new Set(), nightCatches: 0, briefsDone: 0, ratKingCD: 45, hitstop: 0, flash: 0,
   escapes: 0, snowing: false,
   cardQueue: [], camX: 0, camY: 0,
@@ -1857,7 +1878,7 @@ function save() {
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: G.mapId,
       x: G.larry.x, y: G.larry.y, secrets: Array.from(G.secretsFound),
-      honours: Array.from(G.honours), nightCatches: G.nightCatches, briefsDone: G.briefsDone, escapes: G.escapes,
+      honours: Array.from(G.honours), nightCatches: G.nightCatches, briefsDone: G.briefsDone, briefStage: G.briefStage, escapes: G.escapes,
       approval: Math.round(G.approval), diff: G.diff, tie: G.tie,
       mischief: Array.from(G.mischief),
       fish: G.fish, larder: G.larder,
@@ -1888,6 +1909,14 @@ let DAY = null;
 function dateStr(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 function saveDay() { try { localStorage.setItem(DAY_KEY, JSON.stringify(DAY)); } catch (e) { } }
 function goalDef(id) { return id === 'palm' ? GOAL_PALM : DAY_GOALS.find(x => x.id === id); }
+// daily-goal quantities scale with rank — the job only gets bigger
+function dayGoalN(g) {
+  const L = G.level;
+  if (g.id === 'mice') return Math.min(20, 6 + Math.floor(L * 0.7));
+  if (g.id === 'fish') return Math.min(18, 5 + Math.floor(L * 0.5));
+  if (g.id === 'night' || g.id === 'swift') return Math.min(5, 1 + Math.floor(L / 4));
+  return g.n; // one-offs (trickster, still, summons, press, briefs, naps) stay singular
+}
 function initDay() {
   if (G.daily || G.intro.phase !== 'done') return;
   let prev = null;
@@ -1905,7 +1934,8 @@ function initDay() {
   const yesterday = dateStr(new Date(REAL_DATE.getTime() - 86400000));
   const carried = prev && (prev.lastDone === yesterday || prev.lastDone === today) ? (prev.streak || 0) : 0;
   const streakLost = prev && prev.streak > 0 && !carried;
-  // deal three goals, seeded by the date, level-appropriate
+  // deal three goals, seeded by the date, level-appropriate — with quantities
+  // that grow as the siege deepens (escalation, not a flat checklist)
   const rnd = mulberry32(DATE_SEED ^ 0x5EED);
   const pool = DAY_GOALS.filter(g => !g.min || G.level >= g.min);
   const picks = [];
@@ -1913,14 +1943,17 @@ function initDay() {
   if (PALM_VISIT && G.level >= 4) picks[0] = GOAL_PALM;
   DAY = {
     date: today, streak: carried, lastDone: prev ? prev.lastDone : null, doneAll: false,
-    goals: picks.map(g => ({ id: g.id, text: g.text.replace('{n}', g.n), n: g.n, prog: 0 })),
+    goals: picks.map(g => { const n = dayGoalN(g); return { id: g.id, text: g.text.replace('{n}', n), n, prog: 0 }; }),
     stats: { catch: 0, escape: 0, brief: 0, fish: 0, palm: 0 },
     ap0: Math.round(G.approval),
   };
   saveDay();
   updateDayHUD();
-  const lines = ['The morning box arrives. Today\'s items, in order of national importance:', '']
-    .concat(DAY.goals.map(g => '📕 ' + g.text));
+  const intro = DAY.streak >= 7 ? 'Another dawn, another box, and still the mice have not learned. This morning\'s items:'
+    : DAY.streak >= 3 ? 'The mice did not relent overnight. Neither does the box. Today\'s items:'
+      : G.level >= 8 ? 'The morning box lands with a heavier thud these days. Today\'s items:'
+        : 'The morning box arrives. Today\'s items, in order of national importance:';
+  const lines = [intro, ''].concat(DAY.goals.map(g => '📕 ' + g.text));
   lines.push('');
   if (PALM_VISIT) lines.push('🎩 Intelligence: Palmerston is visiting today. The garden is NOT neutral.');
   if (IS_XMAS) lines.push('🎄 It is also Christmas. The tree has been assessed. (Climbable.)');
@@ -3280,9 +3313,6 @@ function wakeUp() {
   G.napping = false;
   G.napPos = null;
   G.napKind = null; G.radT = 0;
-  // the obligatory post-nap stretch — profile, back arched, leaning forward
-  G.catAnim = { name: 'standRight', t: 0, dur: 0.9, fps: 1, stretch: true };
-  sStretch();
   toast(pick(TXT_WAKE));
 }
 
@@ -3521,9 +3551,7 @@ function update(dt) {
     G.idleAnim.t += dt;
     if (G.idleAnim.t * 6 >= CANIM[G.idleAnim.name][1] || v.x || v.y) G.idleAnim = null;
   } else if (!G.napping && !G.catAnim && L.idleT > 3 && Math.random() < dt * 0.14) {
-    // a richer repertoire of idle fidgets — a groom, a yawn, or a good stretch
-    if (Math.random() < 0.28) { G.catAnim = { name: 'standRight', t: 0, dur: 0.9, fps: 1, stretch: true }; sStretch(); }
-    else G.idleAnim = { name: pick(['wash', 'wash', 'yawn']), t: 0 };
+    G.idleAnim = { name: pick(['wash', 'wash', 'yawn']), t: 0 };  // a groom or a yawn
   }
   G.chatterCD = Math.max(0, (G.chatterCD || 0) - dt);
   G.affCD = Math.max(0, (G.affCD || 0) - dt);
@@ -4083,7 +4111,6 @@ function drawLarry(L) {
   const dirAnim = p => L.dir === 'side' ? (L.flip ? p + 'Left' : p + 'Right') : L.dir === 'up' ? p + 'Up' : p + 'Down';
   let anim, frame;
   if (G.napping) { anim = 'sleep3'; frame = (G.time * 1.6) % 2; }  // curled cosy, not rump-to-camera
-  else if (G.catAnim && G.catAnim.stretch) { anim = L.flip ? 'standLeft' : 'standRight'; frame = 0; } // profile, arched by the transform below
   else if (G.catAnim) { anim = G.catAnim.name; frame = G.catAnim.t * G.catAnim.fps; }
   else if (L.pounceT > 0) {
     anim = dirAnim('paw');
@@ -4110,15 +4137,7 @@ function drawLarry(L) {
   }
   ctx.save();
   ctx.translate(px2, py2);
-  if (G.catAnim && G.catAnim.stretch) {
-    // a proper play-bow stretch: reach long, arch the back, dip the front and
-    // lean forward, then ease back — read in profile
-    const e = Math.sin(clamp(G.catAnim.t / G.catAnim.dur, 0, 1) * Math.PI);
-    const dir = L.flip ? -1 : 1;
-    ctx.transform(1 + e * 0.30, 0, -dir * e * 0.36, 1 - e * 0.06, dir * e * 5, e * 2);
-  } else {
-    ctx.scale(sqx, sqy);
-  }
+  ctx.scale(sqx, sqy);
   ctx.translate(-px2, -py2);
   if (has('cape') && !G.napping) {
     ctx.fillStyle = '#7c2d3e';
@@ -4319,6 +4338,7 @@ function startGame(fresh) {
     G.nightCatches = s.nightCatches || 0;
     G.escapes = s.escapes || 0;
     G.briefsDone = s.briefsDone || 0;
+    G.briefStage = s.briefStage || 0;
     G.approval = s.approval != null ? s.approval : 72;
     G.diff = DIFFS[s.diff] ? s.diff : 'mouser';
     G.tie = TIES.some(t => t.id === s.tie) ? s.tie : 'union';
