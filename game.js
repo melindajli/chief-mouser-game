@@ -1995,7 +1995,8 @@ const keys = {};
 window.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
   if (e.key === ' ') { e.preventDefault(); if (!e.repeat) chargeStart('key'); }
-  if (e.key === 'Escape') { menuOpen ? closeMenu() : openMenu(); }
+  if (e.key === 'Escape') { houseMapOpen() ? closeHouseMap() : menuOpen ? closeMenu() : openMenu(); }
+  if (e.key.toLowerCase() === 'm') toggleHouseMap(); // pull up the house map
   if (e.key.toLowerCase() === 'e') useTool(TOOLS[3]); // laser
   if (e.key.toLowerCase() === 'q') meowNow();
   const n = parseInt(e.key, 10);
@@ -4224,6 +4225,7 @@ function bootWorld() {
   }
   document.getElementById('gadgets').classList.remove('hidden');
   document.getElementById('btnMenu').classList.remove('hidden');
+  document.getElementById('btnMap').classList.remove('hidden');
   buildGadgetBar();
   refreshGadgetBar();
   if (has('monocle')) G.nv = true; // night vision on once the monocle is earned
@@ -4469,6 +4471,7 @@ bindBtn(document.getElementById('menuMischief'), openMischief);
 
 // ---------- House map: a pop-out schematic of No. 10, floor by floor ----------
 const HOUSE_FLOORS = [
+  { id: 'street', label: 'OUTSIDE · DOWNING STREET' },
   { id: 'first', label: 'FIRST FLOOR' },
   { id: 'ground', label: 'GROUND FLOOR' },
   { id: 'basement', label: 'BASEMENT' },
@@ -4478,9 +4481,10 @@ function openHouseMap() {
   document.getElementById('menuWrap').classList.add('hidden');
   menuOpen = false; G.paused = true;
   const onFloor = HOUSE_FLOORS.some(f => f.id === G.mapId);
-  document.getElementById('mapHere').textContent = onFloor
-    ? (G.region || '—') + ' · ' + floorLabel(G.mapId).toLowerCase()
-    : 'not in the house';
+  document.getElementById('mapHere').textContent = G.mapId === 'street'
+    ? 'outside, on Downing Street'
+    : onFloor ? (G.region || '—') + ' · ' + floorLabel(G.mapId).toLowerCase()
+      : 'not in the house';
   const host = document.getElementById('mapFloors');
   host.textContent = '';
   for (const f of HOUSE_FLOORS) {
@@ -4522,12 +4526,24 @@ function openHouseMap() {
   document.getElementById('mapWrap').classList.remove('hidden');
   sClick();
 }
-bindBtn(document.getElementById('menuMap'), openHouseMap);
-bindBtn(document.getElementById('mapClose'), () => {
+function houseMapOpen() { return !document.getElementById('mapWrap').classList.contains('hidden'); }
+function closeHouseMap() {
   document.getElementById('mapWrap').classList.add('hidden');
   G.paused = false;
   sClick();
-});
+}
+// pull the map up (or put it away) from anywhere in play — Pokémon-style
+function toggleHouseMap() {
+  if (!G.running) return;
+  if (houseMapOpen()) { closeHouseMap(); return; }
+  // don't pop it over a story card or the daily results
+  if (!document.getElementById('cardWrap').classList.contains('hidden')) return;
+  if (!document.getElementById('dailyWrap').classList.contains('hidden')) return;
+  openHouseMap();
+}
+bindBtn(document.getElementById('menuMap'), openHouseMap);
+bindBtn(document.getElementById('mapClose'), closeHouseMap);
+bindBtn(document.getElementById('btnMap'), toggleHouseMap);
 
 // ---------- Save codes: the career as a portable string ----------
 function exportCode() {

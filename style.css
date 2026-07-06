@@ -90,10 +90,11 @@ button { font-family:inherit; cursor:pointer; }
   max-width:min(440px, 86vw); width:max-content; text-align:center;
   animation:toastin .3s ease-out; }
 @keyframes toastin { from { opacity:0; transform:translateX(-50%) translateY(8px); } to { opacity:1; transform:translateX(-50%); } }
-#btnMute, #btnMenu { position:fixed; top:calc(12px + env(safe-area-inset-top)); z-index:11;
+#btnMute, #btnMenu, #btnMap { position:fixed; top:calc(12px + env(safe-area-inset-top)); z-index:11;
   width:40px; height:34px; font-size:14px; background:rgba(12,10,20,.6); border:2px solid rgba(255,255,255,.14); border-radius:8px; color:#fff; }
-#btnMute { left:50%; transform:translateX(calc(-50% - 24px)); }
-#btnMenu { left:50%; transform:translateX(calc(-50% + 24px)); }
+#btnMute { left:50%; transform:translateX(calc(-50% - 46px)); }
+#btnMap  { left:50%; transform:translateX(-50%); }
+#btnMenu { left:50%; transform:translateX(calc(-50% + 46px)); }
 
 /* Pause menu */
 #menuWrap { z-index:24; }
