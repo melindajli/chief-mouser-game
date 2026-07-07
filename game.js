@@ -335,6 +335,32 @@ const TXT_DOORSTEP = [
   'A tour guide points you out. Forty phones turn. You gaze into the middle distance, historically.',
   'Warm stone, cold morning, flashing bulbs. You have decided this step is, technically, your porch.',
 ];
+const TXT_PORTER = [
+  "The hooded guard's chair. Chippendale built it so the watchman outside wouldn't freeze — there's a drawer beneath for hot coals. You have claimed the seat, the hood, and the general principle of warmth.",
+  'A leather sentry-box on legs. The constable it was built for is two centuries gone; you have inherited the post, the hood, and the naps.',
+  'The hood keeps the draught off. You keep the hood. A fair division of the Entrance Hall.',
+  'Two hundred years of doormen sat here against the London cold. None of them curled up in it quite this well.',
+];
+const TXT_DOOR11 = [
+  'An ordinary door in an extraordinary wall: the far side is No. 11. Very few are permitted through it. You are permitted through it in both directions, and use the privilege daily.',
+  'The connecting door — two of the most famous addresses in Britain joined by a bit of green baize and a draught. You patrol both sides.',
+  'Number Ten this side, Number Eleven that side, one cat straddling the entire constitutional arrangement. Nobody has thought to stop you.',
+  'The Chancellor keeps the smaller flat, over No. 10. The Prime Minister takes the bigger one, over No. 11. You take whichever radiator is warmer.',
+];
+const TXT_TELLY = [
+  "The television murmurs the rolling news. Your face appears on it more often than most Cabinet ministers'. You do not watch it. You ARE the content.",
+  'Somewhere on this channel a serious man is discussing you gravely. You wash a paw.',
+  'The remote has gone under the sofa cushion. It will stay there. This is now a cat decision.',
+];
+const TXT_FLATKITCHEN = [
+  "The flat's little kitchen, where Prime Ministers cook their own suppers and call it unwinding. You supervise from the counter — uninvited, essential.",
+  'Not the grand basement kitchen — the family one. A kettle, a hob, a PM in an apron looking briefly human. You permit it.',
+  'The famous "kitchen suppers" happen at this table: deals done over pasta. You are always, always under it.',
+];
+const TXT_FLATWINDOW = [
+  'From up here you can see the whole garden and half of Whitehall. The pigeons look smaller from above. Everything does.',
+  'The residence window. Off-duty, unofficial, entirely yours. Even Chief Mousers go home; yours is up the stairs.',
+];
 
 function buildMouse(body, belly) {
   const s = mkS(14, 10);
@@ -465,6 +491,16 @@ function drawFloorBase(mc, grid, x, y, ch) {
     if (edge(0, 1)) mc.fillRect(px, py + TILE - 2, TILE, 1);
     if (edge(-1, 0)) mc.fillRect(px + 1, py, 1, TILE);
     if (edge(1, 0)) mc.fillRect(px + TILE - 2, py, 1, TILE);
+  } else if (ch === 'y') { // the Grand Staircase runner: soft golden yellow with a deeper-gold border
+    mc.fillStyle = '#c9a23a'; mc.fillRect(px, py, TILE, TILE);
+    mc.fillStyle = (x + y) % 2 ? '#c39a30' : '#cfa943';
+    for (let i = 0; i < 3; i++) mc.fillRect(px + ((hash2(x + i, y) * 13) | 0), py + ((hash2(y + i, x) * 13) | 0), 2, 2);
+    const edgeY = (dx, dy) => { const yy = y + dy, xx = x + dx; return !(grid[yy] && grid[yy][xx] === 'y'); };
+    mc.fillStyle = '#8a6a18';
+    if (edgeY(0, -1)) mc.fillRect(px, py + 1, TILE, 1);
+    if (edgeY(0, 1)) mc.fillRect(px, py + TILE - 2, TILE, 1);
+    if (edgeY(-1, 0)) mc.fillRect(px + 1, py, 1, TILE);
+    if (edgeY(1, 0)) mc.fillRect(px + TILE - 2, py, 1, TILE);
   } else if (ch === 'g' || ch === 'f' || ch === 'a') {
     // dithered grass
     mc.fillStyle = '#5e9c4e'; mc.fillRect(px, py, TILE, TILE);
@@ -945,6 +981,34 @@ function drawDecor(mc, d) {
     mc.fillStyle = '#5a3a20'; mc.fillRect(px + 2, py + 9, 12, 6);
     mc.fillStyle = '#6e4a2c'; mc.fillRect(px + 3, py + 10, 10, 4);
     mc.fillStyle = '#4a2e18'; for (let i = 4; i < 13; i += 2) mc.fillRect(px + i, py + 10, 1, 4);
+  } else if (d.t === 'porterchair') {
+    // Chippendale's hooded black-leather guard's chair
+    mc.fillStyle = '#241d1a'; mc.fillRect(px + 2, py + 1, 12, 5);            // the hood
+    mc.beginPath(); mc.arc(px + 8, py + 4, 6, Math.PI, 0); mc.fillStyle = '#2b2320'; mc.fill();
+    mc.fillStyle = '#171210'; mc.fillRect(px + 3, py + 5, 10, 8);           // seat back, in shadow
+    mc.fillStyle = '#3a2f29'; mc.fillRect(px + 4, py + 6, 8, 5);            // worn leather
+    mc.fillStyle = '#4a3d34'; mc.fillRect(px + 4, py + 6, 8, 1);
+    mc.fillStyle = '#c9a227'; mc.fillRect(px + 5, py + 8, 1, 1); mc.fillRect(px + 10, py + 8, 1, 1); // brass studs
+    mc.fillStyle = '#2b2320'; mc.fillRect(px + 3, py + 13, 10, 2);          // the coal drawer
+    mc.fillStyle = '#c9a227'; mc.fillRect(px + 7, py + 14, 2, 1);           // drawer pull
+  } else if (d.t === 'door11') {
+    // the green-baize connecting door through to No. 11
+    mc.fillStyle = '#e8e2d0'; mc.fillRect(px + 1, py, 14, 1); mc.fillRect(px + 1, py, 1, TILE); mc.fillRect(px + 14, py, 1, TILE); // surround
+    mc.fillStyle = '#2f4a34'; mc.fillRect(px + 2, py + 1, 12, 15);          // green baize
+    mc.fillStyle = '#375740'; mc.fillRect(px + 3, py + 2, 10, 6);
+    mc.fillStyle = '#274031'; mc.fillRect(px + 3, py + 9, 10, 6);
+    mc.fillStyle = '#1f3226';
+    [[4, 2], [12, 2], [4, 14], [12, 14], [8, 8]].forEach(([bx, by]) => mc.fillRect(px + bx, py + by, 1, 1)); // brass-stud diamonds
+    mc.fillStyle = '#c9a227'; mc.fillRect(px + 11, py + 8, 2, 2);           // door knob, brass
+    mc.fillStyle = '#e0cf9a'; mc.fillRect(px + 4, py + 4, 4, 1);            // little "11" plate
+    mc.fillStyle = '#2f4a34'; mc.fillRect(px + 5, py + 4, 1, 1);
+  } else if (d.t === 'telly') {
+    mc.fillStyle = '#17161a'; mc.fillRect(px + 1, py + 2, 14, 10);          // the set
+    mc.fillStyle = '#2b3a4a'; mc.fillRect(px + 2, py + 3, 12, 8);          // screen
+    mc.fillStyle = '#3d5468'; mc.fillRect(px + 3, py + 4, 5, 3);           // rolling-news glow
+    mc.fillStyle = '#c94a3a'; mc.fillRect(px + 3, py + 9, 10, 1);         // news ticker
+    mc.fillStyle = '#0e0d10'; mc.fillRect(px + 6, py + 12, 4, 2);         // stand
+    mc.fillStyle = '#3a3630'; mc.fillRect(px + 4, py + 14, 8, 1);
   }
 }
 
@@ -1031,7 +1095,7 @@ function makeMap(id, w, h, build) {
     if (ch === 'b') m.pois.push({ x, y, emoji: '🍗', type: 'eat', texts: TXT_BOWL });
   }
   for (const d of m.decor) {
-    const map2 = { books: ['📚', TXT_BOOKS], painting: ['🖼️', TXT_PAINTING], clock: ['🕰️', TXT_CLOCK], fire: ['🔥', TXT_FIRE], poster: ['📌', TXT_POSTER] };
+    const map2 = { books: ['📚', TXT_BOOKS], painting: ['🖼️', TXT_PAINTING], clock: ['🕰️', TXT_CLOCK], fire: ['🔥', TXT_FIRE], poster: ['📌', TXT_POSTER], porterchair: ['🪑', TXT_PORTER], telly: ['📺', TXT_TELLY] };
     if (map2[d.t]) m.pois.push({ x: d.x, y: d.y + 1, emoji: map2[d.t][0], type: 'text', texts: map2[d.t][1] });
   }
   m.portraits.forEach(([x, y], i) => m.pois.push({ x, y: y + 1, emoji: '🖼️', type: 'portrait', idx: i }));
@@ -1110,8 +1174,8 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   // corridor from the front door to the Cabinet Room
   rect(21, 10, 23, 33, 'v');
   set(24, 13, '.'); set(24, 14, '.');
-  // Grand Staircase (portraits of every PM)
-  rect(2, 10, 9, 16, 'v');
+  // Grand Staircase (yellow runner; portraits of every PM up the wall)
+  rect(2, 10, 9, 16, 'y');
   set(3, 11, 'U'); set(3, 15, 'B');
   m.portraits = [[5, 9], [7, 9], [9, 9]];
   // Press Office
@@ -1147,7 +1211,8 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   set(18, 10, 'K'); set(19, 10, 'K');
   set(12, 16, 'p'); set(26, 17, 'p');
   set(26, 33, 'R'); set(27, 33, 'R');           // Larry's famous radiator, under the front windows
-  m.decor.push({ x: 19, y: 32, t: 'lectern' }, { x: 24, y: 32, t: 'umbrella' }, { x: 24, y: 25, t: 'plaque' });
+  m.decor.push({ x: 19, y: 32, t: 'lectern' }, { x: 24, y: 32, t: 'umbrella' }, { x: 24, y: 25, t: 'plaque' },
+    { x: 28, y: 30, t: 'porterchair' });          // Chippendale's hooded guard's chair, by the door
   m.pois.push(
     { x: 19, y: 32, emoji: '🎤', type: 'text', texts: TXT_LECTERN },
     { x: 24, y: 32, emoji: '☂️', type: 'text', texts: TXT_UMBRELLA },
@@ -1163,6 +1228,12 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
     { x: 2, y: 16, f: 'The Grand Staircase, where every important arrival trips exactly once. You have seen everything. You will say nothing. For tuna.' },
     { x: 44, y: 7, f: 'The Downing Street pigeons hold their AGM at this pond. You are Item One on the agenda. Again.' },
     { x: 3, y: 2, f: 'Palmerston of the Foreign Office occupied this tree for six hours in 2016. Historians call it The Incident. You call it Tuesday.' },
+    { x: 35, y: 11, f: 'Larry fact: the only picture in the Cabinet Room is Robert Walpole — the first Prime Minister — over the fireplace. Everyone else who ever mattered got a chair. He got the wall.' },
+    { x: 33, y: 17, f: "Larry fact: the PM's chair is the only one at the table with arms, set midway down, facing the windows. You have tested it. It is, you can confirm, the good chair." },
+    { x: 7, y: 12, f: 'Larry fact: the staircase portraits were a gift of Sir Edward Hamilton of the Treasury in 1907. They descend the wall in strict order, back to Walpole — and the wall is nearly full.' },
+    { x: 5, y: 14, f: 'Larry fact: Winston Churchill is the only Prime Minister on this staircase to appear twice. You have counted. Repeatedly. Twice.' },
+    { x: 6, y: 22, f: "Larry fact: this study was Margaret Thatcher's own office; her portrait by Richard Stone still keeps the room. She worked a cat's hours. You keep them for her." },
+    { x: 14, y: 4, f: 'Larry fact: in 1991 an IRA mortar came down in this garden, metres from a Cabinet meeting in progress. The window cracked; the meeting continued. Cats remained, on principle, unbothered.' },
   ];
   m.holes = [[12, 29], [31, 30], [47, 15], [20, 23], [24, 16], [10, 1], [33, 6]]; // last two: garden burrows (tree + hedge)
   m.knockables = [
@@ -1322,11 +1393,21 @@ MAPS.first = makeMap('first', 44, 26, (m, set, rect) => {
   m.secrets = [
     { x: 41, y: 9, f: 'Larry fact: a President of the United States once bent down to greet Larry near this spot. Larry permitted 4.0 seconds of contact. A record.' },
     { x: 23, y: 24, f: 'The state dinner service, in use since 1735. You have never broken a single piece. The humans have broken nine.' },
+    { x: 12, y: 22, f: 'Larry fact: the State Dining Room was raised by Sir John Soane in the 1820s — a soaring vaulted chamber bolted onto the house purely for banquets. It seats a Cabinet of egos. You seat one cat, centrally.' },
+    { x: 24, y: 7, f: "Larry fact: the Doric columns framing the Terracotta Room are Quinlan Terry's, from the 1980s restoration. Grand, load-bearing, and — you have quietly confirmed — climbable." },
+    { x: 40, y: 7, f: 'Larry fact: the Pillared Drawing Room is the largest of the state rooms, named for its screen of columns. It is where Prime Ministers pose with presidents. You have photobombed four such photographs.' },
   ];
+  // the No. 11 connecting door, at the far end of the landing — through to the residence
+  m.decor.push({ x: 43, y: 13, t: 'door11' });
+  m.pois = m.pois || [];
+  m.pois.push({ x: 41, y: 13, emoji: '🚪', type: 'text', texts: TXT_DOOR11 });
   m.holes = [[0, 12], [43, 13], [25, 20], [39, 18]];
   m.knockables = [{ kind: 'vase', x: 10, y: 2 }]; // Regency, wobbly, on the étagère
   m.lamps = [[3.5, 12.5], [20.5, 12.5], [36.5, 12.5], [6.5, 2.5], [21.5, 2.5], [36.5, 2.5], [15.5, 22.5], [36.5, 17.5]];
-  m.transitions = [{ x: 2, y: 12, to: 'ground', tx: 4, ty: 11 }];
+  m.transitions = [
+    { x: 2, y: 12, to: 'ground', tx: 4, ty: 11 },
+    { x: 42, y: 13, to: 'flat', tx: 4, ty: 15 },     // through the No. 11 door, up to the private flat
+  ];
   m.regions = [
     [1, 1, 12, 9, 'The White Drawing Room'],
     [15, 1, 28, 9, 'The Terracotta Room'],
@@ -1352,6 +1433,67 @@ MAPS.first = makeMap('first', 44, 26, (m, set, rect) => {
     ] },
   ];
   m.mouseCap = lvl => Math.min(3 + Math.floor(lvl * 0.6), 7);
+});
+
+// --- The private flat: the PM's residence, above No. 11 (reached via the connecting door) ---
+MAPS.flat = makeMap('flat', 34, 22, (m, set, rect) => {
+  // The Sitting Room — off-duty, domestic, the one room with a telly
+  rect(1, 1, 15, 9, '.');
+  set(3, 0, 'w'); set(4, 0, 'w'); set(11, 0, 'w'); set(12, 0, 'w');
+  m.decor.push({ x: 8, y: 0, t: 'fire' }, { x: 13, y: 0, t: 'telly' }, { x: 1, y: 0, t: 'painting' });
+  set(14, 3, 'u');                                  // window seat — Larry's off-duty perch
+  set(2, 8, 'p'); set(14, 8, 'p');
+  m.packItems = [
+    { k: 'sofaGrey', tx: 3, ty: 7, fw: 3, fh: 2, clear: 1 },
+    { k: 'sofaGreen', tx: 9, ty: 7, fw: 3, fh: 2, clear: 1 },
+    { k: 'rugGold', tx: 6, ty: 4, fw: 3, fh: 2 },
+  ];
+  set(6, 10, '.'); set(7, 10, '.');                // sitting room → landing
+  // The Flat Kitchen — the family kitchen, home of the "kitchen suppers"
+  rect(18, 1, 32, 9, '.');
+  set(20, 0, 'w'); set(29, 0, 'w');
+  for (let x = 19; x <= 31; x++) if (x % 4 !== 0) set(x, 1, 'K');   // the counter
+  set(31, 3, 'K'); set(31, 4, 'K');
+  rect(22, 5, 26, 6, 'T');                          // the little supper table
+  set(30, 8, 'p');
+  m.decor.push({ x: 21, y: 0, t: 'pans' }, { x: 27, y: 0, t: 'pans' });
+  set(24, 10, '.'); set(25, 10, '.');              // kitchen → landing
+  // The Residence Landing — the golden stair-runner continues up here
+  rect(1, 11, 32, 17, 'y');
+  set(2, 12, 'B');                                 // the residence stair, back down to the state floor
+  set(15, 18, 'w'); set(16, 18, 'w');
+  set(30, 16, 'p');
+  m.decor.push({ x: 33, y: 13, t: 'door11' });     // THE connecting door, through to No. 11 proper
+  m.toys = [[20, 14, '#e9c46a']];
+  m.pois = [
+    { x: 24, y: 7, emoji: '🍝', type: 'text', texts: TXT_FLATKITCHEN },
+    { x: 15, y: 17, emoji: '💤', type: 'text', texts: TXT_FLATWINDOW },
+    { x: 31, y: 13, emoji: '🚪', type: 'text', texts: TXT_DOOR11 },
+  ];
+  m.secrets = [
+    { x: 8, y: 14, f: 'Larry fact: the Prime Minister lives up here, in the flat above No. 11 — the larger of the two. The Chancellor takes the smaller flat over No. 10. Occupants have been known to swap. You never move; you simply RESIDE.' },
+    { x: 27, y: 15, f: 'The wallpaper up here has, on occasion, cost more than anyone in public life cares to admit. You decline to take a view. You do, however, choose to sharpen your claws in the OTHER room.' },
+    { x: 5, y: 16, f: 'Larry fact: officially, no cat has the run of the private flat. Officially. You have made your own arrangements — as you have with every rule in this house.' },
+  ];
+  m.holes = [[0, 14], [33, 16], [9, 10]];
+  m.lamps = [[8.5, 3.5], [24.5, 3.5], [6.5, 14.5], [26.5, 14.5]];
+  m.transitions = [
+    { x: 2, y: 12, to: 'first', tx: 41, ty: 13 },   // down the residence stair
+    { x: 32, y: 13, to: 'first', tx: 41, ty: 13 },  // back through the No. 11 door
+  ];
+  m.regions = [
+    [1, 1, 15, 9, 'The Sitting Room'],
+    [18, 1, 32, 9, 'The Flat Kitchen'],
+    [1, 11, 32, 17, 'The Residence Landing'],
+  ];
+  m.npcs = [{ x: 10, y: 7, sprite: 'butler', rect: [1, 1, 15, 9], quips: [
+    "Off duty, Chief Mouser? Up here you needn't be Chief anything.",
+    'The PM cooks their own supper on Sundays. Badly. Kindly. You supervise.',
+    'Mind the good sofa. That is the only house rule up here — and it is, of course, yours to break.',
+    'Quieter, this floor. No cameras, no Cabinet. Just the kettle, the telly, and you.',
+    'Through that door is No. 11. I did not see you use it. I never do.',
+  ] }];
+  m.mouseCap = lvl => Math.min(2 + Math.floor(lvl * 0.3), 4);
 });
 
 // --- Downing Street: the famous front of No. 10 ---
@@ -4712,6 +4854,7 @@ bindBtn(document.getElementById('menuMischief'), openMischief);
 // ---------- House map: a pop-out schematic of No. 10, floor by floor ----------
 const HOUSE_FLOORS = [
   { id: 'street', label: 'OUTSIDE · DOWNING STREET' },
+  { id: 'flat', label: 'THE PRIVATE FLAT · ABOVE No. 11' },
   { id: 'first', label: 'FIRST FLOOR' },
   { id: 'ground', label: 'GROUND FLOOR' },
   { id: 'basement', label: 'BASEMENT' },
