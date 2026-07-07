@@ -345,7 +345,7 @@ const TXT_DOOR11 = [
   'An ordinary door in an extraordinary wall: the far side is No. 11. Very few are permitted through it. You are permitted through it in both directions, and use the privilege daily.',
   'The connecting door — two of the most famous addresses in Britain joined by a bit of green baize and a draught. You patrol both sides.',
   'Number Ten this side, Number Eleven that side, one cat straddling the entire constitutional arrangement. Nobody has thought to stop you.',
-  'The Chancellor keeps the smaller flat, over No. 10. The Prime Minister takes the bigger one, over No. 11. You take whichever radiator is warmer.',
+  'Officially, this door does not exist. Neither, officially, do your movements through it. You and the door have an understanding.',
 ];
 const TXT_TELLY = [
   "The television murmurs the rolling news. Your face appears on it more often than most Cabinet ministers'. You do not watch it. You ARE the content.",
@@ -360,6 +360,9 @@ const TXT_FLATKITCHEN = [
 const TXT_FLATWINDOW = [
   'From up here you can see the whole garden and half of Whitehall. The pigeons look smaller from above. Everything does.',
   'The residence window. Off-duty, unofficial, entirely yours. Even Chief Mousers go home; yours is up the stairs.',
+  'Below, the garden; beyond, the rooftops of Whitehall. Somewhere out there a mouse is planning something. Let it. You are OFF DUTY.',
+  'Evening light lands on the carpet in one warm rectangle. You occupy the rectangle. This is the whole plan.',
+  'A helicopter crosses the skyline. You track it, chattering softly. A very large, very disappointing bird.',
 ];
 
 function buildMouse(body, belly) {
@@ -481,26 +484,19 @@ function drawFloorBase(mc, grid, x, y, ch) {
     mc.fillStyle = '#b3aa99'; mc.fillRect(px + TILE - 1, py, 1, TILE); mc.fillRect(px, py + TILE - 1, TILE, 1);
     mc.fillStyle = '#d4ccbe'; mc.fillRect(px, py, TILE - 1, 1);
     if (h > 0.85) { mc.fillStyle = '#bdb4a4'; mc.fillRect(px + 3, py + 3, 4, 4); }
-  } else if (ch === 'v') { // red runner carpet with gold trim at its edges
-    mc.fillStyle = '#8d2f35'; mc.fillRect(px, py, TILE, TILE);
-    mc.fillStyle = (x + y) % 2 ? '#87292f' : '#93353b';
+  } else if (ch === 'v' || ch === 'y') { // carpet runners: 'v' the red corridor, 'y' the golden Grand Staircase
+    const C = ch === 'v'
+      ? { base: '#8d2f35', a: '#87292f', b: '#93353b', trim: '#c9a227' }
+      : { base: '#c9a23a', a: '#c39a30', b: '#cfa943', trim: '#8a6a18' };
+    mc.fillStyle = C.base; mc.fillRect(px, py, TILE, TILE);
+    mc.fillStyle = (x + y) % 2 ? C.a : C.b;
     for (let i = 0; i < 3; i++) mc.fillRect(px + ((hash2(x + i, y) * 13) | 0), py + ((hash2(y + i, x) * 13) | 0), 2, 2);
-    const edge = (dx, dy) => { const yy = y + dy, xx = x + dx; return !(grid[yy] && grid[yy][xx] === 'v'); };
-    mc.fillStyle = '#c9a227';
+    const edge = (dx, dy) => { const yy = y + dy, xx = x + dx; return !(grid[yy] && grid[yy][xx] === ch); };
+    mc.fillStyle = C.trim;
     if (edge(0, -1)) mc.fillRect(px, py + 1, TILE, 1);
     if (edge(0, 1)) mc.fillRect(px, py + TILE - 2, TILE, 1);
     if (edge(-1, 0)) mc.fillRect(px + 1, py, 1, TILE);
     if (edge(1, 0)) mc.fillRect(px + TILE - 2, py, 1, TILE);
-  } else if (ch === 'y') { // the Grand Staircase runner: soft golden yellow with a deeper-gold border
-    mc.fillStyle = '#c9a23a'; mc.fillRect(px, py, TILE, TILE);
-    mc.fillStyle = (x + y) % 2 ? '#c39a30' : '#cfa943';
-    for (let i = 0; i < 3; i++) mc.fillRect(px + ((hash2(x + i, y) * 13) | 0), py + ((hash2(y + i, x) * 13) | 0), 2, 2);
-    const edgeY = (dx, dy) => { const yy = y + dy, xx = x + dx; return !(grid[yy] && grid[yy][xx] === 'y'); };
-    mc.fillStyle = '#8a6a18';
-    if (edgeY(0, -1)) mc.fillRect(px, py + 1, TILE, 1);
-    if (edgeY(0, 1)) mc.fillRect(px, py + TILE - 2, TILE, 1);
-    if (edgeY(-1, 0)) mc.fillRect(px + 1, py, 1, TILE);
-    if (edgeY(1, 0)) mc.fillRect(px + TILE - 2, py, 1, TILE);
   } else if (ch === 'g' || ch === 'f' || ch === 'a') {
     // dithered grass
     mc.fillStyle = '#5e9c4e'; mc.fillRect(px, py, TILE, TILE);
@@ -800,10 +796,11 @@ function drawTile(mc, grid, x, y, mapId) {
     mc.fillStyle = '#8a5230';
     if (!nb([0, -1])) mc.fillRect(px, py, TILE, 2);
     if (!nb([0, 1])) { mc.fillStyle = '#4f2d17'; mc.fillRect(px, py + 13, TILE, 3); }
-    const top = mapId === 'ground' ? '#3e6b45' : mapId === 'first' ? '#e9e3d3' : '#b08a55';
+    const top = mapId === 'ground' ? '#3e6b45' : mapId === 'first' ? '#e9e3d3' : mapId === 'flat' ? '#c9915a' : '#b08a55';
     mc.fillStyle = top;
     mc.fillRect(px + (nb([-1, 0]) ? 0 : 2), py + (nb([0, -1]) ? 0 : 3), TILE - (nb([-1, 0]) ? 0 : 2) - (nb([1, 0]) ? 0 : 2), TILE - (nb([0, -1]) ? 0 : 3) - (nb([0, 1]) ? 0 : 4));
     if (mapId === 'basement') { mc.fillStyle = '#9c7846'; mc.fillRect(px + 2, py + 6, 12, 1); mc.fillRect(px + 2, py + 10, 12, 1); }
+    if (mapId === 'flat') { mc.fillStyle = '#b07a42'; mc.fillRect(px + 2, py + 6, 12, 1); mc.fillRect(px + 2, py + 10, 12, 1); } // scrubbed family-kitchen wood
     if (mapId === 'first' && hash2(x, y) > 0.7) { mc.fillStyle = '#c9a227'; mc.fillRect(px + 6, py + 6, 4, 4); mc.fillStyle = '#e9e3d3'; mc.fillRect(px + 7, py + 7, 2, 2); }
     if (mapId === 'ground' && hash2(x, y) > 0.72) { mc.fillStyle = '#e8e2d0'; mc.fillRect(px + 5, py + 6, 6, 4); mc.fillStyle = '#9a9284'; mc.fillRect(px + 6, py + 7, 4, 1); }
   } else if (ch === 'K') {
@@ -1056,7 +1053,7 @@ function makeMap(id, w, h, build) {
   const rect = (x0, y0, x1, y1, ch) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) grid[y][x] = ch; };
   build(m, set, rect);
   // chairs alongside big tables
-  if (id === 'ground' || id === 'first') {
+  if (id === 'ground' || id === 'first' || id === 'flat') {
     for (let y = 1; y < h; y++) for (let x = 0; x < w; x++) {
       if (FLOORY(grid[y][x]) && grid[y - 1][x] === 'T' && hash2(x, y) > 0.25) m.decor.push({ x, y, t: 'chair' });
     }
@@ -1233,7 +1230,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
     { x: 7, y: 12, f: 'Larry fact: the staircase portraits were a gift of Sir Edward Hamilton of the Treasury in 1907. They descend the wall in strict order, back to Walpole — and the wall is nearly full.' },
     { x: 5, y: 14, f: 'Larry fact: Winston Churchill is the only Prime Minister on this staircase to appear twice. You have counted. Repeatedly. Twice.' },
     { x: 6, y: 22, f: "Larry fact: this study was Margaret Thatcher's own office; her portrait by Richard Stone still keeps the room. She worked a cat's hours. You keep them for her." },
-    { x: 14, y: 4, f: 'Larry fact: in 1991 an IRA mortar came down in this garden, metres from a Cabinet meeting in progress. The window cracked; the meeting continued. Cats remained, on principle, unbothered.' },
+    { x: 14, y: 4, f: 'Larry fact: entire governments have been launched at a podium on this lawn, before the roses and the cameras. You have inspected the podium spot thoroughly. It smells of nerves.' },
   ];
   m.holes = [[12, 29], [31, 30], [47, 15], [20, 23], [24, 16], [10, 1], [33, 6]]; // last two: garden burrows (tree + hedge)
   m.knockables = [
@@ -1398,10 +1395,9 @@ MAPS.first = makeMap('first', 44, 26, (m, set, rect) => {
     { x: 40, y: 7, f: 'Larry fact: the Pillared Drawing Room is the largest of the state rooms, named for its screen of columns. It is where Prime Ministers pose with presidents. You have photobombed four such photographs.' },
   ];
   // the No. 11 connecting door, at the far end of the landing — through to the residence
-  m.decor.push({ x: 43, y: 13, t: 'door11' });
-  m.pois = m.pois || [];
-  m.pois.push({ x: 41, y: 13, emoji: '🚪', type: 'text', texts: TXT_DOOR11 });
-  m.holes = [[0, 12], [43, 13], [25, 20], [39, 18]];
+  m.decor.push({ x: 43, y: 13, t: 'door11' }, { x: 42, y: 13, t: 'doormat' }); // the passage, marked
+  m.pois = [{ x: 41, y: 13, emoji: '🚪', type: 'text', texts: TXT_DOOR11 }];
+  m.holes = [[0, 12], [43, 11], [25, 20], [39, 18]]; // hole kept clear of the No. 11 passage tile
   m.knockables = [{ kind: 'vase', x: 10, y: 2 }]; // Regency, wobbly, on the étagère
   m.lamps = [[3.5, 12.5], [20.5, 12.5], [36.5, 12.5], [6.5, 2.5], [21.5, 2.5], [36.5, 2.5], [15.5, 22.5], [36.5, 17.5]];
   m.transitions = [
@@ -1441,8 +1437,9 @@ MAPS.flat = makeMap('flat', 34, 22, (m, set, rect) => {
   rect(1, 1, 15, 9, '.');
   set(3, 0, 'w'); set(4, 0, 'w'); set(11, 0, 'w'); set(12, 0, 'w');
   m.decor.push({ x: 8, y: 0, t: 'fire' }, { x: 13, y: 0, t: 'telly' }, { x: 1, y: 0, t: 'painting' });
-  set(14, 3, 'u');                                  // window seat — Larry's off-duty perch
+  set(12, 1, 'u');                                  // window seat, under the window — Larry's off-duty perch
   set(2, 8, 'p'); set(14, 8, 'p');
+  rect(3, 7, 5, 8, 'S'); rect(9, 7, 11, 8, 'S');    // the sofas are real furniture, not paint
   m.packItems = [
     { k: 'sofaGrey', tx: 3, ty: 7, fw: 3, fh: 2, clear: 1 },
     { k: 'sofaGreen', tx: 9, ty: 7, fw: 3, fh: 2, clear: 1 },
@@ -1451,7 +1448,7 @@ MAPS.flat = makeMap('flat', 34, 22, (m, set, rect) => {
   set(6, 10, '.'); set(7, 10, '.');                // sitting room → landing
   // The Flat Kitchen — the family kitchen, home of the "kitchen suppers"
   rect(18, 1, 32, 9, '.');
-  set(20, 0, 'w'); set(29, 0, 'w');
+  set(20, 0, 'w'); set(28, 0, 'w');                 // both windows sit over counter gaps
   for (let x = 19; x <= 31; x++) if (x % 4 !== 0) set(x, 1, 'K');   // the counter
   set(31, 3, 'K'); set(31, 4, 'K');
   rect(22, 5, 26, 6, 'T');                          // the little supper table
@@ -1463,11 +1460,11 @@ MAPS.flat = makeMap('flat', 34, 22, (m, set, rect) => {
   set(2, 12, 'B');                                 // the residence stair, back down to the state floor
   set(15, 18, 'w'); set(16, 18, 'w');
   set(30, 16, 'p');
-  m.decor.push({ x: 33, y: 13, t: 'door11' });     // THE connecting door, through to No. 11 proper
+  m.decor.push({ x: 33, y: 13, t: 'door11' }, { x: 32, y: 13, t: 'doormat' }); // THE connecting door, marked
   m.toys = [[20, 14, '#e9c46a']];
   m.pois = [
     { x: 24, y: 7, emoji: '🍝', type: 'text', texts: TXT_FLATKITCHEN },
-    { x: 15, y: 17, emoji: '💤', type: 'text', texts: TXT_FLATWINDOW },
+    { x: 15, y: 17, emoji: '💤', type: 'nap', texts: TXT_FLATWINDOW },   // a real rest spot, by the landing window
     { x: 31, y: 13, emoji: '🚪', type: 'text', texts: TXT_DOOR11 },
   ];
   m.secrets = [
@@ -1486,7 +1483,7 @@ MAPS.flat = makeMap('flat', 34, 22, (m, set, rect) => {
     [18, 1, 32, 9, 'The Flat Kitchen'],
     [1, 11, 32, 17, 'The Residence Landing'],
   ];
-  m.npcs = [{ x: 10, y: 7, sprite: 'butler', rect: [1, 1, 15, 9], quips: [
+  m.npcs = [{ x: 12, y: 4, sprite: 'butler', rect: [1, 1, 15, 9], quips: [
     "Off duty, Chief Mouser? Up here you needn't be Chief anything.",
     'The PM cooks their own supper on Sundays. Badly. Kindly. You supervise.',
     'Mind the good sofa. That is the only house rule up here — and it is, of course, yours to break.',
@@ -3994,17 +3991,18 @@ function update(dt) {
     if (tapTarget.stuckT > 0.6) tapTarget = null;
   }
 
-  if (G.transCD <= 0 && G.fadeDir === 0) {
+  {
+    // transitions fire on stepping ONTO the tile — standing there when the
+    // cooldown ends doesn't count (no ping-pong when exiting while holding a direction)
     const m = curMap();
     const tx = Math.floor(L.x / TILE), ty = Math.floor(L.y / TILE);
-    for (const tr of m.transitions) {
-      if (tr.x === tx && tr.y === ty) {
-        sStairs();
-        G.transCD = 99;
-        startFade(() => switchMap(tr.to, (tr.tx + 0.5) * TILE, (tr.ty + 0.5) * TILE));
-        break;
-      }
+    const tr = m.transitions.find(t => t.x === tx && t.y === ty);
+    if (tr && !G.wasOnTrans && G.transCD <= 0 && G.fadeDir === 0) {
+      sStairs();
+      G.transCD = 99;
+      startFade(() => switchMap(tr.to, (tr.tx + 0.5) * TILE, (tr.ty + 0.5) * TILE));
     }
+    G.wasOnTrans = !!tr;
   }
 
   {
