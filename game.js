@@ -204,7 +204,7 @@ const LARRY_FACTS = [
   'Larry fact: recruited from Battersea in 2011 — the only member of government hired strictly on merit.',
   'Larry fact: the first cat to hold the OFFICIAL title Chief Mouser to the Cabinet Office. The capitals matter.',
   'Larry fact: he is employed by the Cabinet Office, not the Prime Minister. Elections change nothing. For him.',
-  'Larry fact: he has outlasted six Prime Ministers and counting. None of them saw it coming. He did.',
+  'Larry fact: he has outlasted every Prime Minister he has ever worked with. None of them saw it coming. He did.',
   'Larry fact: in 2019 he napped under a visiting president\'s armoured limousine and simply declined to move. The motorcade waited.',
   'Larry fact: President Obama petted him in 2016. Larry permitted it. History records who approached whom.',
   'Larry fact: the famous front door has no outside handle — Larry stares at it until a human opens it. The system works.',
@@ -351,11 +351,13 @@ const TXT_TELLY = [
   "The television murmurs the rolling news. Your face appears on it more often than most Cabinet ministers'. You do not watch it. You ARE the content.",
   'Somewhere on this channel a serious man is discussing you gravely. You wash a paw.',
   'The remote has gone under the sofa cushion. It will stay there. This is now a cat decision.',
+  'The ticker crawls past: GOVERNMENT IN CRISIS. It usually is. You settle in front of the warm rectangle regardless.',
 ];
 const TXT_FLATKITCHEN = [
   "The flat's little kitchen, where Prime Ministers cook their own suppers and call it unwinding. You supervise from the counter — uninvited, essential.",
   'Not the grand basement kitchen — the family one. A kettle, a hob, a PM in an apron looking briefly human. You permit it.',
   'The famous "kitchen suppers" happen at this table: deals done over pasta. You are always, always under it.',
+  'The refrigerator hums. Somewhere inside it is ham. This is now the most important intelligence in the building.',
 ];
 const TXT_FLATWINDOW = [
   'From up here you can see the whole garden and half of Whitehall. The pigeons look smaller from above. Everything does.',
@@ -1220,7 +1222,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   );
   m.secrets = [
     { x: 11, y: 33, f: 'Larry fact: recruited from Battersea Dogs & Cats Home in 2011 — the only member of government hired strictly on merit.' },
-    { x: 45, y: 17, f: 'Larry fact: he has outlasted six Prime Ministers so far. The seventh checks over their shoulder.' },
+    { x: 45, y: 17, f: 'Larry fact: he has outlasted every Prime Minister to date. The current one checks over their shoulder.' },
     { x: 30, y: 16, f: 'Under the Cabinet table: three biros, one manifesto (chewed), and an IOU signed by a mouse.' },
     { x: 2, y: 16, f: 'The Grand Staircase, where every important arrival trips exactly once. You have seen everything. You will say nothing. For tuna.' },
     { x: 44, y: 7, f: 'The Downing Street pigeons hold their AGM at this pond. You are Item One on the agenda. Again.' },
@@ -1418,6 +1420,8 @@ MAPS.first = makeMap('first', 44, 26, (m, set, rect) => {
     'Shall I fetch the good saucer? The occasion, one feels, demands it.',
     'One has learned to iron a newspaper flat. You then sit upon it. We persevere.',
     'Do signal if the ambassador bores you. I shall arrange an urgent nap.',
+    'The green door at the end of the landing goes through to Eleven, and up to the flat. I did not tell you that.',
+    'If anyone asks, the private flat is strictly off limits. If anyone asks where YOU are, I shall say "on patrol".',
   ] }];
   m.cats = [
     { x: 34, y: 5, set: 'black', name: 'Gladstone', mode: 'sit', rect: [32, 2, 41, 8], quips: [
@@ -1473,6 +1477,7 @@ MAPS.flat = makeMap('flat', 34, 22, (m, set, rect) => {
     { x: 5, y: 16, f: 'Larry fact: officially, no cat has the run of the private flat. Officially. You have made your own arrangements — as you have with every rule in this house.' },
   ];
   m.holes = [[0, 14], [33, 16], [9, 10]];
+  m.knockables = [{ kind: 'mug', x: 24, y: 5 }];    // the PM's cocoa, on the supper table
   m.lamps = [[8.5, 3.5], [24.5, 3.5], [6.5, 14.5], [26.5, 14.5]];
   m.transitions = [
     { x: 2, y: 12, to: 'first', tx: 41, ty: 13 },   // down the residence stair
@@ -1585,6 +1590,7 @@ const MISCHIEF = [
   { id: 'photobomb', text: 'Photobomb the press pack', hint: 'Be in shot when a flash pops.' },
   { id: 'boxes', text: 'Supervise the removal boxes', hint: 'A PM departs, boxes appear. Boxes require inspection.' },
   { id: 'radiator', text: 'Hold the famous radiator (45 uninterrupted seconds)', hint: 'The warmest seat in government. Defend it.' },
+  { id: 'mug', text: "Knock the PM's cocoa off the supper table", hint: 'Upstairs, in the flat. Domestic. Ceramic. Doomed.' },
 ];
 function earnMischief(id) {
   if (G.daily || G.mischief.has(id)) return;
@@ -1607,6 +1613,7 @@ const KNOCK_DEFS = {
   vase: { quip: '💥 The vase (Regency, irreplaceable) is now performance art. You feel nothing.', color: '#7fa8d4', shatter: true },
   papers: { quip: '📄 The morning briefing achieves flight. The Press Office weeps quietly.', color: '#efe9dc', shatter: false },
   sandwich: { quip: '🥪 The sandwich has been requisitioned. For security reasons.', color: '#d9b46a', shatter: false },
+  mug: { quip: '💥 The cocoa mug ("WORLD\'S BEST PM", chipped) meets the kitchen floor. A tragedy, in two syllables.', color: '#c9702c', shatter: true },
 };
 function setupKnocks() {
   G.knocks = (curMap().knockables || []).map(k => ({
@@ -1664,6 +1671,11 @@ function drawKnock(kn) {
   } else if (kn.kind === 'sandwich') {
     ctx.fillStyle = '#e0c084'; ctx.fillRect(-3, -3, 6, 1); ctx.fillRect(-3, -1, 6, 1);
     ctx.fillStyle = '#8fae5a'; ctx.fillRect(-3, -2, 6, 1);
+  } else if (kn.kind === 'mug') {
+    ctx.fillStyle = '#c9702c'; ctx.fillRect(-2, -4, 4, 4);          // the mug
+    ctx.fillStyle = '#5a3a20'; ctx.fillRect(-1, -4, 2, 1);          // cocoa
+    ctx.fillStyle = '#c9702c'; ctx.fillRect(2, -3, 1, 2);           // handle
+    ctx.fillStyle = '#e08a3c'; ctx.fillRect(-2, -4, 1, 4);          // highlight
   }
   ctx.restore();
 }
@@ -1723,6 +1735,8 @@ const CAMPAIGN = [
   // ---- the siege proper: from here the campaign loops, escalating ----
   { text: 'Retake the Kitchen (3 mice)', kind: 'catch', map: 'basement', n: 3,
     why: 'The Kitchen has fallen a SECOND time — and this time they came in numbers, brazen and drilled. Retake it. Clear three. They must learn there is no second chance with you.' },
+  { text: 'Defend the flat (2 mice)', kind: 'catch', map: 'flat', n: 2,
+    why: 'They are in the FLAT. Past the green door at the end of the First Floor landing, up where you SLEEP, where the good sofa is. This stopped being politics the moment they crossed the residence line. Catch two, and let the whole skirting-board world hear about it.' },
   { text: 'Cut through the red tape', kind: 'yarn', n: 8,
     why: 'The mice have discovered PAPERWORK. Red tape spools loose through every corridor, nearly to the Cabinet Room. Cut through it before the government notices the mice run it better than they do.' },
   { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1,
@@ -1963,6 +1977,7 @@ const FLAVOUR = [
   'Tourists outside chanted your name at a departing minister. The minister waved back. Embarrassing for everyone.',
   'The Treasury attempted to audit your treat budget and simply gave up.',
   'A wasp entered the Cabinet Room. You handled it. The official record says "decisively".',
+  'Sources say the Chief Mouser now "splits his time" between the state rooms and the flat upstairs. The state rooms are putting a brave face on it.',
 ];
 
 function beatFor(level) {
