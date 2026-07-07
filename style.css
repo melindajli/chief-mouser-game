@@ -25,7 +25,7 @@ canvas#game { position:fixed; inset:0; width:100vw; height:100vh; image-renderin
 #stfill { height:100%; width:100%; background:linear-gradient(90deg,#7fd4a0,#4aa877); border-radius:3px; }
 #stfill.tired { background:linear-gradient(90deg,#d4907f,#a85a4a); }
 #summons { margin-top:7px; font-size:7px; line-height:1.7; color:#f0a0a0; max-width:150px; }
-#daybox { margin-top:7px; font-size:7px; line-height:1.7; color:#c9b98f; max-width:150px; }
+#daybox { margin-top:7px; font-size:7px; line-height:1.7; color:#c9b98f; max-width:150px; white-space:pre-line; }
 #hudRight { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px; text-align:right; max-width:58vw; }
 #pmline { font-size:8px; line-height:1.5; color:#ffd9a0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 

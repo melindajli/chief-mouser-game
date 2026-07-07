@@ -401,6 +401,26 @@ const P_VISITOR = buildPerson('#5a5f6b'), P_GUARD = buildPerson('#2b2f3a', 'poli
   P_AIDE = buildPerson('#4a5568'), P_CHEF = buildPerson('#c9c5ba', 'chef'),
   P_BUTLER = buildPerson('#23242a'), P_GARDENER = buildPerson('#4e6b3c'),
   P_WORKER = buildPerson('#5c86a0'), P_PRESS = buildPerson('#8a7a5c');
+// the Cabinet, for when it is in session: an assortment of serious suits
+const P_MIN1 = buildPerson('#3d4a63'), P_MIN2 = buildPerson('#54443c'), P_MIN3 = buildPerson('#425562');
+// seats round the boat table (ground map): four up the far side, three near
+const CABINET_SEATS = [
+  [30.5, 12.75, P_MIN1, false], [33.5, 12.75, P_MIN2, true], [36.5, 12.75, P_VISITOR, false], [39.5, 12.75, P_MIN3, true],
+  [31.5, 16.55, P_MIN2, true], [35.5, 16.55, P_AIDE, false], [38.5, 16.55, P_MIN1, true],
+];
+const MINISTER_LINES = [
+  'Order. The cat has the floor.',
+  'Minute that: a cat entered. Uninvited. Correctly.',
+  'The Chief Mouser dissents.',
+  'Item four: the cat. Item five: also the cat.',
+  'He\'s sitting on the agenda. Again.',
+  'Let the record show he looked at the Chancellor first.',
+  'Can someone move the biscuits UP the table.',
+];
+// the Cabinet sits in daylight, in the career, once you actually live here
+function cabinetInSession(dark) {
+  return G.mapId === 'ground' && !G.daily && G.intro.phase === 'done' && dark < 0.4;
+}
 
 function buildCanopy() {
   const s = mkS(26, 20);
@@ -1133,6 +1153,8 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
     { x: 24, y: 32, emoji: '☂️', type: 'text', texts: TXT_UMBRELLA },
     { x: 21, y: 33, emoji: '📮', type: 'text', texts: TXT_LETTERBOX },
     { x: 24, y: 26, emoji: '🎖️', type: 'honours' },
+    { x: 28, y: 6, emoji: '🤝', type: 'gardendeal' },   // the gardener knows where they dig
+    { x: 6, y: 10, emoji: '🖼️', type: 'commission' },   // vanity, in oils, on the Grand Staircase
   );
   m.secrets = [
     { x: 11, y: 33, f: 'Larry fact: recruited from Battersea Dogs & Cats Home in 2011 — the only member of government hired strictly on merit.' },
@@ -1237,6 +1259,8 @@ MAPS.basement = makeMap('basement', 30, 20, (m, set, rect) => {
   m.holes = [[0, 8], [0, 14], [29, 4], [29, 13], [9, 18], [19, 6], [24, 8]];
   m.lamps = [[4.5, 3.5], [14.5, 5.5], [24.5, 2.5], [24.5, 13.5]];
   m.transitions = [{ x: 2, y: 2, to: 'ground', tx: 4, ty: 15 }];
+  // the chef's counter: slip him kippers, he opens the pantry door a crack
+  m.pois = [{ x: 7, y: 1, emoji: '🤝', type: 'chefdeal' }];
   m.regions = [
     [1, 1, 18, 17, 'The Kitchen'],
     [21, 1, 28, 7, 'The Pantry'],
@@ -1347,6 +1371,7 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
   m.pois = [{ x: 11, y: 5, emoji: '📸', type: 'text', texts: TXT_DOORSTEP }];
   m.holes = [[1, 12], [20, 12]];           // a couple of gutter mouseholes
   m.lamps = [[3.5, 3.5], [18.5, 3.5]];
+  m.glows = [[10.6, 1.6, 70]];             // the lamp over the famous door, warm at night
   m.regions = [[0, 0, 21, 14, 'Downing Street']];
   m.transitions = [
     { x: 10, y: 4, to: 'ground', tx: 22, ty: 32 },   // back in through the door
@@ -1394,6 +1419,8 @@ const HONOURS = [
   { id: 'beloved', name: 'Darling of the Press', test: () => G.approval >= 95 },
   { id: 'menace', name: 'Registered National Menace', test: () => G.mischief.size >= MISCHIEF.length },
   { id: 'garter', name: 'Order of the Garter (Feline Div.)' },
+  { id: 'vanity', name: 'Patron of the Arts (Self-Portraits)' },
+  { id: 'newlife', name: 'Nine Lives (One Spent Well)' },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -1520,13 +1547,10 @@ function startSummons() {
   updateSummonsHUD();
 }
 function updateSummonsHUD() {
-  const el = document.getElementById('summons');
-  if (!G.summons) { el.classList.add('hidden'); return; }
-  const txt = '📜 PHOTO-OP: ' + G.summons.region + (G.summons.att > 0.5 ? ' — 📸 hold still…' : ' — report when ready');
-  if (txt === G.summons.shown) return;
-  G.summons.shown = txt;
-  el.textContent = txt;
-  el.classList.remove('hidden');
+  // the photo-op lives inside the day tracker now — one corner block, one
+  // narrative, no separate checklist line
+  document.getElementById('summons').classList.add('hidden');
+  updateDayHUD();
 }
 
 // ---------- Red Box briefs: little missions with XP attached ----------
@@ -1643,7 +1667,7 @@ function tone(f0, f1, dur, type, vol, when = 0) {
   o.start(a.currentTime + when); o.stop(a.currentTime + when + dur + 0.02);
 }
 const sSqueak = () => { tone(1500, 2200, 0.09, 'sine', 0.12); tone(1900, 1300, 0.07, 'sine', 0.08, 0.09); };
-const sCatch = () => { sSqueak(); tone(320, 160, 0.08, 'square', 0.08); };
+const sCatch = () => { sSqueak(); tone(320, 160, 0.08, 'square', 0.08); playMotif(0.05, 0.026, 'triangle', 0.1); };
 const sPounce = () => tone(500, 900, 0.1, 'triangle', 0.07);
 const sLevel = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.14, 'square', 0.07, i * 0.09));
 const sMeow = () => { tone(680, 520, 0.22, 'triangle', 0.1); tone(1360, 1040, 0.22, 'sine', 0.03); };
@@ -1654,6 +1678,32 @@ const sStairs = () => { tone(300, 200, 0.1, 'triangle', 0.06); tone(260, 180, 0.
 const sChatter = () => { for (let i = 0; i < 6; i++) tone(1500 + Math.random() * 260, 1380, 0.03, 'square', 0.028, i * 0.055); };
 const sTrill = () => { tone(680, 1120, 0.12, 'sine', 0.05); tone(1120, 900, 0.1, 'sine', 0.03, 0.1); };
 const sStretch = () => { tone(480, 760, 0.36, 'sine', 0.05); };
+
+// THE LARRY MOTIF — four notes (G C E D), the game's one musical signature.
+// Quick and bright on a catch, square and proud on the title, slow and
+// stately when the Evening Paper goes to print.
+const MOTIF = [392, 523.25, 659.25, 587.33];
+function playMotif(step = 0.09, vol = 0.05, type = 'triangle', when = 0) {
+  MOTIF.forEach((f, i) => tone(f, f, step * 1.5, type, vol, when + i * step));
+}
+
+// a real purr: a low sawtooth rumble with the ~21Hz flutter cats actually
+// have, instead of a bare sine blip. Respect the mute like everything else.
+function purr(dur = 0.8, vol = 0.045) {
+  const a = audio(); if (!a || muted) return;
+  const o = a.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 46;
+  const lp = a.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 140;
+  const g = a.createGain();
+  const lfo = a.createOscillator(); lfo.frequency.value = 21;
+  const lg = a.createGain(); lg.gain.value = vol * 0.55;
+  lfo.connect(lg).connect(g.gain);
+  g.gain.setValueAtTime(0.0001, a.currentTime);
+  g.gain.linearRampToValueAtTime(vol, a.currentTime + 0.16);
+  g.gain.linearRampToValueAtTime(0.0001, a.currentTime + dur);
+  o.connect(lp).connect(g).connect(a.destination);
+  o.start(); lfo.start();
+  o.stop(a.currentTime + dur + 0.05); lfo.stop(a.currentTime + dur + 0.05);
+}
 
 // ---------- Rain on the window: looping filtered noise, ducked indoors ----------
 let rainSrc = null, rainGain = null, rainFilt = null;
@@ -1837,6 +1887,7 @@ const G = {
   fish: 5, larder: 0,
   summons: null, summonsCD: 75, chefCD: 0,
   dream: null, dreamT: 0, dreamDone: false, dreamCD: 0,
+  ownPortrait: 0, lives: 0,
 };
 const has = g => {
   const need = { zoomies: 2, whiskers: 4, collar: 6, laser: 8, monocle: 10, cape: 12 };
@@ -1882,6 +1933,7 @@ function save() {
       approval: Math.round(G.approval), diff: G.diff, tie: G.tie,
       mischief: Array.from(G.mischief),
       fish: G.fish, larder: G.larder,
+      ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
   } catch (e) { }
 }
@@ -1967,7 +2019,9 @@ function updateDayHUD() {
   if (!el) return;
   if (!DAY || G.daily || G.intro.phase !== 'done') { el.classList.add('hidden'); return; }
   const done = DAY.goals.filter(g => g.prog >= g.n).length;
-  el.textContent = DAY.doneAll ? '📦 ✓ day well governed · 🔥 ' + DAY.streak : '📦 Red Box ' + done + '/3';
+  let txt = DAY.doneAll ? '📦 ✓ day well governed · 🔥 ' + DAY.streak : '📦 Red Box ' + done + '/3';
+  if (G.summons) txt += '\n📸 photo-op: ' + G.summons.region + (G.summons.att > 0.5 ? ' — hold still…' : '');
+  el.textContent = txt;
   el.classList.remove('hidden');
 }
 function goalEvent(kind, info = {}) {
@@ -2010,7 +2064,9 @@ function eveningPaper() {
     '🐭 ' + s.catch + ' caught · 💨 ' + s.escape + ' escaped\n' +
     '📕 ' + s.brief + ' briefs cleared · 🐟 ' + s.fish + ' kippers banked\n' +
     '📊 Approval ' + (apd >= 0 ? '+' : '') + apd + '% on the day' +
+    (s.ops ? '\n📸 ' + s.ops + ' photo-op' + (s.ops === 1 ? '' : 's') + ' attended, beautifully' : '') +
     (s.palm ? '\n🎩 Palmerston: ' + s.palm + ' mice poached. Noted. Filed. Unforgiven.' : '') +
+    (G.brief ? '\n\n📕 Tomorrow\'s Red Box, already on the desk: "' + G.brief.def.text + '"' : '') +
     '\n\n🔥 Streak: ' + DAY.streak + ' day' + (DAY.streak === 1 ? '' : 's') + ' with the box cleared.' +
     '\n\nReward: +6 🐟 · +25 XP. Larry may now nap with a completely clear conscience.';
   showCard('THE EVENING PAPER', '"' + pick(heads) + '"', body, null, () => {
@@ -2018,7 +2074,8 @@ function eveningPaper() {
     updateHUD();
     maybeShowCard();
   });
-  [523, 659, 784, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.11, 'triangle', 0.06, i * 0.09));
+  playMotif(0.3, 0.06, 'triangle');                    // the motif, slow and stately: the presses roll
+  tone(MOTIF[0] / 2, MOTIF[0] / 2, 1.2, 'sine', 0.045); // under a long, satisfied root note
   saveDay();
   updateDayHUD();
 }
@@ -2205,6 +2262,63 @@ window.addEventListener('gamepadconnected', () => {
 
 // ---------- Actions ----------
 function interactPoi(p) {
+  // ---- the kipper economy's proper sinks: intel and vanity ----
+  if (p.type === 'chefdeal') {
+    if (G.fish < 4) { toast('🤝 The chef eyes your tin. "Four kippers and the pantry door swings open. You\'re short." He returns to the soup.'); sClick(); return; }
+    showChoice('THE KITCHEN — OFF THE RECORD', 'The Chef\'s Arrangement',
+      'The chef wipes his hands and leans in. "Four kippers, and the pantry door stays open for half a minute. What runs out of it is your department. I was never here. I am ALWAYS here — it\'s my kitchen. But you understand."',
+      '🤝 Pay 4 🐟', '🚶 Another time', which => {
+        if (which !== 'a') return;
+        G.fish -= 4;
+        const n = spawnMouseNear([[29, 4], [24, 8], [19, 6]], 3);
+        G.sonarT = 8;
+        toast('🚪 The pantry door swings. ' + n + ' mice bolt for the Kitchen — and your whiskers know EXACTLY where they are.');
+        tone(500, 800, 0.15, 'triangle', 0.06);
+        updateHUD();
+      });
+    return;
+  }
+  if (p.type === 'gardendeal') {
+    if (G.fish < 3) { toast('🤝 The gardener tips his hat. "Three kippers and I\'ll show you where they\'re digging. Come back when you\'re flush."'); sClick(); return; }
+    showChoice('THE GARDEN — A QUIET WORD', 'The Gardener\'s Tip',
+      'The gardener leans on his rake. "Three kippers and I\'ll give the far burrow a poke with this. What comes out, comes out fast. The begonias saw nothing."',
+      '🤝 Pay 3 🐟', '🚶 Another time', which => {
+        if (which !== 'a') return;
+        G.fish -= 3;
+        const n = spawnMouseNear([[10, 1], [33, 6]], 2);
+        G.sonarT = 8;
+        toast('🌱 The rake goes in. ' + n + ' mice erupt from the burrow — the garden is suddenly very busy.');
+        tone(500, 800, 0.15, 'triangle', 0.06);
+        updateHUD();
+      });
+    return;
+  }
+  if (p.type === 'commission') {
+    const PRICES = [25, 60, 120];
+    const tier = G.ownPortrait || 0;
+    if (tier >= 3) { toast('🖼️ Your portrait dominates the Grand Staircase. The wall can structurally support no further ambition. You inspect it anyway. Magnificent.'); sClick(); return; }
+    const price = PRICES[tier];
+    const PITCH = [
+      'A discreet artist can be engaged. A modest study of yourself, in oils, hung on the Grand Staircase among the Prime Ministers. Entirely appropriate. Long overdue, frankly.',
+      'The modest portrait no longer captures your standing. The artist proposes something GRANDER — gilt frame, commanding gaze, twice the canvas. The PMs\' portraits would, of course, appear slightly smaller by comparison. Unavoidable.',
+      'The artist, trembling, proposes the final work: a portrait so ENORMOUS it requires two men and a permit. Visiting dignitaries would see it before they see the Prime Minister. This is, you feel, as it should be.',
+    ];
+    if (G.fish < price) { toast('🖼️ The artist quotes ' + price + ' 🐟 for the next portrait. Your tin holds ' + G.fish + '. Art waits for kippers.'); sClick(); return; }
+    showChoice('THE GRAND STAIRCASE', 'A Commission (' + price + ' 🐟)', PITCH[tier],
+      '🖼️ Commission it', '💰 Prudence, for now', which => {
+        if (which !== 'a') return;
+        G.fish -= price;
+        G.ownPortrait = tier + 1;
+        toast(['🖼️ The portrait is hung, low, at cat height, where it matters. You regard it. It regards you. Both approve.',
+          '🖼️ The grander portrait goes up. A passing minister says "is that new?" You do not dignify it.',
+          '🖼️ The ENORMOUS portrait is installed by two men and a permit. The staircase is now, officially, yours.'][tier]);
+        playMotif(0.16, 0.05, 'triangle');
+        if (G.ownPortrait >= 3) earnHonour('vanity');
+        updateHUD();
+        save();
+      });
+    return;
+  }
   if (p.type === 'nap') {
     G.napping = true;
     G.larry.idleT = 0;
@@ -2459,6 +2573,30 @@ function spawnMouse() {
     }
   }
 }
+// flush mice from specific holes (the chef's pantry door, the gardener's
+// burrows) — paid intel turns kippers back into hunting
+function spawnMouseNear(holes, n) {
+  const m = curMap();
+  let spawned = 0;
+  for (let tries = 0; tries < n * 4 && spawned < n; tries++) {
+    const [hx, hy] = holes[(Math.random() * holes.length) | 0];
+    for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+      const tx = hx + dx, ty = hy + dy;
+      if (tx > 0 && ty > 0 && tx < m.w && ty < m.h && FLOORY(m.grid[ty][tx])) {
+        const type = pickMouseType();
+        G.mice.push({
+          x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE, tx: 0, ty: 0,
+          state: 'wander', stateT: 0, dir: 1, animT: Math.random() * 9, scale: 0,
+          type, hp: MOUSE_TYPES[type].hp, life: (16 + Math.random() * 14) * DIFF().life, dodgeCD: 0, iframes: 0,
+        });
+        spawned++;
+        break;
+      }
+    }
+  }
+  return spawned;
+}
+
 // the raiding pair: a loud decoy and a quiet accomplice with the cheese.
 // Chase the squeaker and the cheddar walks out the door.
 function spawnPair() {
@@ -2548,9 +2686,31 @@ function updateMouse(mo, dt, idx) {
   else if (mo.state === 'lured' || mo.state === 'charmed' || mo.state === 'stunned') mo.state = 'flee';
   const dL = dist(mo.x, mo.y, L.x, L.y);
 
+  // ---- awareness: mice get absorbed in sniffing/grooming ("busy") ----
+  // A busy mouse is oblivious — it holds still and its flee radius collapses,
+  // so a patient stalk (creep in while charging) is rewarded with a guaranteed
+  // catch. Rushing in at speed snaps it alert like any other mouse.
+  mo.busy = Math.max(0, (mo.busy || 0) - dt);
+  const larrySpd = Math.hypot(L.cvx, L.cvy);
+  if (mo.state === 'wander' && mo.busy <= 0 && dL > 40 && Math.random() < dt * 0.22) {
+    mo.busy = 1.7 + Math.random() * 1.5; // stops to sniff something fascinating
+  }
+  if (mo.busy > 0) {
+    // startled out of it by noise-at-speed nearby, a landing pounce, or contact
+    if ((dL < 62 && larrySpd > 42) || (L.pounceT > 0 && dL < 70 && larrySpd > 42) || dL < 12) {
+      if (dL >= 12) { // it noticed you coming — the moment is gone
+        mo.busy = 0; mo.state = 'flee';
+        addFloat(mo.x, mo.y - 8, '!', '#f0d0a0');
+      }
+    } else if (Math.random() < dt * 1.2) {
+      addFloat(mo.x, mo.y - 7, '…', '#cfc8b8'); // absorbed. utterly oblivious.
+    }
+  }
+
   // tricksters read a wound-up leap and sidestep it — a quick tap is too
-  // fast to juke, so uncharged pounces are the counter
-  if (T.dodge && mo.dodgeCD <= 0 && L.pounceT > 0.15 && L.lastPower > 0.3 && dL < 46 && mo.state !== 'charmed' && mo.state !== 'stunned') {
+  // fast to juke, so uncharged pounces are the counter (and a busy trickster
+  // never sees it coming at all)
+  if (T.dodge && mo.busy <= 0 && mo.dodgeCD <= 0 && L.pounceT > 0.15 && L.lastPower > 0.3 && dL < 46 && mo.state !== 'charmed' && mo.state !== 'stunned') {
     const px2 = -(mo.y - L.y), py2 = (mo.x - L.x);
     const pm = Math.max(1, Math.hypot(px2, py2)), side = Math.random() < 0.5 ? 1 : -1;
     const jx = mo.x + px2 / pm * 16 * side, jy = mo.y + py2 / pm * 16 * side;
@@ -2590,7 +2750,9 @@ function updateMouse(mo, dt, idx) {
   }
 
   const calmDream = G.dream && G.dream.buff === 'calm';
-  if (mo.state !== 'lured' && mo.state !== 'charmed' && mo.state !== 'stunned' && mo.state !== 'leave' && mo.state !== 'freeze' && dL < (calmDream ? 52 : 62)) mo.state = 'flee';
+  // a busy mouse barely notices the world: its flee radius collapses to 12px
+  const fleeAt = mo.busy > 0 ? 12 : (calmDream ? 52 : 62);
+  if (mo.state !== 'lured' && mo.state !== 'charmed' && mo.state !== 'stunned' && mo.state !== 'leave' && mo.state !== 'freeze' && dL < fleeAt) mo.state = 'flee';
   else if (mo.state === 'flee' && dL > 110) { mo.state = 'wander'; mouseTarget(mo); }
 
   const fleeSpd = (55 + Math.min(20, G.level * 2)) * T.spd * DIFF().mSpd * (calmDream ? 0.93 : 1) * (mo.type === 'decoy' ? 0.55 : 1);
@@ -2642,6 +2804,8 @@ function updateMouse(mo, dt, idx) {
     sp = 66;
     const d = Math.max(1, dist(mo.x, mo.y, G.laser.x, G.laser.y));
     if (d > 6) { vx = (G.laser.x - mo.x) / d; vy = (G.laser.y - mo.y) / d; } else sp = 0;
+  } else if (mo.busy > 0) {
+    sp = 0; // rooted to the spot, nose-deep in something fascinating
   } else {
     if (!mo.tx || dist(mo.x, mo.y, mo.tx, mo.ty) < 6 || Math.random() < dt * 0.3) mouseTarget(mo);
     const d = Math.max(1, dist(mo.x, mo.y, mo.tx, mo.ty)); vx = (mo.tx - mo.x) / d; vy = (mo.ty - mo.y) / d;
@@ -3013,6 +3177,12 @@ function catchMouse(i) {
   let gain = Math.round((12 + Math.floor(G.level * 1.5)) * T.xp);
   if (has('cape')) gain *= 2;
   if (G.dream && G.dream.buff === 'xp') gain = Math.round(gain * 1.15);
+  if (mo.busy > 0) { // taken completely unawares — the stalk paid off
+    gain = Math.round(gain * 1.3);
+    addFloat(mo.x, mo.y - 16, 'UNAWARES! +30%', '#9fd6ff');
+    tone(700, 1050, 0.09, 'triangle', 0.06);
+  }
+  if (G.lives) gain = Math.round(gain * (1 + G.lives * 0.08)); // old lives sharpen the instincts
   G.xp += gain;
   addParticle(mo.x, mo.y, '#e9c46a', 8, 40);
   addParticle(mo.x, mo.y, '#f3ead9', 5, 30);
@@ -3081,7 +3251,7 @@ function queueBeat(level) {
     earnHonour('garter');
     G.cardQueue.push({
       level, title: 'You Remain',
-      body: 'PMs will come. Vans will go. Portraits will climb the staircase until the staircase surrenders. But the file is stamped PERMANENT, the radiator is warm, and the whole grand, mouse-riddled house is YOURS.\n\nThank you for playing. Larry remains on duty — the mice, the honours, the mischief and the Daily Sortie continue for as long as you do. 🐾',
+      body: 'PMs will come. Vans will go. Portraits will climb the staircase until the staircase surrenders. But the file is stamped PERMANENT, the radiator is warm, and the whole grand, mouse-riddled house is YOURS.\n\nThank you for playing. Larry remains on duty — the mice, the honours, the mischief and the Daily Sortie continue for as long as you do. 🐾\n\n(And when you are ready: cats get NINE lives. A New Life awaits in the pause menu — the climb begins again, and everything you earned comes with you.)',
     });
   }
   maybeShowCard();
@@ -3318,7 +3488,7 @@ function wakeUp() {
 
 // ---------- HUD ----------
 function updateHUD() {
-  document.getElementById('lvl').textContent = 'LV ' + G.level;
+  document.getElementById('lvl').textContent = 'LV ' + G.level + (G.lives ? '·' + (G.lives + 1) + '🐾' : '');
   document.getElementById('mice').textContent = '🐭 ' + G.catches;
   document.getElementById('xpfill').style.width = Math.min(100, G.xp / xpNeed(G.level) * 100) + '%';
   if (!G.daily) {
@@ -3444,6 +3614,7 @@ function update(dt) {
         G.approval = Math.min(100, G.approval + 4);
         G.xp += 15;
         toast('📸 You sat. You stared into the middle distance. The photograph is MAGNIFICENT. +5 🐟 +15 XP');
+        if (DAY) { DAY.stats.ops = (DAY.stats.ops || 0) + 1; saveDay(); } // the Evening Paper keeps count
         goalEvent('summons');
         [659, 784, 988].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
         while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -3478,6 +3649,14 @@ function update(dt) {
       if (!G.mice.some(m2 => m2.type === 'raider' || m2.type === 'decoy')) spawnPair();
     }
   }
+  // walking into a Cabinet meeting: the ministers react, on the record
+  G.cabQuipCD = Math.max(0, (G.cabQuipCD || 0) - dt);
+  if (cabinetInSession(dark) && G.cabQuipCD <= 0 && dist(L.x, L.y, 35.5 * TILE, 14.5 * TILE) < 72) {
+    const seat = CABINET_SEATS[(Math.random() * CABINET_SEATS.length) | 0];
+    addFloat(seat[0] * TILE, (seat[1] - 1.6) * TILE, pick(MINISTER_LINES), '#cfd8e8');
+    G.cabQuipCD = 7 + Math.random() * 5;
+  }
+
   // the division bell, somewhere across Whitehall — urgent for somebody else
   if (!G.daily && G.intro.phase === 'done') {
     G.bellCD = (G.bellCD === undefined ? 120 + Math.random() * 120 : G.bellCD - dt);
@@ -3529,7 +3708,7 @@ function update(dt) {
     if (v.x || v.y) wakeUp();
     else {
       G.time += dt * 5; // naps fast-forward the day
-      if (Math.random() < dt * 3) tone(82, 76, 0.22, 'sine', 0.016); // a low, dignified purr
+      if (Math.random() < dt * 0.9) purr(1.1, 0.04); // a low, dignified purr — the real rumble
       const np = G.napPos || L;
       if (Math.random() < dt * 1.2) addFloat(np.x + 8, np.y - 14, 'z', '#8a83a0');
       // making biscuits: a dozy knead of the blanket, with a small happy mrrp
@@ -3649,7 +3828,7 @@ function update(dt) {
   } else {
     L.idleT += dt;
     if (L.idleT > 7 && Math.random() < dt * 0.5) { addFloat(L.x + 8, L.y - 18, 'z', '#8a83a0'); }
-    if (L.idleT > 7 && Math.random() < dt * 0.7) tone(82, 76, 0.25, 'sine', 0.012); // content, off duty
+    if (L.idleT > 7 && Math.random() < dt * 0.35) purr(0.7, 0.022); // content, off duty
   }
   if (L.cvx || L.cvy) {
     const nx = L.x + L.cvx * dt, ny = L.y + L.cvy * dt;
@@ -3699,7 +3878,9 @@ function update(dt) {
 
   const reach = (L.pounceT > 0 ? (L.superP ? 30 : 15 + L.lastPower * 6) : 8) + (G.dream && G.dream.buff === 'reach' ? 3 : 0);
   if (!G.napping) for (let i = G.mice.length - 1; i >= 0; i--) {
-    if (G.mice[i].iframes <= 0 && dist(G.mice[i].x, G.mice[i].y, L.x, L.y) < reach) catchMouse(i);
+    // an oblivious mouse is easier to bag — the pounce is generous against it
+    const r2 = reach + (G.mice[i].busy > 0 ? 5 : 0);
+    if (G.mice[i].iframes <= 0 && dist(G.mice[i].x, G.mice[i].y, L.x, L.y) < r2) catchMouse(i);
   }
 
   for (let i = G.mice.length - 1; i >= 0; i--) updateMouse(G.mice[i], dt, i);
@@ -3879,6 +4060,26 @@ function draw() {
     }
   }
 
+  // Larry's own commissioned portrait(s) on the Grand Staircase — each tier
+  // replaces the last with something larger. Vanity, in oils, escalating.
+  if (G.ownPortrait > 0 && G.mapId === 'ground') {
+    const t9 = G.ownPortrait;
+    const w9 = t9 === 1 ? 10 : t9 === 2 ? 14 : 22;
+    const h9 = t9 === 1 ? 12 : t9 === 2 ? 16 : 26;
+    const px = 4 * TILE + (TILE - w9) / 2, py = (9 + 1) * TILE - 2 - h9; // bottom-aligned to the wall
+    ctx.fillStyle = '#c9a227'; ctx.fillRect(px, py, w9, h9);                       // gilt frame
+    if (t9 >= 2) { ctx.fillStyle = '#e9c46a'; ctx.fillRect(px + 1, py + 1, w9 - 2, h9 - 2); }
+    ctx.fillStyle = '#1e2a22'; ctx.fillRect(px + 2, py + 2, w9 - 4, h9 - 4);       // canvas
+    const cx9 = px + w9 / 2, cy9 = py + h9 * 0.42, s9 = t9 === 3 ? 2 : 1;          // the subject
+    ctx.fillStyle = '#8a7a5c';
+    ctx.fillRect(cx9 - 3 * s9, cy9 - 2 * s9, 6 * s9, 5 * s9);                       // tabby head
+    ctx.fillRect(cx9 - 4 * s9, cy9 - 3 * s9, 2 * s9, 2 * s9); ctx.fillRect(cx9 + 2 * s9, cy9 - 3 * s9, 2 * s9, 2 * s9); // ears
+    ctx.fillStyle = '#efe9dc'; ctx.fillRect(cx9 - 2 * s9, cy9 + 1 * s9, 4 * s9, 2 * s9); // white muzzle
+    ctx.fillStyle = '#84ab50'; ctx.fillRect(cx9 - 2 * s9, cy9, s9, s9); ctx.fillRect(cx9 + s9, cy9, s9, s9); // the eyes
+    ctx.fillStyle = '#1e3f8f'; ctx.fillRect(cx9 - 2 * s9, cy9 + 3 * s9, 4 * s9, s9); // the bow tie, of course
+    if (t9 >= 3) { ctx.fillStyle = '#c9a227'; ctx.font = '4px monospace'; ctx.textAlign = 'center'; ctx.fillText('LARRY', cx9, py + h9 - 3); }
+  }
+
   // lamps
   for (const [lx, ly] of m.lamps) {
     const wx = lx * TILE, wy = ly * TILE;
@@ -3947,6 +4148,13 @@ function draw() {
   for (const c of G.rivals) ents.push({ y: c.y, draw: () => drawRival(c) });
   for (const p of G.paps) ents.push({ y: p.y, draw: () => drawPap(p) });
   for (const n of G.npcs) ents.push({ y: n.y, draw: () => drawPerson(NPC_SPRITES[n.sprite], n.x, n.y, n.animT, n.flip, n.tx && n.pauseT <= 0) });
+  // the Cabinet in session: ministers round the boat table by day. Walk in
+  // mid-meeting; they will cope. They always cope.
+  if (cabinetInSession(dark)) {
+    for (const [sx2, sy2, spr2, fl2] of CABINET_SEATS) {
+      ents.push({ y: sy2 * TILE, draw: () => drawPerson(spr2, sx2 * TILE, sy2 * TILE, 0, fl2, false) });
+    }
+  }
   if (G.visitor) ents.push({ y: G.visitor.y, draw: () => drawPerson(P_VISITOR, G.visitor.x, G.visitor.y, G.visitor.animT, false, !G.visitor.done) });
   ents.push({ y: L.y, draw: () => drawLarry(L) });
   ents.sort((a, b) => a.y - b.y);
@@ -4011,6 +4219,7 @@ function draw() {
     dc.globalCompositeOperation = 'destination-out';
     const lights = [{ x: L.x, y: L.y, r: G.nv ? 100 : 65 }];
     for (const [lx, ly] of m.lamps) lights.push({ x: lx * TILE, y: ly * TILE - 16, r: 55 });
+    for (const [gx, gy, gr] of (m.glows || [])) lights.push({ x: gx * TILE, y: gy * TILE, r: gr || 60 }); // post-less warm glows
     for (const f of m.fires) lights.push({ x: f.x * TILE + 8, y: f.y * TILE + 14, r: 42 });
     if (G.laser) lights.push({ x: G.laser.x, y: G.laser.y, r: 18 });
     for (const li of lights) {
@@ -4176,8 +4385,14 @@ function drawMouse(mo) {
   ctx.scale(mo.dir * mo.scale * sc, mo.scale * sc);
   ctx.fillStyle = 'rgba(0,0,0,0.22)';
   ctx.beginPath(); ctx.ellipse(0, 4, rat ? 7 : 5, 1.5, 0, 0, 7); ctx.fill();
-  const still = mo.state === 'charmed' || mo.state === 'stunned' || mo.state === 'freeze';
+  const still = mo.state === 'charmed' || mo.state === 'stunned' || mo.state === 'freeze' || mo.busy > 0;
   const hop = still ? 0 : Math.abs(Math.sin(mo.animT * 14)) * 1.4;
+  if (mo.busy > 0) { // nose down, tail curled, dead to the world: the stalker's cue
+    const sniff = Math.sin(mo.animT * 9) * 0.6;
+    ctx.fillStyle = '#d78f92'; ctx.fillRect(6, -1 + sniff, 1, 1); // the twitching nose
+    ctx.fillStyle = 'rgba(207,200,184,0.8)';
+    if ((mo.animT * 2 | 0) % 2) ctx.fillRect(8, -4 + sniff, 1, 1);
+  }
   ctx.strokeStyle = rat ? '#c9838a' : '#d78f92'; ctx.lineWidth = rat ? 1.1 : 0.8;
   ctx.beginPath(); ctx.moveTo(rat ? -8 : -6, 1 - hop);
   ctx.quadraticCurveTo(rat ? -12 : -9, -1 - hop + Math.sin(mo.animT * 10), rat ? -15 : -11, 1 - hop);
@@ -4349,6 +4564,8 @@ function startGame(fresh) {
     // pre-economy saves get a kipper allowance proportional to their career
     G.fish = s.fish != null ? s.fish : Math.min(30, Math.floor((s.catches || 0) / 2) + 5);
     G.larder = s.larder || 0;
+    G.ownPortrait = s.ownPortrait || 0;
+    G.lives = s.lives || 0;
     G.stam = 100;
   } else {
     try { localStorage.removeItem(SAVE_KEY); } catch (e) { }
@@ -4390,8 +4607,8 @@ function startGame(fresh) {
   }
 }
 
-document.getElementById('btnNew').addEventListener('click', () => { audio(); sClick(); startGame(true); });
-document.getElementById('btnContinue').addEventListener('click', () => { audio(); sClick(); startGame(false); });
+document.getElementById('btnNew').addEventListener('click', () => { audio(); playMotif(0.13, 0.055, 'square'); startGame(true); });
+document.getElementById('btnContinue').addEventListener('click', () => { audio(); playMotif(0.13, 0.055, 'square'); startGame(false); });
 document.getElementById('btnDaily').addEventListener('click', () => { audio(); sClick(); startDaily(); });
 // PWA: offline play when served over http(s) with sw.js alongside (no-op in the artifact)
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
@@ -4439,7 +4656,10 @@ function openMenu() {
     + (DAY.streak > 0 ? '\n🔥 streak: ' + DAY.streak : '')
     : '';
   document.getElementById('menuStats').textContent =
-    '🐭 ' + G.catches + ' caught   🏅 ' + G.honours.size + ' honours   🔍 ' + G.secretsFound.size + ' secrets   PM #' + pmCount + dayLines;
+    '🐭 ' + G.catches + ' caught   🏅 ' + G.honours.size + ' honours   🔍 ' + G.secretsFound.size + ' secrets   PM #' + pmCount
+    + (G.lives ? '   🐾 life ' + (G.lives + 1) : '') + dayLines;
+  // a New Life unlocks once the Garter is conferred (the L17 finale)
+  document.getElementById('menuLife').classList.toggle('hidden', !(G.honours.has('garter') && !G.daily));
   menuLabels();
   document.getElementById('menuRestart').textContent = 'Restart from Battersea';
   document.getElementById('menuWrap').classList.remove('hidden');
@@ -4616,6 +4836,39 @@ bindBtn(document.getElementById('mischiefClose'), () => {
   G.paused = false;
   sClick();
 });
+// ---------- Nine Lives: prestige, feline edition ----------
+// After the Garter, a New Life restarts the climb — level, gadgets and the
+// campaign reset — while everything EARNED endures: honours, secrets,
+// mischief, bow ties, the staircase portraits, your own portrait, the
+// lifetime catch count and the day streak. Each life spent adds +8% XP
+// forever and a slightly better-provisioned first morning.
+function beginNewLife() {
+  document.getElementById('menuWrap').classList.add('hidden');
+  menuOpen = false;
+  const next = (G.lives || 0) + 2; // lives=0 means life 1: the next is life 2
+  showChoice('THE NINTH LIFE PROTOCOL', 'Life ' + next + ' of Nine',
+    'Cats are issued nine lives; you have been using this one since Battersea. Begin another?\n\nThe level, the gadgets and the Red Box campaign reset — a fresh climb, a fresh war with the mice. Everything EARNED remains: the honours, the secrets, the mischief, the bow ties, every portrait on the staircase (including, obviously, yours), and the streak.\n\nOld lives leave their mark: each one sharpens the instincts (+8% XP, forever) and the kitchen starts you better provisioned. The mice will not know what has hit them. Again.',
+    '🐾 Begin Life ' + next, '🛋️ Remain, for now', which => {
+      if (which !== 'a') { G.paused = false; return; }
+      G.lives = (G.lives || 0) + 1;
+      earnHonour('newlife');
+      G.level = 1; G.xp = 0;
+      G.fish = 5 + G.lives * 5;
+      G.larder = 0; G.briefStage = 0; G.brief = null; G.briefCD = 10;
+      G.nv = false; G.superArmed = false; G.dream = null; G.crisis = false;
+      G.approval = Math.max(60, Math.round(G.approval)); // the nation remembers fondly
+      startFade(() => {
+        switchMap('ground', 21.5 * TILE, 31 * TILE);
+        buildGadgetBar(); refreshGadgetBar();
+        updateHUD();
+        showCard('LONDON SW1A 2AA — AGAIN', 'The First Morning (Again)',
+          'You wake on the famous radiator as though none of it ever happened — except all of it happened, and the wall of honours proves it. Somewhere below, a new generation of mice is being told you are only a legend.\n\nCorrect them.',
+          null, () => { save(); pressFlashes(G.larry.x, G.larry.y, 6); });
+      });
+    });
+}
+bindBtn(document.getElementById('menuLife'), beginNewLife);
+
 bindBtn(document.getElementById('menuRestart'), () => {
   if (!restartArmed) {
     restartArmed = true;
