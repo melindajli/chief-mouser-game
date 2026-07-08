@@ -2033,6 +2033,7 @@ const G = {
   mapId: 'shelter',
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
+  sceneNpcs: [], met: new Set(),
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
   bowtie: false,
@@ -2103,6 +2104,7 @@ function save() {
       honours: Array.from(G.honours), nightCatches: G.nightCatches, briefsDone: G.briefsDone, briefStage: G.briefStage, escapes: G.escapes,
       approval: Math.round(G.approval), diff: G.diff, tie: G.tie,
       mischief: Array.from(G.mischief),
+      met: Array.from(G.met || []),
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -2255,6 +2257,10 @@ function eveningPaper() {
 const keys = {};
 window.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
+  if (SCENE) { // a scene has the floor: Space / Enter / E advance it, nothing else fires
+    if (e.key === ' ' || e.key === 'Enter' || e.key.toLowerCase() === 'e') { e.preventDefault(); if (!e.repeat) sceneAdvance(); }
+    return;
+  }
   if (e.key === ' ') { e.preventDefault(); if (!e.repeat) chargeStart('key'); }
   if (e.key === 'Escape') { houseMapOpen() ? closeHouseMap() : menuOpen ? closeMenu() : openMenu(); }
   if (e.key.toLowerCase() === 'm') toggleHouseMap(); // pull up the house map
@@ -3003,8 +3009,10 @@ function updateNpc(n, dt) {
   n.animT += dt;
   n.quipCD = Math.max(0, n.quipCD - dt);
   if (n.quipCD <= 0 && dist(n.x, n.y, G.larry.x, G.larry.y) < 30) {
-    toast(pick(n.quips));
     n.quipCD = 12;
+    // the first time you meet someone, they introduce themselves properly
+    if (maybeMeet(n.sprite + '@' + G.mapId)) { n.quipCD = 16; return; }
+    toast(pick(n.quips));
   }
   if (n.pauseT > 0) { n.pauseT -= dt; return; }
   if (!n.tx || dist(n.x, n.y, n.tx, n.ty) < 4) {
@@ -3086,8 +3094,9 @@ function updateRival(c, dt) {
   c.animT += dt;
   c.quipCD = Math.max(0, c.quipCD - dt);
   if (c.quipCD <= 0 && dist(c.x, c.y, G.larry.x, G.larry.y) < 28) {
-    toast(c.name + ': "' + pick(c.quips) + '"');
     c.quipCD = 14;
+    if (maybeMeet('cat:' + c.name)) { c.quipCD = 18; if (!c.anim) c.anim = { name: 'meow', t: 0 }; return; }
+    toast(c.name + ': "' + pick(c.quips) + '"');
     if (c.state === 'sit' && !c.anim) c.anim = { name: 'meow', t: 0 };
   }
   if (c.anim) {
@@ -3426,6 +3435,232 @@ function queueBeat(level) {
     });
   }
   maybeShowCard();
+}
+
+/* =========================================================
+   Scenes: Pokémon-style dialogue played over the living room.
+   A scene is a list of steps: { who, text, do?, choice? }.
+   The world stays visible (paused underneath); text types out;
+   tap / Space / E advances. `do` runs as the step opens (sounds,
+   camera flashes, guests). A `choice` step shows two buttons:
+   [[label, fn], [label, fn]] — fns may splice in more steps.
+   ========================================================= */
+let SCENE = null;
+const sceneEl = {
+  wrap: document.getElementById('sceneWrap'), name: document.getElementById('sceneName'),
+  text: document.getElementById('sceneText'), next: document.getElementById('sceneNext'),
+  choices: document.getElementById('sceneChoices'),
+  a: document.getElementById('sceneA'), b: document.getElementById('sceneB'),
+};
+function playScene(steps, onDone) {
+  chargeCancel(); tapTarget = null; G.napping = false; G.napPos = null;
+  SCENE = { steps: steps.slice(), i: -1, onDone, shown: 0, full: '' };
+  G.paused = true;
+  document.body.classList.add('scene'); // touch controls stand down for the scene
+  sceneEl.wrap.classList.remove('hidden');
+  sceneNextStep();
+}
+function sceneNextStep() {
+  SCENE.i++;
+  if (SCENE.i >= SCENE.steps.length) { endScene(); return; }
+  const s = SCENE.steps[SCENE.i];
+  sceneEl.name.textContent = s.who;
+  sceneEl.name.classList.toggle('larry', s.who === 'LARRY');
+  SCENE.full = s.text; SCENE.shown = 0;
+  sceneEl.text.textContent = '';
+  sceneEl.choices.classList.add('hidden');
+  sceneEl.next.classList.add('hidden');
+  if (s.do) s.do();
+}
+function sceneShowActions() {
+  const s = SCENE.steps[SCENE.i];
+  if (s.choice) {
+    sceneEl.a.textContent = s.choice[0][0];
+    sceneEl.b.textContent = s.choice[1][0];
+    sceneEl.a.onclick = () => { sClick(); s.choice[0][1](); sceneNextStep(); };
+    sceneEl.b.onclick = () => { sClick(); s.choice[1][1](); sceneNextStep(); };
+    sceneEl.choices.classList.remove('hidden');
+  } else sceneEl.next.classList.remove('hidden');
+}
+function sceneAdvance() {
+  if (!SCENE) return;
+  const s = SCENE.steps[SCENE.i];
+  if (SCENE.shown < SCENE.full.length) { // first tap completes the typing
+    SCENE.shown = SCENE.full.length;
+    sceneEl.text.textContent = SCENE.full;
+    sceneShowActions();
+    return;
+  }
+  if (s && s.choice) return; // choices advance via their buttons
+  sceneAdvanceSound();
+  sceneNextStep();
+}
+const sceneAdvanceSound = () => tone(900, 700, 0.04, 'square', 0.03);
+function endScene() {
+  const done = SCENE && SCENE.onDone;
+  SCENE = null;
+  sceneEl.wrap.classList.add('hidden');
+  document.body.classList.remove('scene');
+  G.sceneNpcs = [];
+  G.paused = false;
+  if (done) done();
+}
+// insert steps right after the current one (for choice branches)
+function sceneSplice(steps) { SCENE.steps.splice(SCENE.i + 1, 0, ...steps); }
+// runs from the main loop while a scene is up: types the text, keeps
+// guests breathing and camera flashes falling even though play is paused
+function sceneTick(dt) {
+  if (SCENE.shown < SCENE.full.length) {
+    const before = SCENE.shown | 0;
+    SCENE.shown = Math.min(SCENE.full.length, SCENE.shown + dt * 52);
+    if ((SCENE.shown | 0) > before && (SCENE.shown | 0) % 3 === 0) tone(1450, 1450, 0.014, 'square', 0.007);
+    sceneEl.text.textContent = SCENE.full.slice(0, SCENE.shown | 0);
+    if (SCENE.shown >= SCENE.full.length) sceneShowActions();
+  }
+  for (const n of G.sceneNpcs) n.animT += dt;
+  for (let i = G.particles.length - 1; i >= 0; i--) {
+    const p = G.particles[i];
+    p.t -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 30 * dt;
+    if (p.t <= 0) G.particles.splice(i, 1);
+  }
+}
+// seat a scene guest on the nearest free tile to (tx, ty)
+function sceneGuest(spr, tx, ty, flip) {
+  const m = curMap();
+  const spots = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1], [2, 0], [-2, 0], [0, 2]];
+  for (const [dx, dy] of spots) {
+    const x = tx + dx, y = ty + dy;
+    if (x > 0 && y > 0 && x < m.w - 1 && y < m.h - 1 && FLOORY(m.grid[y][x])) {
+      G.sceneNpcs.push({ spr, x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, animT: Math.random() * 9, flip: !!flip });
+      return;
+    }
+  }
+}
+sceneEl.wrap.addEventListener('pointerdown', e => {
+  if (e.target.closest('button')) return;
+  e.preventDefault();
+  sceneAdvance();
+});
+
+/* ---------- The photo-op, staged: the PM arrives, nerves and all ---------- */
+const PM_NERVES = [
+  'Does he need anything? A mark? Should I have brought a treat? Is it too late for the treat?',
+  'Is he looking at me? Why is he looking at me. What does he KNOW.',
+  'Just act natural. Shoulders down. WHY are my arms like this.',
+  'The last one warned me the cat outranks me. They were joking. …Were they joking?',
+  'He has done more of these than I have. He is visibly aware of it.',
+];
+function photoOpScene(S) {
+  const L = G.larry;
+  const tx = Math.floor(L.x / TILE), ty = Math.floor(L.y / TILE);
+  G.sceneNpcs = [];
+  sceneGuest(P_VISITOR, tx - 2, ty, false);      // the PM, ushered in
+  sceneGuest(P_PRESS, tx + 2, ty + 1, true);     // the photographer
+  sceneGuest(P_AIDE, tx + 2, ty - 1, true);      // the aide, hovering
+  let pose = 'sit';
+  const flashes = () => pressFlashes(L.x, L.y - 6, 7);
+  playScene([
+    { who: 'THE PHOTOGRAPHER', text: 'Right — ' + S.why + '. Chief Mouser front and centre, please. Everyone else, do your best to look elected.', do: () => tone(1900, 1200, 0.04, 'square', 0.04) },
+    { who: 'THE PM', text: pick(PM_NERVES) },
+    { who: 'THE AIDE', text: 'The cat knows what he is doing, Prime Minister. The cat always knows what he is doing.' },
+    {
+      who: 'LARRY', text: 'The lens swings to you. The room holds its breath.', choice: [
+        ['🐾 Sit. Middle distance. Legend.', () => {
+          pose = 'sit';
+          sceneSplice([
+            { who: 'LARRY', text: '(You sit. You compose yourself into an institution. Somewhere beyond the lens, a nation feels briefly governed.)', do: flashes },
+            { who: 'THE PHOTOGRAPHER', text: 'Perfect. PERFECT. That is tomorrow\'s front page and next year\'s official calendar. Nobody move — actually everyone else CAN move, it hardly matters.' },
+            { who: 'THE PM', text: 'Did… did I blink? I blinked, didn\'t I.' },
+          ]);
+        }],
+        ['😮 Yawn. Enormously. Mid-shutter.', () => {
+          pose = 'yawn';
+          sceneSplice([
+            { who: 'LARRY', text: '(You yawn. Vastly. Every tooth on the record. The shutter clatters like polite applause.)', do: flashes },
+            { who: 'THE PHOTOGRAPHER', text: 'He— did he just— …no. No, KEEP IT. "The only honest face in Westminster." Print it.' },
+            { who: 'THE AIDE', text: 'The Prime Minister\'s office wishes to note the yawn was "not a comment on policy". The papers will decide otherwise.' },
+          ]);
+        }],
+      ],
+    },
+  ], () => {
+    G.summons = null;
+    G.summonsCD = 110 + Math.random() * 70;
+    const fish = pose === 'sit' ? 5 : 3, appr = pose === 'sit' ? 4 : 6;
+    G.fish += fish;
+    G.approval = Math.min(100, G.approval + appr);
+    G.xp += 15;
+    toast(pose === 'sit'
+      ? '📸 The photograph is MAGNIFICENT. +' + fish + ' 🐟 +15 XP'
+      : '📸 The yawn runs on every front page by morning. +' + fish + ' 🐟 +15 XP');
+    if (DAY) { DAY.stats.ops = (DAY.stats.ops || 0) + 1; saveDay(); }
+    goalEvent('summons');
+    [659, 784, 988].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+    while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+    updateHUD();
+  });
+}
+
+/* ---------- First meetings: new characters introduce themselves ----------
+   Keyed by npc sprite + map (or cat name); each plays once per career and
+   frames that character's side of the house — their quest hook, in dialogue. */
+const MEETINGS = {
+  'guard@ground': () => [
+    { who: 'THE GUARD', text: 'Chief Mouser. Heard you\'d been appointed. The door is mine; the house is yours. That\'s the arrangement.' },
+    { who: 'THE GUARD', text: 'Quick tour: radiator under the front window — finest posting in government. Letterbox rattles at eleven. Tourists at the railings all day, every weather. They\'re here for you, not the door.' },
+    { who: 'LARRY', text: '(You have already chosen the radiator. You chose it from across the room. It is warm. It is yours. It is policy.)' },
+  ],
+  'aide@ground': () => [
+    { who: 'THE AIDE', text: 'Oh good. The cat. Wonderful. Do NOT sit on the morning briefing — that is the ONLY copy of the morning briefing.' },
+    { who: 'LARRY', text: '(You look at the briefing. You look at the aide. You look back at the briefing.)' },
+    { who: 'THE AIDE', text: '…I will make a copy.' },
+    { who: 'THE AIDE', text: 'While you\'re here: the Red Box has taken an interest in you. Tasks, from the very top. See them done and there\'s tuna in it. Probably. Budgets permitting.' },
+  ],
+  'gardener@ground': () => [
+    { who: 'THE GARDENER', text: 'Afternoon. Mind the begonias. Everything else out here is negotiable.' },
+    { who: 'THE GARDENER', text: 'You\'ll be wanting the burrows. Bring me three kippers and my rake finds one — whatever bolts out is your department. The roses saw nothing.' },
+    { who: 'LARRY', text: '(You inspect the rake. The rake passes inspection. This one can stay.)' },
+  ],
+  'chef@basement': () => [
+    { who: 'THE CHEF', text: 'Oi. New management upstairs, is it? Down HERE, I\'m the management.' },
+    { who: 'THE CHEF', text: 'House rules: paws off my counter, and anything that squeaks is yours. In return — four kippers buys thirty seconds of open pantry door. Whatever runs out of it runs to you. I was never here.' },
+    { who: 'LARRY', text: 'Mrrp.' },
+    { who: 'THE CHEF', text: 'Good lad. There\'s a saucer of milk with your name on it. Literally. I labelled it.' },
+  ],
+  'butler@first': () => [
+    { who: 'THE BUTLER', text: 'Welcome upstairs, sir. The state rooms: ambassadors to your left, chandeliers above, and mice — regrettably — behind every skirting board with a view.' },
+    { who: 'THE BUTLER', text: 'Should you require the residence: the green door at the end of this landing goes through to Eleven, and up to the flat. I shall not have seen you use it.' },
+    { who: 'LARRY', text: '(A door that does not officially exist, to a floor you are not officially allowed on. Your favourite kind of door.)' },
+  ],
+  'butler@flat': () => [
+    { who: 'THE HOUSEKEEPER', text: 'So you found your way up. Good. Kettle\'s on, telly\'s murmuring, and nobody on this floor wants a single thing from you.' },
+    { who: 'THE HOUSEKEEPER', text: 'That\'s the point of the place, you understand. Downstairs you\'re an institution. Up here you\'re just the cat. The sofa is yours. Mind the cocoa.' },
+    { who: 'LARRY', text: '(Just the cat. You try the words on. They fit like a warm windowsill.)' },
+  ],
+  'officer@street': () => [
+    { who: 'THE OFFICER', text: 'Evening, Chief Mouser. Or morning. It all runs together on this door.' },
+    { who: 'THE OFFICER', text: 'Forty photographers over the road, and every lens pointed at you. Wave a paw, don\'t wave a paw — either way it\'s the front page.' },
+    { who: 'LARRY', text: '(You sit on the step. Forty shutters go off at once. You did nothing. You did everything.)' },
+  ],
+  'cat:Palmerston': () => [
+    { who: 'PALMERSTON', text: 'So. The domestic appointment. Palmerston — Foreign Office. Senior service. Superior garden.' },
+    { who: 'PALMERSTON', text: 'We shall settle precedence properly: eyes locked, first to blink loses the afternoon. Whenever you are ready. If ever.' },
+    { who: 'LARRY', text: '(You have already begun. He simply has not noticed yet.)' },
+  ],
+  'cat:Gladstone': () => [
+    { who: 'GLADSTONE', text: 'Gladstone. Treasury. I am told you are classified as an "asset". I decide asset classifications here.' },
+    { who: 'GLADSTONE', text: 'Every mouse you take is a liability off MY books. Do keep it up. Do keep the receipts.' },
+    { who: 'LARRY', text: '(You will not be keeping the receipts.)' },
+  ],
+};
+// a first meeting fires instead of the usual quip — once per career
+function maybeMeet(key) {
+  if (G.daily || G.intro.phase !== 'done' || SCENE || G.paused) return false;
+  if (!MEETINGS[key] || G.met.has(key)) return false;
+  G.met.add(key);
+  playScene(MEETINGS[key]());
+  save();
+  return true;
 }
 
 function showCard(kicker, title, body, gadgetHtml, onClose) {
@@ -3778,20 +4013,10 @@ function update(dt) {
     const S = G.summons;
     if (G.mapId === S.mapId && G.region === S.region) {
       S.att += dt;
-      if (S.att >= 4) { // attended, sat beautifully — no rush, no penalty for taking your time
-        G.summons = null;
-        G.summonsCD = 110 + Math.random() * 70;
-        G.fish += 5;
-        G.approval = Math.min(100, G.approval + 4);
-        G.xp += 15;
-        toast('📸 You sat. You stared into the middle distance. The photograph is MAGNIFICENT. +5 🐟 +15 XP');
-        if (DAY) { DAY.stats.ops = (DAY.stats.ops || 0) + 1; saveDay(); } // the Evening Paper keeps count
-        goalEvent('summons');
-        [659, 784, 988].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
-        while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
-        updateHUD();
-      }
-    } else S.att = Math.max(0, S.att - dt * 2); // wandered off mid-photo
+      // you've arrived and settled: the PM, the photographer and an aide
+      // assemble around you and the photo-op plays out as a scene
+      if (S.att >= 1.4 && !S.fired && !SCENE) { S.fired = true; photoOpScene(S); }
+    } else if (!S.fired) S.att = Math.max(0, S.att - dt * 2); // wandered off before it began
     updateSummonsHUD();
   }
 
@@ -4320,6 +4545,7 @@ function draw() {
   for (const c of G.rivals) ents.push({ y: c.y, draw: () => drawRival(c) });
   for (const p of G.paps) ents.push({ y: p.y, draw: () => drawPap(p) });
   for (const n of G.npcs) ents.push({ y: n.y, draw: () => drawPerson(NPC_SPRITES[n.sprite], n.x, n.y, n.animT, n.flip, n.tx && n.pauseT <= 0) });
+  for (const n of G.sceneNpcs) ents.push({ y: n.y, draw: () => drawPerson(n.spr, n.x, n.y, n.animT, n.flip, false) });
   // the Cabinet in session: ministers round the boat table by day. Walk in
   // mid-meeting; they will cope. They always cope.
   if (cabinetInSession(dark)) {
@@ -4610,6 +4836,8 @@ function loop(now) {
   if (!G.running) return;
   pollPad();
   musicTick();
+  if (SCENE) sceneTick(dt); // dialogue types on; guests breathe; flashes fall
+
   G.flash = Math.max(0, G.flash - dt);
   if (G.hitstop > 0) G.hitstop -= dt;
   // the final seconds of a Daily Sortie play out in slow motion
@@ -4730,6 +4958,7 @@ function startGame(fresh) {
     G.diff = DIFFS[s.diff] ? s.diff : 'mouser';
     G.tie = TIES.some(t => t.id === s.tie) ? s.tie : 'union';
     G.mischief = new Set(s.mischief || []);
+    G.met = new Set(s.met || []);
     // saves from before the flatter XP curve can bank xp above the new,
     // lower thresholds — clamp so one catch doesn't fire a burst of level-ups
     G.xp = Math.min(G.xp, Math.max(0, xpNeed(G.level) - 1));

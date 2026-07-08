@@ -84,6 +84,26 @@ button { font-family:inherit; cursor:pointer; }
   background:rgba(20,16,32,.72); box-shadow:0 4px 12px rgba(0,0,0,.5); }
 .abtn:active { background:rgba(233,196,106,.35); }
 .abtn.cooling { opacity:.35; }
+/* Scene dialogue — Pokémon-style box; the world stays visible behind it */
+#sceneWrap { position:fixed; inset:0; z-index:14; }
+body.scene #gadgets, body.scene #btns, body.scene #stick, body.scene #daybox { display:none !important; }
+#sceneBox { position:absolute; left:50%; transform:translateX(-50%);
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  width:min(520px, 92vw); background:linear-gradient(180deg,#17141f,#100d17);
+  border:2px solid rgba(255,215,150,.4); border-radius:12px;
+  padding:12px 16px 14px; box-shadow:0 8px 30px rgba(0,0,0,.55);
+  animation:toastin .22s ease-out; }
+#sceneName { font-size:9px; color:#ffd98a; letter-spacing:1px; margin-bottom:8px; }
+#sceneName.larry { color:#9fe8a0; }
+#sceneText { font-size:9px; line-height:1.9; color:#e8e2d2; min-height:52px; text-align:left; white-space:pre-line; }
+#sceneNext { position:absolute; right:12px; bottom:8px; color:#ffd98a; font-size:10px;
+  animation:scenebob 0.9s ease-in-out infinite; }
+@keyframes scenebob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(3px); } }
+#sceneChoices { display:flex; gap:10px; margin-top:10px; }
+#sceneChoices button { flex:1; font-size:8px; line-height:1.6; padding:9px 8px;
+  background:#241f31; color:#ffe8b8; border:2px solid rgba(255,215,150,.4); border-radius:8px; }
+#sceneChoices button:active { transform:translateY(1px); }
+
 #toast { position:fixed; bottom:calc(150px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
   z-index:12; background:rgba(12,10,20,.82); border:2px solid rgba(255,215,150,.3); border-radius:10px;
   padding:9px 16px; font-size:9px; line-height:1.8; color:#ffe8b8; pointer-events:none;
