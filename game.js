@@ -335,6 +335,12 @@ const TXT_DOORSTEP = [
   'A tour guide points you out. Forty phones turn. You gaze into the middle distance, historically.',
   'Warm stone, cold morning, flashing bulbs. You have decided this step is, technically, your porch.',
 ];
+const TXT_DONATE = [
+  '🎁 Ten kippers, posted to Battersea. Where it all began. The nation does not see this. The nation does not need to.',
+  '🎁 The tin rattles, heavily. Somewhere across the river tonight, a shelter cat eats like a Chief Mouser.',
+  '🎁 An anonymous donation, the staff agree, winking. Your secret is safe with the entire building.',
+  '🎁 You were hired from Battersea on merit. Consider this the dividend.',
+];
 const TXT_PORTER = [
   "The hooded guard's chair. Chippendale built it so the watchman outside wouldn't freeze — there's a drawer beneath for hot coals. You have claimed the seat, the hood, and the general principle of warmth.",
   'A leather sentry-box on legs. The constable it was built for is two centuries gone; you have inherited the post, the hood, and the naps.',
@@ -1001,6 +1007,15 @@ function drawDecor(mc, d) {
     mc.fillStyle = '#c9a227'; mc.fillRect(px + 11, py + 8, 2, 2);           // door knob, brass
     mc.fillStyle = '#e0cf9a'; mc.fillRect(px + 4, py + 4, 4, 1);            // little "11" plate
     mc.fillStyle = '#2f4a34'; mc.fillRect(px + 5, py + 4, 1, 1);
+  } else if (d.t === 'tin') {
+    // the Battersea collection tin, by the front door — where it all began
+    mc.fillStyle = '#a33636'; mc.fillRect(px + 4, py + 6, 8, 9);          // the tin
+    mc.fillStyle = '#c14444'; mc.fillRect(px + 4, py + 6, 8, 2);
+    mc.fillStyle = '#7c2525'; mc.fillRect(px + 4, py + 14, 8, 1);
+    mc.fillStyle = '#241d16'; mc.fillRect(px + 6, py + 7, 4, 1);          // the slot
+    mc.fillStyle = '#f0e8d2';                                              // a little paw
+    mc.fillRect(px + 7, py + 10, 2, 2); mc.fillRect(px + 6, py + 9, 1, 1); mc.fillRect(px + 9, py + 9, 1, 1);
+    mc.fillStyle = '#e9c46a'; mc.fillRect(px + 5, py + 12, 6, 1);         // BATTERSEA, in tiny gold
   } else if (d.t === 'telly') {
     mc.fillStyle = '#17161a'; mc.fillRect(px + 1, py + 2, 14, 10);          // the set
     mc.fillStyle = '#2b3a4a'; mc.fillRect(px + 2, py + 3, 12, 8);          // screen
@@ -1211,7 +1226,9 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   set(12, 16, 'p'); set(26, 17, 'p');
   set(26, 33, 'R'); set(27, 33, 'R');           // Larry's famous radiator, under the front windows
   m.decor.push({ x: 19, y: 32, t: 'lectern' }, { x: 24, y: 32, t: 'umbrella' }, { x: 24, y: 25, t: 'plaque' },
-    { x: 28, y: 30, t: 'porterchair' });          // Chippendale's hooded guard's chair, by the door
+    { x: 28, y: 30, t: 'porterchair' },           // Chippendale's hooded guard's chair, by the door
+    { x: 14, y: 25, t: 'tin' });                  // the Battersea collection tin — kippers go home
+  m.pois.push({ x: 14, y: 26, emoji: '🎁', type: 'donate' });
   m.pois.push(
     { x: 19, y: 32, emoji: '🎤', type: 'text', texts: TXT_LECTERN },
     { x: 24, y: 32, emoji: '☂️', type: 'text', texts: TXT_UMBRELLA },
@@ -1567,6 +1584,7 @@ const HONOURS = [
   { id: 'newlife', name: 'Nine Lives (One Spent Well)' },
   { id: 'post8', name: 'Postmaster General (Feline Div.)' },
   { id: 'steady', name: 'Perfectly Composed' },
+  { id: 'patron', name: 'Friend of Battersea', test: () => (G.donated || 0) >= 5 },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -1776,12 +1794,14 @@ function finishPostWatch() {
   const h = M.hit;
   const fish = h >= 8 ? 5 : h >= 6 ? 4 : h >= 4 ? 3 : h >= 2 ? 2 : 1;
   G.fish += fish;
+  G.xp += h * 2; // interception is skilled work; the Box notices
   if (h >= 8) earnHonour('post8');
-  toast(h >= 8 ? '📮 EIGHT FOR EIGHT. Not one envelope reached the mat. The Royal Mail files a formal complaint; the nation files this under "hero". +' + fish + ' 🐟'
-    : h >= 6 ? '📮 ' + h + '/8 batted down. The post has been thoroughly vetted. +' + fish + ' 🐟'
-      : h >= 4 ? '📮 ' + h + '/8. A respectable interception rate. The letters will think twice. +' + fish + ' 🐟'
-        : '📮 ' + h + '/8. The post won this round. It will not be so lucky at the next delivery. +' + fish + ' 🐟');
+  toast(h >= 8 ? '📮 EIGHT FOR EIGHT. Not one envelope reached the mat. The Royal Mail files a formal complaint; the nation files this under "hero". +' + fish + ' 🐟 +' + h * 2 + ' XP'
+    : h >= 6 ? '📮 ' + h + '/8 batted down. The post has been thoroughly vetted. +' + fish + ' 🐟 +' + h * 2 + ' XP'
+      : h >= 4 ? '📮 ' + h + '/8. A respectable interception rate. The letters will think twice. +' + fish + ' 🐟 +' + h * 2 + ' XP'
+        : '📮 ' + h + '/8. The post won this round. It will not be so lucky at the next delivery. +' + fish + ' 🐟' + (h ? ' +' + h * 2 + ' XP' : ''));
   [659, 784, h >= 6 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   updateHUD();
 }
 function drawPostWatch() {
@@ -2225,9 +2245,12 @@ const has = g => {
 // raised (55→85, 1.28→1.24) so early levels don't fly past in the first
 // minutes: the story DISPATCH cards fire on level-up, and levelling too fast
 // meant they interrupted constantly. Late game stays roughly where it was.
+// early levels climb steeply (a career taking shape); past 10 the ladder goes
+// linear and GENTLE — the final stretch to the Garter should be a victory lap
+// with story beats, not a second job (+55/level was +95, which walled the end)
 const xpNeed = l => l <= 10
   ? Math.floor(85 * Math.pow(1.24, l - 1))
-  : Math.floor(85 * Math.pow(1.24, 9) + (l - 10) * 95);
+  : Math.floor(85 * Math.pow(1.24, 9) + (l - 10) * 55);
 
 // ---------- Difficulty & bow ties ----------
 const DIFFS = {
@@ -2261,6 +2284,7 @@ function save() {
       mischief: Array.from(G.mischief),
       met: Array.from(G.met || []),
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
+      donated: G.donated || 0,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -2324,7 +2348,12 @@ function initDay() {
   if (PALM_VISIT && G.level >= 4) picks[0] = GOAL_PALM;
   DAY = {
     date: today, streak: carried, lastDone: prev ? prev.lastDone : null, doneAll: false,
-    goals: picks.map(g => { const n = dayGoalN(g); return { id: g.id, text: g.text.replace('{n}', n), n, prog: 0 }; }),
+    goals: picks.map(g => {
+      const n = dayGoalN(g);
+      let text = g.text.replace('{n}', n);
+      if (n === 1) text = text.replace(' mice', ' mouse').replace(' naps', ' nap').replace(' briefs', ' brief').replace(' kippers', ' kipper');
+      return { id: g.id, text, n, prog: 0 };
+    }),
     stats: { catch: 0, escape: 0, brief: 0, fish: 0, palm: 0 },
     ap0: Math.round(G.approval),
   };
@@ -2374,13 +2403,22 @@ function goalEvent(kind, info = {}) {
       if (done < 3) toast('📦 Red Box: ' + g.text + ' ✓ (' + done + '/3)');
     }
   }
-  if (changed && !DAY.doneAll && DAY.goals.every(g => g.prog >= g.n)) eveningPaper();
-  else updateDayHUD();
+  if (changed && !DAY.doneAll && !DAY.pending && DAY.goals.every(g => g.prog >= g.n)) {
+    // the box is cleared, but a paper prints at dusk, not the moment the ink dries
+    if (G.isNight) eveningPaper();
+    else {
+      DAY.pending = true;
+      toast('📦 The Red Box is CLEARED. The Evening Paper has everything it needs — it goes to print at dusk.');
+      tone(659, 659, 0.12, 'triangle', 0.06); tone(880, 880, 0.12, 'triangle', 0.06, 0.14);
+      updateDayHUD();
+    }
+  } else updateDayHUD();
   saveDay();
 }
 function eveningPaper() {
   const yesterday = dateStr(new Date(REAL_DATE.getTime() - 86400000));
   DAY.doneAll = true;
+  DAY.pending = false;
   DAY.streak = (DAY.lastDone === yesterday ? (DAY.streak || 0) : 0) + 1;
   DAY.lastDone = DAY.date;
   G.fish += 6;
@@ -2674,6 +2712,23 @@ function interactPoi(p) {
     const h = latest && HONOURS.find(x => x.id === latest);
     toast('🎖️ Career: ' + G.catches + ' caught, ' + G.escapes + ' escaped, ' + G.secretsFound.size + ' secrets uncovered, ' + G.honours.size + ' honours.' + (h ? ' Latest: ' + h.name + '.' : ' The Palace is watching. Catch things.'));
     sClick();
+    return;
+  }
+  if (p.type === 'donate') {
+    if (G.fish < 10) { toast('🎁 The Battersea tin. Ten kippers posts a parcel home. You are, at present, ' + (10 - G.fish) + ' short — the mice can fix that.'); sClick(); return; }
+    showChoice('THE ENTRANCE HALL', 'The Battersea Tin',
+      'A small red collection tin, kept by the door: BATTERSEA DOGS & CATS HOME. You came from there, on merit. Some cats there are still waiting on theirs.\n\nPost 10 🐟 back home?',
+      '🎁 Donate 10 🐟', '🚶 Another time', which => {
+        if (which !== 'a') return;
+        G.fish -= 10;
+        G.donated = (G.donated || 0) + 1;
+        G.approval = Math.min(100, G.approval + 3);
+        toast(pick(TXT_DONATE) + ' (+3% approval)');
+        [523, 659, 784].forEach((f, i) => tone(f, f, 0.12, 'sine', 0.05, i * 0.1));
+        if (G.donated >= 5) earnHonour('patron');
+        save();
+        updateHUD();
+      });
     return;
   }
   if (p.type === 'post') {
@@ -3591,6 +3646,9 @@ function catchMouse(i) {
 
 function queueBeat(level) {
   const b = beatFor(level);
+  // the FIRST van waits for day two: outlasting a PM should take at least one
+  // night's sleep. The dawn handler re-queues this beat once the sun comes up.
+  if (b.pmChange && pmCount <= 1 && Math.floor(G.time / DAYLEN) < 1 && !G.daily) return;
   let body = b.body, newPM = null;
   if (b.pmChange) {
     const old = G.pm;
@@ -4294,6 +4352,8 @@ function update(dt) {
   document.getElementById('clock').textContent = dark > 0.55 ? '🌙' : (G.snowing ? '❄️' : G.raining ? '🌧️' : '☀️');
 
   G.isNight = dark > 0.5;
+  // dusk falls: a held Evening Paper goes to print (waits out any mini game)
+  if (G.isNight && DAY && DAY.pending && !DAY.doneAll && !G.daily && !G.mini && G.intro.phase === 'done') eveningPaper();
   G.rainT -= dt;
   if (G.rainT <= 0) {
     const r = Math.random();
@@ -4457,6 +4517,8 @@ function update(dt) {
     if (dayIdx > G.dayIdx) {
       G.pmDays += dayIdx - G.dayIdx; G.dayIdx = dayIdx;
       document.getElementById('pmday').textContent = 'Day ' + G.pmDays;
+      // a deferred first van arrives with the morning
+      if (pmCount <= 1 && G.level >= 3 && G.intro.phase === 'done' && !G.cardQueue.some(c => c.newPM)) queueBeat(3);
     }
   }
 
@@ -5338,6 +5400,7 @@ function startGame(fresh) {
     G.mischief = new Set(s.mischief || []);
     G.met = new Set(s.met || []);
     G.kingSeen = !!s.kingSeen; G.kingDeposed = !!s.kingDeposed;
+    G.donated = s.donated || 0;
     // saves from before the flatter XP curve can bank xp above the new,
     // lower thresholds — clamp so one catch doesn't fire a burst of level-ups
     G.xp = Math.min(G.xp, Math.max(0, xpNeed(G.level) - 1));
