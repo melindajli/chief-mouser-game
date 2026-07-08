@@ -1215,7 +1215,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   m.pois.push(
     { x: 19, y: 32, emoji: '🎤', type: 'text', texts: TXT_LECTERN },
     { x: 24, y: 32, emoji: '☂️', type: 'text', texts: TXT_UMBRELLA },
-    { x: 21, y: 33, emoji: '📮', type: 'text', texts: TXT_LETTERBOX },
+    { x: 21, y: 33, emoji: '📮', type: 'post', texts: TXT_LETTERBOX },
     { x: 24, y: 26, emoji: '🎖️', type: 'honours' },
     { x: 28, y: 6, emoji: '🤝', type: 'gardendeal' },   // the gardener knows where they dig
     { x: 6, y: 10, emoji: '🖼️', type: 'commission' },   // vanity, in oils, on the Grand Staircase
@@ -1565,6 +1565,7 @@ const HONOURS = [
   { id: 'garter', name: 'Order of the Garter (Feline Div.)' },
   { id: 'vanity', name: 'Patron of the Arts (Self-Portraits)' },
   { id: 'newlife', name: 'Nine Lives (One Spent Well)' },
+  { id: 'post8', name: 'Postmaster General (Feline Div.)' },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -1680,6 +1681,123 @@ function drawKnock(kn) {
   ctx.restore();
 }
 
+/* ---------- POST WATCH: the eleven o'clock delivery, intercepted ----------
+   A letterbox mini game. Letters shoot through the famous front door's flap;
+   tap / SPACE at the right moment to bat them out of the air. Decoy rattles
+   punish button-mashing with a short whiff lockout. The world keeps playing —
+   it is, after all, just a cat attacking the mail. */
+function startPostWatch() {
+  G.mini = {
+    type: 'post', t: 0, next: 1.1, spawned: 0, total: 8,
+    letters: [], hit: 0, lock: 0, endT: 0,
+  };
+  toast('📮 POST WATCH — bat the letters as they come through! Tap or SPACE. Mind the decoy rattles.');
+  tone(200, 160, 0.06, 'square', 0.05); tone(200, 160, 0.06, 'square', 0.05, 0.1);
+}
+const POST_SLOT = { x: 22 * TILE, y: 34 * TILE + 2 }; // the brass flap in the black door
+function postRattle() {
+  tone(210, 150, 0.05, 'square', 0.05); tone(190, 140, 0.05, 'square', 0.04, 0.08);
+  addParticle(POST_SLOT.x, POST_SLOT.y - 4, '#e9c46a', 2, 10);
+}
+function updatePostWatch(dt) {
+  if (G.postCD > 0) G.postCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'post') return;
+  M.t += dt;
+  M.lock = Math.max(0, M.lock - dt);
+  // the flap: real letters and decoy rattles
+  if (M.spawned < M.total) {
+    M.next -= dt;
+    if (M.next <= 0) {
+      postRattle();
+      if (Math.random() < 0.24) { // a decoy — the flap lies
+        M.next = 0.7 + Math.random() * 0.9;
+      } else {
+        M.spawned++;
+        M.letters.push({
+          x: POST_SLOT.x + (Math.random() - 0.5) * 10, y: POST_SLOT.y,
+          vx: (Math.random() - 0.5) * 70, vy: -(80 + Math.random() * 45),
+          age: 0, hit: false, landed: false,
+          landY: (31.4 + Math.random() * 1.6) * TILE,
+        });
+        M.next = 1.0 + Math.random() * 1.3;
+      }
+    }
+  }
+  for (const l of M.letters) {
+    if (l.landed) continue;
+    l.age += dt;
+    l.x += l.vx * dt; l.y += l.vy * dt; l.vy += 170 * dt;
+    if (l.vy > 0 && l.y >= l.landY) {
+      l.landed = true;
+      if (!l.hit) addFloat(l.x, l.y - 8, 'delivered…', '#b9b2a2');
+    }
+  }
+  // over when the full post has arrived and settled
+  if (M.spawned >= M.total && M.letters.every(l => l.landed)) {
+    M.endT += dt;
+    if (M.endT > 0.9) finishPostWatch();
+  }
+}
+function postSwat() {
+  const M = G.mini;
+  if (!M || M.type !== 'post' || M.lock > 0) return;
+  const L = G.larry;
+  G.catAnim = { name: 'meow', t: 0, dur: 2 / 6, fps: 6 };
+  // the freshest airborne letter is the battable one
+  const live = M.letters.filter(l => !l.hit && !l.landed && l.age < 0.55);
+  if (live.length) {
+    const l = live.sort((a, b) => a.age - b.age)[0];
+    l.hit = true;
+    l.vx = (l.x < L.x ? -1 : 1) * (130 + Math.random() * 60);
+    l.vy = -70;
+    M.hit++;
+    addFloat(l.x, l.y - 8, 'SWAT!', '#ffe8b8');
+    addParticle(l.x, l.y, '#efe9dc', 5, 30);
+    tone(900, 500, 0.06, 'triangle', 0.07);
+    briefEvent('post');
+  } else {
+    M.lock = 0.55; // swung at a rumour
+    addFloat(L.x, L.y - 18, 'whiff', '#b9b2a2');
+    tone(300, 200, 0.05, 'sine', 0.04);
+  }
+}
+function finishPostWatch() {
+  const M = G.mini;
+  G.mini = null;
+  G.postCD = 90 + Math.random() * 60;
+  const h = M.hit;
+  const fish = h >= 8 ? 5 : h >= 6 ? 4 : h >= 4 ? 3 : h >= 2 ? 2 : 1;
+  G.fish += fish;
+  if (h >= 8) earnHonour('post8');
+  toast(h >= 8 ? '📮 EIGHT FOR EIGHT. Not one envelope reached the mat. The Royal Mail files a formal complaint; the nation files this under "hero". +' + fish + ' 🐟'
+    : h >= 6 ? '📮 ' + h + '/8 batted down. The post has been thoroughly vetted. +' + fish + ' 🐟'
+      : h >= 4 ? '📮 ' + h + '/8. A respectable interception rate. The letters will think twice. +' + fish + ' 🐟'
+        : '📮 ' + h + '/8. The post won this round. It will not be so lucky at the next delivery. +' + fish + ' 🐟');
+  [659, 784, h >= 6 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  updateHUD();
+}
+function drawPostWatch() {
+  const M = G.mini;
+  for (const l of M.letters) {
+    ctx.save();
+    ctx.translate(l.x, l.y);
+    if (!l.landed) ctx.rotate(clamp(l.vx * 0.004, -0.5, 0.5));
+    ctx.fillStyle = l.hit ? '#d8d3ca' : '#efe9dc';
+    ctx.fillRect(-4, -3, 8, 5);
+    ctx.strokeStyle = '#b9b2a2'; ctx.lineWidth = 1;
+    ctx.strokeRect(-3.5, -2.5, 7, 4);
+    ctx.beginPath(); ctx.moveTo(-3.5, -2.5); ctx.lineTo(0, 0); ctx.lineTo(3.5, -2.5); ctx.stroke();
+    if (!l.hit) { ctx.fillStyle = '#cf2b3a'; ctx.fillRect(1, -2, 2, 1); } // the stamp
+    ctx.restore();
+  }
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.65)';
+  ctx.fillRect(POST_SLOT.x - 16, POST_SLOT.y - 40, 32, 11);
+  ctx.fillStyle = '#ffe8b8';
+  ctx.fillText(M.hit + '/' + M.total, POST_SLOT.x, POST_SLOT.y - 31);
+}
+
 // ---------- Summons: politics barges in and demands a photograph ----------
 const SUMMONS_SPOTS = [
   ['ground', 'The Cabinet Room', 'the trade delegation photo'],
@@ -1737,6 +1855,8 @@ const CAMPAIGN = [
     why: 'The Kitchen has fallen a SECOND time — and this time they came in numbers, brazen and drilled. Retake it. Clear three. They must learn there is no second chance with you.' },
   { text: 'Defend the flat (2 mice)', kind: 'catch', map: 'flat', n: 2,
     why: 'They are in the FLAT. Past the green door at the end of the First Floor landing, up where you SLEEP, where the good sofa is. This stopped being politics the moment they crossed the residence line. Catch two, and let the whole skirting-board world hear about it.' },
+  { text: 'Intercept the post (bat 4 letters)', kind: 'post', n: 4,
+    why: 'MI-Paw intercepts chatter from below: the mice are riding the eleven o\'clock post in padded envelopes. Take up position at the Entrance Hall letterbox and bat down four before they clear the doormat.' },
   { text: 'Cut through the red tape', kind: 'yarn', n: 8,
     why: 'The mice have discovered PAPERWORK. Red tape spools loose through every corridor, nearly to the Cabinet Room. Cut through it before the government notices the mice run it better than they do.' },
   { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1,
@@ -2006,7 +2126,7 @@ function beatFor(level) {
     case 4: return { title: 'A Package from MI-Paw', body: 'It arrived in the Pantry in a plain brown box marked "CATNIP — DO NOT OPEN". It was not catnip. It was a set of standard-issue sonic whiskers, and they are magnificent.', gadget: 'whiskers' };
     case 5: return { title: 'Another Van', body: 'You know the drill by now. {OLD} {EXIT} Incoming: {NEW}, who has promised "strong and stable saucers of milk". We shall see.', pmChange: true };
     case 6: return { title: 'The Delegation', body: 'A foreign delegation visited the Terracotta Room today. They ignored the Foreign Secretary entirely and queued to meet you. One of them left a gift.', gadget: 'collar' };
-    case 7: return { title: 'Reports from Below', body: 'The kitchen staff refuse to fetch the good cheese after dark. The junior mice have started PAYING TRIBUTE. Somewhere beneath the Cellar, something enormous is holding court. MI-Paw stamps the file: KING RAT — AT LARGE. Keep an eye on the basement.' };
+    case 7: return { title: 'Reports from Below', scene: 'herald', body: 'The kitchen staff refuse to fetch the good cheese after dark. The junior mice have started PAYING TRIBUTE. Somewhere beneath the Cellar, something enormous is holding court. MI-Paw stamps the file: KING RAT — AT LARGE. Keep an eye on the basement.' };
     case 8: return { title: 'The Cabinet Requisition', body: 'A red dot has been appearing on the Cabinet Room wall during meetings, reducing ministers to helpless distraction. Nobody could find the source. The source has now been requisitioned. It is yours.', gadget: 'laser' };
     case 9: return { title: 'The Palmerston Incident', body: '{OLD} {EXIT} Incoming: {NEW}. Meanwhile: the Foreign Office cat has been seen in YOUR garden, at YOUR pond, watching YOUR pigeons. He left a single feather on the terrace. This means war. Diplomatic war. (Win the stare-off.)', pmChange: true };
     case 10: return { title: 'Night Duty', body: 'MI-Paw has been watching your after-dark patrols with quiet approval. A flat package arrives, unmarked: their finest optics, cut for a cat. The Cellar holds no shadows for you now.', gadget: 'monocle' };
@@ -2034,6 +2154,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
+  mini: null, postCD: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
   bowtie: false,
@@ -2333,6 +2454,7 @@ function inputEnd(id, cx, cy) {
   if (!joy.active || id !== joy.id) return;
   // a quick press that never dragged = "walk here" (or a chin-scritch meow on Larry)
   if (!joy.moved && performance.now() - joy.t0 < 350 && G.running && !G.paused) {
+    if (G.mini) { postSwat(); resetStick(); return; } // a quick tap is a swat, not a stroll
     const wx = clamp(G.camX + cx * DPR / ZOOM, TILE, (curMap().w - 1) * TILE);
     const wy = clamp(G.camY + cy * DPR / ZOOM, TILE, (curMap().h - 1) * TILE);
     if (dist(wx, wy, G.larry.x, G.larry.y) < 16 && !G.napping) {
@@ -2519,6 +2641,14 @@ function interactPoi(p) {
     sClick();
     return;
   }
+  if (p.type === 'post') {
+    if (G.mini) return;
+    if (G.postCD > 0) { toast(pick(p.texts)); sClick(); return; } // between deliveries, the flap is quiet
+    showChoice('THE ENTRANCE HALL', "The Eleven O'Clock Post",
+      'The flap gives its warning rattle: the post is due. Tradition demands it be inspected. At speed. With claws.\n\nBat the letters out of the air as they come through — tap or SPACE, timing over enthusiasm. Beware the decoy rattles.',
+      '🐾 Take up position', '🚶 The mail can wait', which => { if (which === 'a') startPostWatch(); });
+    return;
+  }
   if (p.type === 'secret') {
     const first = !G.secretsFound.has(p.sid);
     if (first) {
@@ -2623,6 +2753,7 @@ const POUNCE_SPD = 265;
 // stray tap on another input can't detonate someone else's wind-up
 function chargeStart(src) {
   const L = G.larry;
+  if (G.mini) { postSwat(); return false; } // during Post Watch the pounce IS the swat
   if (!G.running || G.paused || L.charging) return false;
   L.charging = true;
   L.chargeSrc = src;
@@ -3426,7 +3557,7 @@ function queueBeat(level) {
     newPM = nextPM();
     body = body.replaceAll('{OLD}', old).replaceAll('{NEW}', newPM).replaceAll('{EXIT}', exitReason(pmCount - 1));
   }
-  G.cardQueue.push({ title: b.title, body, gadget: b.gadget, newPM, level });
+  G.cardQueue.push({ title: b.title, body, gadget: b.gadget, newPM, level, scene: b.scene });
   if (b.finale) {
     earnHonour('garter');
     G.cardQueue.push({
@@ -3523,15 +3654,20 @@ function sceneTick(dt) {
     p.t -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 30 * dt;
     if (p.t <= 0) G.particles.splice(i, 1);
   }
+  for (let i = G.floats.length - 1; i >= 0; i--) {
+    const f = G.floats[i];
+    f.t -= dt; f.y -= 14 * dt;
+    if (f.t <= 0) G.floats.splice(i, 1);
+  }
 }
 // seat a scene guest on the nearest free tile to (tx, ty)
-function sceneGuest(spr, tx, ty, flip) {
+function sceneGuest(spr, tx, ty, flip, mouse) {
   const m = curMap();
   const spots = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1], [2, 0], [-2, 0], [0, 2]];
   for (const [dx, dy] of spots) {
     const x = tx + dx, y = ty + dy;
     if (x > 0 && y > 0 && x < m.w - 1 && y < m.h - 1 && FLOORY(m.grid[y][x])) {
-      G.sceneNpcs.push({ spr, x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, animT: Math.random() * 9, flip: !!flip });
+      G.sceneNpcs.push({ spr, x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, animT: Math.random() * 9, flip: !!flip, mouse: !!mouse });
       return;
     }
   }
@@ -3599,6 +3735,84 @@ function photoOpScene(S) {
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
     updateHUD();
   });
+}
+
+/* ---------- The herald: King Rat sends terms (the level-7 beat) ---------- */
+function heraldScene(onDone) {
+  const L = G.larry;
+  const tx = Math.floor(L.x / TILE), ty = Math.floor(L.y / TILE);
+  G.sceneNpcs = [];
+  sceneGuest('decoy', tx + 1, ty + 1, L.x > tx * TILE + 8, true); // a small golden functionary
+  playScene([
+    { who: 'A SMALL VOICE', text: '(Something at paw height clears its throat. Twice. The second time with visible regret.)', do: () => tone(1800, 1400, 0.05, 'sine', 0.03) },
+    { who: 'THE HERALD MOUSE', text: 'A-HEM. By proclamation of His Enormity, KING RAT — First of His Name, Sovereign of the Under-Cellar, Keeper of the Lost Cheddar —' },
+    { who: 'THE HERALD MOUSE', text: 'You are invited to surrender the Kitchen, effective tonight. In exchange, your radiator will be spared the coming unpleasantness. His Enormity is assured this is "generous".' },
+    {
+      who: 'LARRY', text: 'The herald waits, quivering. Protocol demands a response.', choice: [
+        ['🐾 Lean in. Very. Slowly.', () => {
+          sceneSplice([
+            {
+              who: 'THE HERALD MOUSE', text: 'He— you— THE TERMS ARE NEGOTIABLE!', do: () => {
+                const h = G.sceneNpcs.find(n => n.mouse);
+                if (h) { addFloat(h.x, h.y - 10, 'eek!', '#f0d0a0'); addParticle(h.x, h.y, '#b4aea6', 4, 26); }
+                G.sceneNpcs = G.sceneNpcs.filter(n => !n.mouse); // gone, at speed
+                tone(1500, 2200, 0.09, 'sine', 0.08);
+              },
+            },
+            { who: 'LARRY', text: '(You did not eat the messenger. You would like that noted in the minutes. It was close.)' },
+          ]);
+        }],
+        ['😮 Yawn. Terms rejected.', () => {
+          sceneSplice([
+            { who: 'THE HERALD MOUSE', text: '…I shall convey your yawn to His Enormity. He will NOT find it relatable.' },
+            { who: 'LARRY', text: '(Terms rejected. The radiator protects itself.)' },
+          ]);
+        }],
+      ],
+    },
+    { who: 'MI-PAW', text: 'File updated. Stamped. Sealed: KING RAT — AT LARGE, somewhere beneath the Cellar. Keep an eye on the basement, Chief Mouser.' },
+  ], onDone);
+}
+
+/* ---------- The introduction: every new PM is brought to meet Larry ---------- */
+const NEWPM_LINES = [
+  'So this is— hello. Hello, cat. Do I shake the— what do I shake?',
+  'They briefed me on the nuclear codes, and then, at considerably greater length, on you.',
+  'Right. Yes. The famous one. You are the famous one and I am… also here.',
+  'I was told you came with the building. Like the pillars. And the leaks.',
+  'Nice cat. Good cat. Please do not do to me whatever it was you did to the last one.',
+];
+const LARRY_VERDICTS = [
+  '(You conduct the assessment: shoes, posture, treat-carrying potential. Findings: pending. Findings are always pending.)',
+  '(You blink once, slowly. In your books, a coronation.)',
+  '(You permit one — ONE — scratch behind the ear. The administration may proceed.)',
+  '(You look at them exactly the way you looked at the last one. They can tell. Good.)',
+];
+const AIDE_CLOSERS = [
+  'That went better than most, Prime Minister. One of them he left mid-handshake.',
+  'The cat stays, Prime Minister. It was in the briefing. Page one, before the economy.',
+  'A word of survival, Prime Minister: never touch the radiator. His radiator.',
+];
+function pmMeetScene(newPM, onDone) {
+  const L = G.larry;
+  const tx = Math.floor(L.x / TILE), ty = Math.floor(L.y / TILE);
+  G.sceneNpcs = [];
+  sceneGuest(P_VISITOR, tx - 2, ty, false);   // the new tenant, still holding a box lid
+  sceneGuest(P_AIDE, tx + 2, ty, true);       // the aide who has done this before
+  playScene([
+    { who: 'THE AIDE', text: 'Prime Minister — before the boxes, before the Cabinet, before anything: this is Larry. Chief Mouser. He was here first, and he will be here after.' },
+    { who: newPM.toUpperCase(), text: pick(NEWPM_LINES) },
+    { who: 'LARRY', text: pick(LARRY_VERDICTS) },
+    {
+      who: newPM.toUpperCase(), text: 'I brought— they said to bring— here. Tribute. Tuna-adjacent.', do: () => {
+        G.fish += 2;
+        addFloat(L.x, L.y - 18, '+2 🐟', '#8fd4e8');
+        tone(500, 800, 0.15, 'triangle', 0.06);
+        updateHUD();
+      },
+    },
+    { who: 'THE AIDE', text: pick(AIDE_CLOSERS) },
+  ], onDone);
 }
 
 /* ---------- First meetings: new characters introduce themselves ----------
@@ -3687,9 +3901,12 @@ function maybeShowCard() {
   if (G.paused || !G.cardQueue.length) return;
   const c = G.cardQueue.shift();
   sLevel();
+  // some beats play out in the room instead of on a card
+  if (c.scene === 'herald' && !G.daily) { heraldScene(() => maybeShowCard()); return; }
   showCard('LEVEL ' + c.level + ' — DISPATCH FROM NO. 10', c.title, c.body,
     c.gadget ? { name: 'NEW GADGET: ' + GADGETS[c.gadget].name, desc: GADGETS[c.gadget].desc } : null,
     () => {
+      const meetPM = c.newPM; // the dispatch breaks the news; the introduction follows in person
       if (c.newPM) {
         G.pm = c.newPM; G.pmDays = 1; G.dayIdx = Math.floor(G.time / DAYLEN);
         if (G.mapId === 'ground') { spawnBoxes(); flashbulbs(); }
@@ -3705,7 +3922,8 @@ function maybeShowCard() {
       if (c.gadget === 'monocle') G.nv = true;
       refreshGadgetBar();
       updateHUD();
-      maybeShowCard();
+      if (meetPM && !G.daily) pmMeetScene(meetPM, () => maybeShowCard());
+      else maybeShowCard();
     });
 }
 
@@ -3857,6 +4075,7 @@ function switchMap(id, x, y) {
   G.mapId = id;
   G.larry.x = x; G.larry.y = y;
   G.mice = []; G.laser = null; G.boxes = []; tapTarget = null; G.napping = false; G.napPos = null;
+  G.mini = null; // an abandoned Post Watch forfeits the round
   if (G.press.active && id !== 'ground') { // the pack disperses if you slip away
     G.press.active = false; G.press.cd = 40; G.paps = [];
     toast('📰 The press lost interest. This time.');
@@ -4313,6 +4532,7 @@ function update(dt) {
   for (const t of G.toys) updateToy(t, dt);
   for (const c of G.rivals) updateRival(c, dt);
   updateKnocks(dt);
+  updatePostWatch(dt);
   // removal boxes demand supervision
   if (!G.mischief.has('boxes')) {
     for (const b of G.boxes) if (dist(b.x, b.y, L.x, L.y) < 18) { earnMischief('boxes'); break; }
@@ -4545,7 +4765,11 @@ function draw() {
   for (const c of G.rivals) ents.push({ y: c.y, draw: () => drawRival(c) });
   for (const p of G.paps) ents.push({ y: p.y, draw: () => drawPap(p) });
   for (const n of G.npcs) ents.push({ y: n.y, draw: () => drawPerson(NPC_SPRITES[n.sprite], n.x, n.y, n.animT, n.flip, n.tx && n.pauseT <= 0) });
-  for (const n of G.sceneNpcs) ents.push({ y: n.y, draw: () => drawPerson(n.spr, n.x, n.y, n.animT, n.flip, false) });
+  for (const n of G.sceneNpcs) ents.push({
+    y: n.y, draw: () => n.mouse
+      ? drawMouse({ x: n.x, y: n.y, type: n.spr, dir: n.flip ? -1 : 1, scale: 1, animT: n.animT, state: 'charmed', busy: 0 })
+      : drawPerson(n.spr, n.x, n.y, n.animT, n.flip, false),
+  });
   // the Cabinet in session: ministers round the boat table by day. Walk in
   // mid-meeting; they will cope. They always cope.
   if (cabinetInSession(dark)) {
@@ -4572,6 +4796,7 @@ function draw() {
     ctx.fillStyle = '#33261a'; ctx.fillRect(b.x, b.y, 1, 2);
   }
 
+  if (G.mini && G.mini.type === 'post') drawPostWatch();
   for (const p of G.particles) {
     ctx.globalAlpha = Math.min(1, p.t * 2);
     ctx.fillStyle = p.color;
