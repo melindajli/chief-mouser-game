@@ -1890,28 +1890,45 @@ function rainAmbience() {
 // ---------- Adaptive music: a generative score that follows the mood ----------
 // calm wander → lazy pentatonic plucks · mouse nearby → sneaky under-layer
 // speeds up · Rat King or the press → tense drone. All synthesized, tiny volume.
-let musicOn = true, musNext = 0, musStep = 0, musIdx = 2;
+let musicOn = true, musNext = 0, musStep = 0;
 // screen shake is off by default — the little judder on every catch reads as
 // jitter, especially when a toast pops at the same moment. Opt back in via the
 // pause menu; the choice persists in its own key (survives dailies + restarts).
 let shakeOn = false;
 try { shakeOn = localStorage.getItem('larry-shake') === 'on'; } catch (e) { }
-const MUS_SCALE = [220, 246.94, 293.66, 329.63, 392, 440, 493.88, 587.33];
+// THE HOUSE THEME — a gentle two-phrase chiptune lullaby built on the Larry
+// motif (G C E D). Phrase one states the motif and settles; phrase two answers
+// an octave down and resolves home. A soft sine bass walks C–Am–G underneath.
+// Adaptive, like before: the tempo tightens when a mouse is close, doubles
+// into a chase when danger walks in, and the whole thing drops an octave and
+// softens after dark. 0 = a rest.
+const MUS_MELODY = [
+  392, 523.25, 659.25, 587.33, 523.25, 440, 392, 0,          // the motif, then down
+  329.63, 392, 440, 523.25, 587.33, 523.25, 440, 0,           // rise and ease off
+  329.63, 392, 440, 392, 329.63, 293.66, 261.63, 0,           // the low answer
+  293.66, 329.63, 392, 440, 392, 329.63, 293.66, 0,           // resolve toward home
+];
+const MUS_BASS = [
+  130.81, 0, 130.81, 0, 110, 0, 110, 0, 130.81, 0, 130.81, 0, 98, 0, 98, 0,
+  110, 0, 110, 0, 98, 0, 98, 0, 130.81, 0, 130.81, 0, 98, 0, 98, 0,
+];
 function musicTick() {
   if (!musicOn || muted || !AC || !G.running || G.paused) return;
   const t = AC.currentTime;
   if (t < musNext - 0.12) return;
   const danger = G.mice.some(mo => mo.type === 'ratking') || G.press.active;
   const stalk = !danger && G.mice.some(mo => dist(mo.x, mo.y, G.larry.x, G.larry.y) < 90);
-  const tempo = danger ? 0.4 : stalk ? 0.62 : 1.15;
+  const tempo = danger ? 0.24 : stalk ? 0.32 : 0.42;
   const when = Math.max(0, musNext - t);
+  const step = musStep % MUS_MELODY.length;
   musStep++;
-  musIdx = clamp(musIdx + ((Math.random() * 3) | 0) - 1, 0, MUS_SCALE.length - 1);
-  const f = MUS_SCALE[musIdx] * (G.isNight ? 0.5 : 1);
-  tone(f, f, tempo * 0.9, 'triangle', G.isNight ? 0.011 : 0.016, when);
-  if (musStep % 4 === 0) tone(110, 110, tempo * 1.7, 'sine', 0.02, when);
-  if (stalk && musStep % 2 === 1) tone(f / 2, f / 2, tempo * 0.5, 'sine', 0.013, when);
-  if (danger) tone(61.7, 61.7, tempo * 1.9, 'sawtooth', 0.009, when);
+  const oct = G.isNight ? 0.5 : 1, soft = G.isNight ? 0.7 : 1;
+  const f = MUS_MELODY[step];
+  if (f) tone(f * oct, f * oct, tempo * 1.7, 'triangle', 0.042 * soft, when);
+  const b = MUS_BASS[step];
+  if (b) tone(b, b, tempo * 2.1, 'sine', 0.026 * soft, when);
+  if (stalk && step % 2 === 1) tone(98, 98, tempo * 0.5, 'sine', 0.02, when); // the low tread of the hunt
+  if (danger) tone(61.7, 61.7, tempo * 1.9, 'sawtooth', 0.012, when);
   musNext = (t > musNext + 1 ? t : musNext) + tempo;
 }
 
