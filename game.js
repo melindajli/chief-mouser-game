@@ -383,6 +383,20 @@ function buildMouse(body, belly) {
   soutline(s, '#2a2522'); sshade(s, '#2a2522', { [body]: '#948e86' });
   return sCanvas(s);
 }
+function buildDog() {
+  // a small terrier of boundless enthusiasm: white, one brown patch, tail up
+  const s = mkS(17, 12);
+  sell(s, 7.5, 7, 5.2, 3.4, '#efe9dc');                 // body
+  sell(s, 12.5, 5, 3.2, 2.9, '#efe9dc');                // head
+  sell(s, 13.5, 4, 2.6, 2.2, '#a2703c');                // the brown patch, over one eye
+  sp(s, 12, 2.4, '#a2703c'); sp(s, 14.6, 2.4, '#efe9dc'); // ears (one up, one patched)
+  sp(s, 14, 5, '#2a2522'); sp(s, 16, 6, '#2a2522');     // eye, nose
+  srect(s, 1, 4, 2, 1, '#efe9dc'); sp(s, 1, 3, '#efe9dc'); // tail, aloft (always)
+  srect(s, 5, 10, 2, 2, '#e0d8c6'); srect(s, 9, 10, 2, 2, '#e0d8c6'); // legs
+  soutline(s, '#2a2522'); sshade(s, '#2a2522', { '#efe9dc': '#c9c2b0' });
+  return sCanvas(s);
+}
+const DOG_SPRITE = buildDog();
 function buildRat() {
   const s = mkS(19, 13);
   sell(s, 8, 8, 6.4, 4.0, '#8a7f74');
@@ -1043,6 +1057,9 @@ const IS_GOTCHA_DAY = SEASON_M === 2 && REAL_DATE.getDate() === 15; // hired 15 
 const DATE_SEED = REAL_DATE.getFullYear() * 10000 + SEASON_M * 100 + REAL_DATE.getDate();
 // roughly two days in five, Palmerston pays a visit (seeded: the same days for everyone)
 const PALM_VISIT = mulberry32(DATE_SEED ^ 0xCA7)() < 0.4;
+// and now and then — never on a Palmerston day; the garden could not take both —
+// the PM's DOG gets garden access. Composure will be tested.
+const DOG_VISIT = !PALM_VISIT && mulberry32(DATE_SEED ^ 0xD06)() < 0.25;
 
 const TXT_XMASTREE = [
   'The official No. 10 tree. You have completed your assessment: climbable. You are CHOOSING not to. Today.',
@@ -1487,7 +1504,7 @@ MAPS.flat = makeMap('flat', 34, 22, (m, set, rect) => {
   m.decor.push({ x: 33, y: 13, t: 'door11' }, { x: 32, y: 13, t: 'doormat' }); // THE connecting door, marked
   m.toys = [[20, 14, '#e9c46a']];
   m.pois = [
-    { x: 24, y: 7, emoji: '🍝', type: 'text', texts: TXT_FLATKITCHEN },
+    { x: 24, y: 7, emoji: '🍝', type: 'supper', texts: TXT_FLATKITCHEN },
     { x: 15, y: 17, emoji: '💤', type: 'nap', texts: TXT_FLATWINDOW },   // a real rest spot, by the landing window
     { x: 31, y: 13, emoji: '🚪', type: 'text', texts: TXT_DOOR11 },
   ];
@@ -1592,6 +1609,8 @@ const HONOURS = [
   { id: 'steady', name: 'Perfectly Composed', hint: 'A perfect photo-op: hold every pose.' },
   { id: 'patron', name: 'Friend of Battersea', hint: 'Send five parcels home.', test: () => (G.donated || 0) >= 5 },
   { id: 'home', name: 'Local Cat Made Good', hint: 'Go home again, decorated.' },
+  { id: 'incident', name: 'The Incident Was Handled', hint: 'Hold your ground when the dog comes to the garden.' },
+  { id: 'gravy', name: 'Not One Pea Lost', hint: 'A perfect Kitchen Supper: catch every falling scrap.' },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -1713,10 +1732,98 @@ function drawKnock(kn) {
    punish button-mashing with a short whiff lockout. The world keeps playing —
    it is, after all, just a cat attacking the mail. */
 // one button, many games: any pounce input routes to the active mini game
+// (Kitchen Suppers is the exception — there, moving and pouncing ARE the game)
 function miniTap() {
   if (!G.mini) return;
   if (G.mini.type === 'post') postSwat();
   else if (G.mini.type === 'photo') photoTap();
+}
+
+/* ---------- KITCHEN SUPPERS: the PM cooks; gravity does the rest ----------
+   Scraps drop from the supper table. Be underneath each one when it falls —
+   walk, or pounce for a longer lunge. The floor gets whatever you miss. */
+function startSupper() {
+  G.mini = { type: 'supper', t: 0, next: 1.4, spawned: 0, total: 10, scraps: [], caught: 0 };
+  // the PM takes the hob; the cast of one stays for the duration
+  G.sceneNpcs.push({ spr: P_VISITOR, x: 21.5 * TILE, y: 2.6 * TILE, animT: Math.random() * 9, flip: false });
+  toast('🍝 KITCHEN SUPPER — scraps incoming! Be under each one before it lands. The floor is the enemy.');
+  tone(523, 659, 0.15, 'triangle', 0.06);
+}
+const SCRAP_KINDS = [
+  { c: '#b5651d', w: 5, h: 2 },  // sausage end
+  { c: '#7a9c62', w: 2, h: 2 },  // a pea, absconding
+  { c: '#e0c084', w: 3, h: 3 },  // roast potato
+  { c: '#c94a3a', w: 3, h: 2 },  // mystery in tomato
+];
+function updateSupper(dt) {
+  if (G.supperCD > 0) G.supperCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'supper') return;
+  M.t += dt;
+  if (M.spawned < M.total) {
+    M.next -= dt;
+    if (M.next <= 0) {
+      M.spawned++;
+      M.next = 1.3 + Math.random() * 1.4;
+      M.scraps.push({
+        x: (22.3 + Math.random() * 4.4) * TILE, y: 5.2 * TILE,
+        vy: 26 + Math.random() * 26, kind: (Math.random() * SCRAP_KINDS.length) | 0,
+        landed: false, caught: false,
+      });
+      tone(900 + Math.random() * 300, 700, 0.05, 'sine', 0.04); // a wobble at the table edge
+    }
+  }
+  const L = G.larry;
+  for (const s of M.scraps) {
+    if (s.landed || s.caught) continue;
+    s.y += s.vy * dt;
+    s.vy += 26 * dt;
+    // catchable once it clears the table's shadow
+    if (s.y > 6.8 * TILE && Math.abs(s.x - L.x) < 10 && Math.abs(s.y - L.y) < 12) {
+      s.caught = true;
+      M.caught++;
+      addFloat(s.x, s.y - 10, 'nom!', '#ffe8b8');
+      addParticle(s.x, s.y, SCRAP_KINDS[s.kind].c, 4, 20);
+      tone(500, 380, 0.06, 'triangle', 0.06);
+    } else if (s.y >= 8.6 * TILE) {
+      s.landed = true;
+      addFloat(s.x, s.y - 6, 'splat.', '#b9b2a2');
+      tone(220, 160, 0.05, 'sine', 0.04);
+    }
+  }
+  if (M.spawned >= M.total && M.scraps.every(s => s.landed || s.caught)) finishSupper();
+}
+function finishSupper() {
+  const M = G.mini;
+  G.mini = null;
+  G.supperCD = 120 + Math.random() * 60;
+  G.sceneNpcs = []; // the PM plates up and withdraws
+  const c = M.caught;
+  const fish = 1 + Math.floor(c / 2);
+  G.fish += fish;
+  G.xp += c * 2;
+  if (c >= 10) earnHonour('gravy');
+  toast(c >= 10 ? '🍝 TEN FOR TEN. Not one pea lost. The PM salutes you with a wooden spoon. +' + fish + ' 🐟 +' + c * 2 + ' XP'
+    : c >= 6 ? '🍝 ' + c + '/10 intercepted. The kitchen floor stays respectable. +' + fish + ' 🐟 +' + c * 2 + ' XP'
+      : '🍝 ' + c + '/10. The floor dined well tonight. There is always another supper. +' + fish + ' 🐟' + (c ? ' +' + c * 2 + ' XP' : ''));
+  [659, 784, c >= 6 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  updateHUD();
+}
+function drawSupper() {
+  const M = G.mini;
+  for (const s of M.scraps) {
+    if (s.caught) continue;
+    const k = SCRAP_KINDS[s.kind];
+    ctx.fillStyle = s.landed ? '#8a8478' : k.c;
+    ctx.fillRect(s.x - k.w / 2, s.y - k.h / 2, k.w, k.h);
+    if (!s.landed) { ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(s.x - 2, 8.6 * TILE, 4, 1); } // landing shadow
+  }
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.65)';
+  ctx.fillRect(24 * TILE - 18, 4.2 * TILE, 36, 11);
+  ctx.fillStyle = '#ffe8b8';
+  ctx.fillText(M.caught + '/' + M.total, 24 * TILE, 4.2 * TILE + 9);
 }
 function startPostWatch() {
   G.mini = {
@@ -2223,7 +2330,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0,
+  mini: null, postCD: 0, supperCD: 0, dog: null,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
@@ -2386,6 +2493,7 @@ function initDay() {
   const lines = [intro, ''].concat(DAY.goals.map(g => '📕 ' + g.text));
   lines.push('');
   if (PALM_VISIT) lines.push('🎩 Intelligence: Palmerston is visiting today. The garden is NOT neutral.');
+  if (DOG_VISIT) lines.push('🐕 Warning: the PM\'s dog has garden access today. Composure will be tested.');
   if (IS_XMAS) lines.push('🎄 It is also Christmas. The tree has been assessed. (Climbable.)');
   if (IS_GOTCHA_DAY) { lines.push('🎉 And it is your Gotcha Day — hired 15 Feb 2011, on merit. The kitchen sends up 10 🐟.'); G.fish += 10; }
   lines.push(DAY.streak > 0 ? '🔥 Streak: ' + DAY.streak + ' day' + (DAY.streak === 1 ? '' : 's') + '. The papers are counting.'
@@ -2547,7 +2655,7 @@ function inputEnd(id, cx, cy) {
   if (!joy.active || id !== joy.id) return;
   // a quick press that never dragged = "walk here" (or a chin-scritch meow on Larry)
   if (!joy.moved && performance.now() - joy.t0 < 350 && G.running && !G.paused) {
-    if (G.mini) { miniTap(); resetStick(); return; } // a quick tap plays the mini game, not a stroll
+    if (G.mini && G.mini.type !== 'supper') { miniTap(); resetStick(); return; } // a quick tap plays the mini game (suppers keep tap-to-walk)
     const wx = clamp(G.camX + cx * DPR / ZOOM, TILE, (curMap().w - 1) * TILE);
     const wy = clamp(G.camY + cy * DPR / ZOOM, TILE, (curMap().h - 1) * TILE);
     if (dist(wx, wy, G.larry.x, G.larry.y) < 16 && !G.napping) {
@@ -2730,6 +2838,15 @@ function interactPoi(p) {
   if (p.type === 'honours') {
     toast('🎖️ Career: ' + G.catches + ' caught, ' + G.escapes + ' escaped, ' + G.secretsFound.size + ' secrets uncovered.');
     openHonours(); // the board itself, in full
+    return;
+  }
+  if (p.type === 'supper') {
+    if (G.mini) return;
+    if (G.daily) { toast('🍝 No suppers on sortie day. Focus, Chief Mouser.'); sClick(); return; }
+    if (G.supperCD > 0) { toast(pick(p.texts)); sClick(); return; } // between suppers, the table is just a table
+    showChoice('THE FLAT KITCHEN', 'Kitchen Supper',
+      'The Prime Minister is cooking. Personally. The kitchen smells of ambition and slightly burnt garlic — and where there is an amateur at a hob, there WILL be falling scraps.\n\nTake up position under the table and catch what drops — walk (or pounce) to be underneath each scrap before it lands.',
+      '🍝 Assume the position', '🚶 Let the floor have it', which => { if (which === 'a') startSupper(); });
     return;
   }
   if (p.type === 'audit') {
@@ -2917,7 +3034,7 @@ const POUNCE_SPD = 265;
 // stray tap on another input can't detonate someone else's wind-up
 function chargeStart(src) {
   const L = G.larry;
-  if (G.mini) { miniTap(); return false; } // during a mini game the pounce IS the move
+  if (G.mini && G.mini.type !== 'supper') { miniTap(); return false; } // during a mini game the pounce IS the move (suppers keep real pounces)
   if (!G.running || G.paused || L.charging) return false;
   L.charging = true;
   L.chargeSrc = src;
@@ -3013,6 +3130,7 @@ const STEAL_LINES = [
   '🧈 The good butter. THE GOOD BUTTER. The Rat King dines like a lord tonight. (Larder: {n})',
 ];
 function pickMouseType(rnd = Math.random) {
+  if (G.daily && G.dailyMod && G.dailyMod.id === 'swift') return 'swift'; // Swift Day: union rules
   const r = rnd();
   if (G.level >= 6 && r < 0.1 && !G.mice.some(mo => mo.type === 'rat')) return 'rat';
   if (G.level >= 7 && r < 0.24 && !G.mice.some(mo => mo.type === 'still')) return 'still';
@@ -3022,7 +3140,8 @@ function pickMouseType(rnd = Math.random) {
 }
 function spawnMouse() {
   const m = curMap();
-  if (G.mice.length >= m.mouseCap(G.level)) return;
+  const cap = m.mouseCap(G.level) + (G.daily && G.dailyMod && G.dailyMod.id === 'rush' ? 3 : 0);
+  if (G.mice.length >= cap) return;
   const rnd = G.daily ? G.dailyRng : Math.random; // daily sorties are seeded: same mice for everyone
   let pool = m.holes;
   // if the current brief wants garden mice, favour the garden burrows
@@ -3385,6 +3504,65 @@ function setupRivals() {
     animT: Math.random() * 9, quipCD: 4, anim: null,
   }));
 }
+/* ---------- THE DOG: on seeded days, the PM's terrier gets garden access ----------
+   It bounces. It barks. It wants, in this order: ball, friend, ball. The first
+   encounter is a formal Incident (held with composure, for an honour); after
+   that it is simply weather. It never leaves the garden. Officially. */
+function setupDog() {
+  G.dog = (G.mapId === 'ground' && DOG_VISIT && !G.daily && G.intro.phase === 'done' && G.level >= 4)
+    ? { x: 32 * TILE, y: 4 * TILE, tx: 32 * TILE, ty: 4 * TILE, animT: Math.random() * 9, barkCD: 2, flip: false }
+    : null;
+}
+const DOG_BARKS = ['BORK!', 'ball??', 'FRIEND!', 'bork bork', 'STICK?!'];
+function updateDog(dt) {
+  const d = G.dog;
+  if (!d) return;
+  d.animT += dt;
+  d.barkCD -= dt;
+  if (d.barkCD <= 0) {
+    addFloat(d.x, d.y - 14, pick(DOG_BARKS), '#f0d0a0');
+    if (Math.random() < 0.5) tone(600, 340, 0.07, 'square', 0.045);
+    d.barkCD = 4 + Math.random() * 6;
+  }
+  // bound to the garden, at terrier speed
+  if (dist(d.x, d.y, d.tx, d.ty) < 6) {
+    d.tx = (3 + Math.random() * 41) * TILE;
+    d.ty = (2 + Math.random() * 5.5) * TILE;
+    if (Math.random() < 0.3) { d.tx = clamp(G.larry.x, 3 * TILE, 44 * TILE); d.ty = clamp(G.larry.y, 2 * TILE, 7.5 * TILE); } // FRIEND??
+  }
+  const dd = Math.max(1, dist(d.x, d.y, d.tx, d.ty));
+  d.x += (d.tx - d.x) / dd * 74 * dt;
+  d.y += (d.ty - d.y) / dd * 74 * dt;
+  d.flip = d.tx < d.x;
+  // the first encounter is The Incident
+  if (!G.met.has('event:dog') && dist(d.x, d.y, G.larry.x, G.larry.y) < 44 && !SCENE && !G.mini && !G.paused && !G.daily) {
+    G.met.add('event:dog');
+    save();
+    playScene([
+      { who: 'THE DOG', text: 'BALL?? FRIEND?? BALL?? STICK?? FRIEND???', do: () => tone(600, 340, 0.08, 'square', 0.06) },
+      { who: 'LARRY', text: '(No.)' },
+      { who: 'THE DOG', text: '(undeterred, vibrating at a frequency visible from the Foreign Office) YES?? GARDEN?? SHARE?? BEST FRIEND?? NOW???' },
+      { who: 'LARRY', text: '(You sit. You stare. You deploy the full institutional weight of not caring, refined over a career at the summit of government.)' },
+      { who: 'THE DOG', text: '…ball? (smaller now) …friend?' },
+      { who: 'LARRY', text: '(The dog, defeated by composure, pretends it wanted the stick anyway. The garden remains a feline jurisdiction. The papers will call it "The Incident". You call it Tuesday.)' },
+    ], () => {
+      earnHonour('incident');
+      toast('🐕 The dog has been filed under "handled". It will be back. They always come back.');
+    });
+  }
+}
+function drawDog() {
+  const d = G.dog;
+  if (!d) return;
+  const hop = Math.abs(Math.sin(d.animT * 11)) * 2.5; // a terrier is mostly airborne
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.24)';
+  ctx.beginPath(); ctx.ellipse(d.x, d.y + 5, 7, 2, 0, 0, 7); ctx.fill();
+  ctx.translate(d.x, d.y - hop);
+  ctx.scale(d.flip ? -1 : 1, 1);
+  ctx.drawImage(DOG_SPRITE, -8, -6);
+  ctx.restore();
+}
 function updateRival(c, dt) {
   c.animT += dt;
   c.quipCD = Math.max(0, c.quipCD - dt);
@@ -3493,6 +3671,7 @@ function drawRival(c) {
 
 // ---------- Butterflies (garden ambience) ----------
 function setupButterflies() {
+  setupDog(); // the dog, if it's a dog day, arrives with the garden ambience
   G.butterflies = [];
   if (G.mapId !== 'ground') return;
   const n = IS_SPRING ? 5 : IS_WINTER ? 1 : 3; // spring brings company
@@ -4438,7 +4617,7 @@ function update(dt) {
   const L = G.larry;
   G.time += dt;
   const tod = (G.time / DAYLEN) % 1;
-  const dark = G.daily ? 0 : 0.5 - 0.5 * Math.cos(tod * Math.PI * 2); // sorties are played in honest daylight
+  const dark = G.daily ? (G.dailyMod && G.dailyMod.id === 'night' ? 0.72 : 0) : 0.5 - 0.5 * Math.cos(tod * Math.PI * 2); // sorties play in daylight — unless it's the Night Shift
   document.getElementById('clock').textContent = dark > 0.55 ? '🌙' : (G.snowing ? '❄️' : G.raining ? '🌧️' : '☀️');
 
   G.isNight = dark > 0.5;
@@ -4836,6 +5015,8 @@ function update(dt) {
   updateKnocks(dt);
   updatePostWatch(dt);
   updatePhotoShoot(dt);
+  updateSupper(dt);
+  updateDog(dt);
   // removal boxes demand supervision
   if (!G.mischief.has('boxes')) {
     for (const b of G.boxes) if (dist(b.x, b.y, L.x, L.y) < 18) { earnMischief('boxes'); break; }
@@ -4896,7 +5077,7 @@ function draw() {
   const L = G.larry;
   const m = curMap();
   const tod = (G.time / DAYLEN) % 1;
-  const dark = G.daily ? 0 : 0.5 - 0.5 * Math.cos(tod * Math.PI * 2); // sorties are played in honest daylight
+  const dark = G.daily ? (G.dailyMod && G.dailyMod.id === 'night' ? 0.72 : 0) : 0.5 - 0.5 * Math.cos(tod * Math.PI * 2); // sorties play in daylight — unless it's the Night Shift
 
   const shX = (shakeOn && G.shake > 0) ? (Math.random() - 0.5) * 5 : 0;
   const shY = (shakeOn && G.shake > 0) ? (Math.random() - 0.5) * 5 : 0;
@@ -5065,6 +5246,7 @@ function draw() {
   for (const kn of G.knocks) ents.push({ y: kn.y, draw: () => drawKnock(kn) });
   for (const t of G.toys) ents.push({ y: t.y - 4, draw: () => drawToy(t) });
   for (const mo of G.mice) ents.push({ y: mo.y, draw: () => drawMouse(mo) });
+  if (G.dog) ents.push({ y: G.dog.y, draw: drawDog });
   for (const c of G.rivals) ents.push({ y: c.y, draw: () => drawRival(c) });
   for (const p of G.paps) ents.push({ y: p.y, draw: () => drawPap(p) });
   for (const n of G.npcs) ents.push({ y: n.y, draw: () => drawPerson(NPC_SPRITES[n.sprite], n.x, n.y, n.animT, n.flip, n.tx && n.pauseT <= 0) });
@@ -5102,6 +5284,7 @@ function draw() {
 
   if (G.mini && G.mini.type === 'post') drawPostWatch();
   if (G.mini && G.mini.type === 'photo') drawPhotoShoot();
+  if (G.mini && G.mini.type === 'supper') drawSupper();
   for (const p of G.particles) {
     ctx.globalAlpha = Math.min(1, p.t * 2);
     ctx.fillStyle = p.color;
@@ -5417,10 +5600,26 @@ function mulberry32(a) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+// the sortie's condition of the day — seeded, so the whole world plays the
+// same twist and the group-chat scores stay comparable
+const DAILY_MODS = [
+  { id: 'std', w: 3 },
+  { id: 'night', name: '🌙 NIGHT SHIFT', blurb: 'Tonight\'s sortie runs after dark. The mice believe this helps them.', w: 1 },
+  { id: 'swift', name: '💨 SWIFT DAY', blurb: 'Every mouse today is a swift brown. Union rules.', w: 1 },
+  { id: 'rush', name: '🐭 RUSH HOUR', blurb: 'Someone left a door open. There are SO many mice.', w: 1 },
+];
+function dailyModFor(seed) {
+  const r = mulberry32(seed ^ 0x50D)();
+  const total = DAILY_MODS.reduce((a, m2) => a + m2.w, 0);
+  let acc = 0;
+  for (const m2 of DAILY_MODS) { acc += m2.w / total; if (r < acc) return m2; }
+  return DAILY_MODS[0];
+}
 function startDaily() {
   const d = new Date();
   const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
   G.dailyRng = mulberry32(seed);
+  G.dailyMod = dailyModFor(seed);
   G.daily = { t: 120, score: 0, caught: 0, escaped: 0, combo: 0, bestCombo: 0, seed, over: false, shown: -1 };
   G.level = 5; G.xp = 0; G.catches = 0;
   if (!pmCount) pmCount = 1;
@@ -5436,8 +5635,10 @@ function startDaily() {
   G.ratKingCD = 1e9;
   G.summons = null; G.summonsCD = 1e9;
   G.fish = 10; G.stam = 100; G.larder = 0; // fixed ration: gadget budgeting is part of the puzzle
+  if (G.dailyMod.id === 'night') G.nv = true; // night sorties come with the monocle fitted
   bootWorld();
-  toast('📅 TODAY\'S SORTIE — 120 seconds. Everyone in the world gets these exact mice today. Set a score worth sharing. GO!');
+  toast('📅 TODAY\'S SORTIE — 120 seconds. Everyone in the world gets these exact mice today.'
+    + (G.dailyMod.name ? ' ' + G.dailyMod.name + ': ' + G.dailyMod.blurb : '') + ' GO!');
   tone(523, 784, 0.25, 'triangle', 0.07);
 }
 function dailySeedStr(seed) {
@@ -5460,6 +5661,7 @@ function dailyEnd() {
     + (D.perfects ? ' ⭐×' + D.perfects : '')
     + (D.bestCombo > 1 ? ' 🔥×' + D.bestCombo : '');
   D.shareText = '🐈 LARRY — Daily Sortie ' + dailySeedStr(D.seed) +
+    (G.dailyMod && G.dailyMod.name ? ' · ' + G.dailyMod.name : '') +
     '\n' + grid +
     '\n🏆 ' + D.score + (isBest ? ' — personal best!' : ' (best today: ' + best + ')');
   document.getElementById('dailyStats').textContent = statsLine;
@@ -5538,7 +5740,7 @@ function startGame(fresh) {
   if (fresh && G.intro.phase === 'shelter' && !location.search.includes('nocard')) {
     showCard('SOUTH LONDON, PRESENT DAY', 'Battersea',
       'The shelter is warm. The service is adequate. The other cats lack ambition. You are LARRY — currently between opportunities — and the mice in Cattery 4 have grown complacent. Show whoever is watching what you can do. (Catch 2 mice.)',
-      null, null);
+      null, () => toast('🐾 Tap the paw / press SPACE to pounce — HOLD it first to charge a longer leap. Release to fly.'));
   }
 }
 
