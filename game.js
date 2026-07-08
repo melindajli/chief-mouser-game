@@ -1415,7 +1415,10 @@ MAPS.first = makeMap('first', 44, 26, (m, set, rect) => {
   ];
   // the No. 11 connecting door, at the far end of the landing — through to the residence
   m.decor.push({ x: 43, y: 13, t: 'door11' }, { x: 42, y: 13, t: 'doormat' }); // the passage, marked
-  m.pois = [{ x: 41, y: 13, emoji: '🚪', type: 'text', texts: TXT_DOOR11 }];
+  m.pois = [
+    { x: 41, y: 13, emoji: '🚪', type: 'text', texts: TXT_DOOR11 },
+    { x: 40, y: 3, emoji: '🧾', type: 'audit' },   // Gladstone's ledger, Pillared Room. Keep the receipts.
+  ];
   m.holes = [[0, 12], [43, 11], [25, 20], [39, 18]]; // hole kept clear of the No. 11 passage tile
   m.knockables = [{ kind: 'vase', x: 10, y: 2 }]; // Regency, wobbly, on the étagère
   m.lamps = [[3.5, 12.5], [20.5, 12.5], [36.5, 12.5], [6.5, 2.5], [21.5, 2.5], [36.5, 2.5], [15.5, 22.5], [36.5, 17.5]];
@@ -1529,7 +1532,10 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
   );
   for (let x = 1; x <= 20; x++) m.decor.push({ x, y: 10, t: 'railing' });   // railings at the kerb
   // sit on the most famous doorstep in the country
-  m.pois = [{ x: 11, y: 5, emoji: '📸', type: 'text', texts: TXT_DOORSTEP }];
+  m.pois = [
+    { x: 11, y: 5, emoji: '📸', type: 'text', texts: TXT_DOORSTEP },
+    { x: 3, y: 6, emoji: '🚐', type: 'homecoming' },   // the Battersea van, on its rounds
+  ];
   m.holes = [[1, 12], [20, 12]];           // a couple of gutter mouseholes
   m.lamps = [[3.5, 3.5], [18.5, 3.5]];
   m.glows = [[10.6, 1.6, 70]];             // the lamp over the famous door, warm at night
@@ -1565,26 +1571,27 @@ const SECRET_TOTAL = Object.values(MAPS).reduce((n, m) => n + m.pois.filter(p =>
 
 // ---------- The Honours List ----------
 const HONOURS = [
-  { id: 'first', name: 'First Blood (Ceremonial)', test: () => G.catches >= 1 },
-  { id: 'fifty', name: 'Fifty Mice for the Crown', test: () => G.catches >= 50 },
-  { id: 'century', name: 'The Century', test: () => G.catches >= 100 },
-  { id: 'hat', name: 'Hat-Trick Hero' },
-  { id: 'secrets', name: 'Official Historian', test: () => G.secretsFound.size >= SECRET_TOTAL },
-  { id: 'pm5', name: 'Outlasted Five PMs', test: () => pmCount >= 5 },
-  { id: 'night10', name: 'Night Stalker', test: () => G.nightCatches >= 10 },
-  { id: 'briefs5', name: 'Model Employee', test: () => G.briefsDone >= 5 },
-  { id: 'ratking', name: 'Deposer of the Rat King' },
-  { id: 'box', name: 'If It Fits, You Sits' },
-  { id: 'decade', name: 'The Institution', test: () => pmCount >= 10 },
-  { id: 'standoff', name: 'Staring Contest Champion' },
-  { id: 'beloved', name: 'Darling of the Press', test: () => G.approval >= 95 },
-  { id: 'menace', name: 'Registered National Menace', test: () => G.mischief.size >= MISCHIEF.length },
-  { id: 'garter', name: 'Order of the Garter (Feline Div.)' },
-  { id: 'vanity', name: 'Patron of the Arts (Self-Portraits)' },
-  { id: 'newlife', name: 'Nine Lives (One Spent Well)' },
-  { id: 'post8', name: 'Postmaster General (Feline Div.)' },
-  { id: 'steady', name: 'Perfectly Composed' },
-  { id: 'patron', name: 'Friend of Battersea', test: () => (G.donated || 0) >= 5 },
+  { id: 'first', name: 'First Blood (Ceremonial)', hint: 'Catch your first mouse.', test: () => G.catches >= 1 },
+  { id: 'fifty', name: 'Fifty Mice for the Crown', hint: 'Fifty career catches.', test: () => G.catches >= 50 },
+  { id: 'century', name: 'The Century', hint: 'One hundred career catches.', test: () => G.catches >= 100 },
+  { id: 'hat', name: 'Hat-Trick Hero', hint: 'Three catches, back to back to back.' },
+  { id: 'secrets', name: 'Official Historian', hint: 'Find every ✨ secret in the house.', test: () => G.secretsFound.size >= SECRET_TOTAL },
+  { id: 'pm5', name: 'Outlasted Five PMs', hint: 'They come. They go. You remain — five times.', test: () => pmCount >= 5 },
+  { id: 'night10', name: 'Night Stalker', hint: 'Ten catches after dark.', test: () => G.nightCatches >= 10 },
+  { id: 'briefs5', name: 'Model Employee', hint: 'Clear five Red Box tasks.', test: () => G.briefsDone >= 5 },
+  { id: 'ratking', name: 'Deposer of the Rat King', hint: 'Depose whatever rules beneath the Cellar.' },
+  { id: 'box', name: 'If It Fits, You Sits', hint: 'A cardboard box. You know what to do.' },
+  { id: 'decade', name: 'The Institution', hint: 'Outlast ten Prime Ministers.', test: () => pmCount >= 10 },
+  { id: 'standoff', name: 'Staring Contest Champion', hint: 'Win a stare-off with a certain diplomat.' },
+  { id: 'beloved', name: 'Darling of the Press', hint: 'Reach 95% approval.', test: () => G.approval >= 95 },
+  { id: 'menace', name: 'Registered National Menace', hint: 'Complete the entire List of Mischief.', test: () => G.mischief.size >= MISCHIEF.length },
+  { id: 'garter', name: 'Order of the Garter (Feline Div.)', hint: 'Serve with continued excellence. The Palace is watching.' },
+  { id: 'vanity', name: 'Patron of the Arts (Self-Portraits)', hint: 'Commission every tier of your own portrait.' },
+  { id: 'newlife', name: 'Nine Lives (One Spent Well)', hint: 'Begin a New Life. Cats are issued nine.' },
+  { id: 'post8', name: 'Postmaster General (Feline Div.)', hint: 'A perfect Post Watch: eight for eight.' },
+  { id: 'steady', name: 'Perfectly Composed', hint: 'A perfect photo-op: hold every pose.' },
+  { id: 'patron', name: 'Friend of Battersea', hint: 'Send five parcels home.', test: () => (G.donated || 0) >= 5 },
+  { id: 'home', name: 'Local Cat Made Good', hint: 'Go home again, decorated.' },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -2085,6 +2092,7 @@ const MUS_BASS = [
   130.81, 0, 130.81, 0, 110, 0, 110, 0, 130.81, 0, 130.81, 0, 98, 0, 98, 0,
   110, 0, 110, 0, 98, 0, 98, 0, 130.81, 0, 130.81, 0, 98, 0, 98, 0,
 ];
+let musRested = false;
 function musicTick() {
   if (!musicOn || muted || !AC || !G.running || G.paused) return;
   const t = AC.currentTime;
@@ -2094,6 +2102,14 @@ function musicTick() {
   const tempo = danger ? 0.24 : stalk ? 0.32 : 0.42;
   const when = Math.max(0, musNext - t);
   const step = musStep % MUS_MELODY.length;
+  // after two full passes the theme takes a long breath — rain, birdsong and
+  // footsteps carry the room until it returns (chase music never rests)
+  if (step === 0 && musStep > 0 && musStep % (MUS_MELODY.length * 2) === 0 && !musRested && !danger) {
+    musRested = true;
+    musNext = t + 24 + Math.random() * 18;
+    return;
+  }
+  if (step === 1) musRested = false;
   musStep++;
   const oct = G.isNight ? 0.5 : 1, soft = G.isNight ? 0.7 : 1;
   const f = MUS_MELODY[step];
@@ -2208,7 +2224,7 @@ const G = {
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
   mini: null, postCD: 0,
-  kingSeen: false, kingDeposed: false,
+  kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
   bowtie: false,
@@ -2284,7 +2300,7 @@ function save() {
       mischief: Array.from(G.mischief),
       met: Array.from(G.met || []),
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
-      donated: G.donated || 0,
+      donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -2708,10 +2724,63 @@ function interactPoi(p) {
     return;
   }
   if (p.type === 'honours') {
-    const latest = [...G.honours].pop();
-    const h = latest && HONOURS.find(x => x.id === latest);
-    toast('🎖️ Career: ' + G.catches + ' caught, ' + G.escapes + ' escaped, ' + G.secretsFound.size + ' secrets uncovered, ' + G.honours.size + ' honours.' + (h ? ' Latest: ' + h.name + '.' : ' The Palace is watching. Catch things.'));
-    sClick();
+    toast('🎖️ Career: ' + G.catches + ' caught, ' + G.escapes + ' escaped, ' + G.secretsFound.size + ' secrets uncovered.');
+    openHonours(); // the board itself, in full
+    return;
+  }
+  if (p.type === 'audit') {
+    const since = G.catches - (G.auditAt || 0);
+    if (since < 4) {
+      toast('🧾 Gladstone flicks the ledger shut. "Nothing material since the last audit. Do try to be less… stable."');
+      sClick(); return;
+    }
+    const pay = Math.min(6, Math.floor(since / 4));
+    G.auditAt = G.catches;
+    G.fish += pay;
+    toast('🧾 Gladstone stamps the ledger: ' + since + ' mice audited and written off as "efficiency savings". The Treasury settles up: +' + pay + ' 🐟. "Keep the receipts."');
+    tone(500, 800, 0.15, 'triangle', 0.06);
+    save();
+    updateHUD();
+    return;
+  }
+  if (p.type === 'homecoming') {
+    if (G.daily) { sClick(); return; }
+    if (!G.honours.has('garter')) {
+      toast('🚐 A Battersea shelter van, on its rounds. The driver gives you a professional nod. (Something for later, perhaps — legends get invited home.)');
+      sClick(); return;
+    }
+    if (G.homecoming) {
+      toast('🚐 The Battersea van. The driver taps the photo of you taped to his dashboard. You have a standing invitation, and you both know it.');
+      sClick(); return;
+    }
+    showChoice('DOWNING STREET', 'An Invitation Home',
+      'The shelter van idles at the kerb. The driver leans out: "They\'d love to see you, you know. The whole cattery watched the ceremony. Hop in — I\'ll have you back before the evening box."\n\nBattersea. Where it all began.',
+      '🚐 Go home. Just for an hour.', '🐾 Another day', which => {
+        if (which !== 'a') return;
+        startFade(() => {
+          switchMap('shelter', 9 * 16, 7 * 16);
+          const tx = 9, ty = 7;
+          sceneCatGuest('ginger', tx + 2, ty, true);   // a kitten, vibrating
+          sceneCatGuest('black', tx + 2, ty + 2, true); // another, pretending not to
+          playScene([
+            { who: 'BATTERSEA', text: '(The same pens. The same smell of disinfectant and hope. Somebody has pinned a newspaper photograph of you to the noticeboard. Front page. Naturally.)' },
+            { who: 'THE WORKER', text: 'Well. Look who it is. We watched the ceremony on the telly — the WHOLE cattery watched. The kittens wouldn\'t sit still.' },
+            { who: 'A KITTEN', text: 'is it TRUE you have a HUNDRED rooms and there\'s a MOUSE KING and the PRIME MINISTER brings you TRIBUTE and—' },
+            { who: 'THE WORKER', text: 'What he means to say is: welcome home, Larry. For a visit. Your old kennel\'s… well. It\'s taken.' },
+            { who: 'LARRY', text: '(You inspect Cage 4. A small tabby blinks out at you — terrified, hopeful, exactly the way you once did. You give it the slow blink. It will do well here. They all do, eventually.)' },
+            { who: 'THE WORKER', text: 'Hired on merit, our Larry. First of his name. …Go on then, back to your government. Mind the front door on your way in — no handle.' },
+            { who: 'LARRY', text: '(Battersea made you. The nation merely borrowed you. You leave one long, slow look on the noticeboard, and go back to work.)' },
+          ], () => {
+            G.homecoming = true;
+            earnHonour('home');
+            save();
+            startFade(() => {
+              switchMap('street', 10.5 * 16, 6.5 * 16);
+              toast('🏠 The van drops you at the kerb. The door has no handle. You stare at it. The system works.');
+            });
+          });
+        });
+      });
     return;
   }
   if (p.type === 'donate') {
@@ -2733,6 +2802,7 @@ function interactPoi(p) {
   }
   if (p.type === 'post') {
     if (G.mini) return;
+    if (G.daily) { toast('📮 The post can wait. You are on the clock, Chief Mouser.'); sClick(); return; }
     if (G.postCD > 0) { toast(pick(p.texts)); sClick(); return; } // between deliveries, the flap is quiet
     showChoice('THE ENTRANCE HALL', "The Eleven O'Clock Post",
       'The flap gives its warning rattle: the post is due. Tradition demands it be inspected. At speed. With claws.\n\nBat the letters out of the air as they come through — tap or SPACE, timing over enthusiasm. Beware the decoy rattles.',
@@ -4294,6 +4364,10 @@ function switchMap(id, x, y) {
   G.camX = clamp(x - VW / 2, 0, Math.max(0, m.w * TILE - VW));
   G.camY = clamp(y - VH / 2, 0, Math.max(0, m.h * TILE - VH));
   G.region = '';
+  // a decorated cat gets invited home — the van waits outside
+  if (id === 'street' && G.honours.has('garter') && !G.homecoming && !G.daily) {
+    toast('🚐 A Battersea van waits at the kerb, engine idling. The driver tips his cap. They\'d love to see you, you know.');
+  }
   save();
 }
 function startFade(cb) { G.fadeDir = 1; G.fadeCb = cb; }
@@ -5401,6 +5475,8 @@ function startGame(fresh) {
     G.met = new Set(s.met || []);
     G.kingSeen = !!s.kingSeen; G.kingDeposed = !!s.kingDeposed;
     G.donated = s.donated || 0;
+    G.homecoming = !!s.homecoming;
+    G.auditAt = s.auditAt || 0;
     // saves from before the flatter XP curve can bank xp above the new,
     // lower thresholds — clamp so one catch doesn't fire a burst of level-ups
     G.xp = Math.min(G.xp, Math.max(0, xpNeed(G.level) - 1));
@@ -5540,6 +5616,30 @@ bindBtn(document.getElementById('menuTie'), () => {
   menuLabels(); sClick(); save();
 });
 bindBtn(document.getElementById('menuPhoto'), photoMode);
+function openHonours() {
+  document.getElementById('menuWrap').classList.add('hidden');
+  menuOpen = false; G.paused = true;
+  const earned = HONOURS.filter(h => G.honours.has(h.id)).length;
+  document.getElementById('honoursSub').textContent =
+    earned + ' of ' + HONOURS.length + ' distinctions conferred. The Palace keeps count. So do you.';
+  const list = document.getElementById('honoursList');
+  list.textContent = '';
+  for (const h of HONOURS) {
+    const row = document.createElement('div');
+    const got = G.honours.has(h.id);
+    row.className = 'mrow' + (got ? ' done' : '');
+    row.textContent = got ? '🎖️ ' + h.name : '❔ ' + h.hint;
+    list.appendChild(row);
+  }
+  document.getElementById('honoursWrap').classList.remove('hidden');
+  sClick();
+}
+bindBtn(document.getElementById('menuHonours'), openHonours);
+bindBtn(document.getElementById('honoursClose'), () => {
+  document.getElementById('honoursWrap').classList.add('hidden');
+  G.paused = false;
+  sClick();
+});
 function openMischief() {
   document.getElementById('menuWrap').classList.add('hidden');
   menuOpen = false; G.paused = true;
@@ -5565,10 +5665,13 @@ function openHouseMap() {
   document.getElementById('menuWrap').classList.add('hidden');
   menuOpen = false; G.paused = true;
   const onFloor = HOUSE_FLOORS.some(f => f.id === G.mapId);
-  document.getElementById('mapHere').textContent = G.mapId === 'street'
+  // after the Garter, the Chief Mouser goes where he pleases: tap a floor to travel
+  const canTravel = G.honours.has('garter') && !G.daily && !SCENE && !G.mini;
+  const FT_SPOTS = { street: [10, 6], flat: [4, 15], first: [4, 12], ground: [4, 13], basement: [3, 3] };
+  document.getElementById('mapHere').textContent = (G.mapId === 'street'
     ? 'outside, on Downing Street'
     : onFloor ? (G.region || '—') + ' · ' + floorLabel(G.mapId).toLowerCase()
-      : 'not in the house';
+      : 'not in the house') + (canTravel ? ' — 🐾 tap a floor to travel' : '');
   const host = document.getElementById('mapFloors');
   host.textContent = '';
   for (const f of HOUSE_FLOORS) {
@@ -5582,6 +5685,16 @@ function openHouseMap() {
     label.textContent = f.label;
     if (here) { const you = document.createElement('span'); you.className = 'fyou'; you.textContent = ' — 🐈 you are here'; label.appendChild(you); }
     div.appendChild(label);
+    if (canTravel && !here && FT_SPOTS[f.id]) {
+      div.style.cursor = 'pointer';
+      const [ftx, fty] = FT_SPOTS[f.id];
+      div.addEventListener('pointerdown', e => {
+        e.preventDefault(); e.stopPropagation();
+        closeHouseMap();
+        sStairs();
+        startFade(() => switchMap(f.id, (ftx + 0.5) * TILE, (fty + 0.5) * TILE));
+      });
+    }
     // scale the pre-rendered floor plan down to fit; mark Larry on his floor
     const TW = 320, scale = TW / (m.w * TILE), TH = Math.round(m.h * TILE * scale);
     const c = document.createElement('canvas');
