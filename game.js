@@ -2291,10 +2291,14 @@ const tieDef = () => TIES.find(t => t.id === G.tie) || TIES[0];
 function save() {
   if (G.daily) return; // daily sorties never touch the career save
   try {
+    // never persist Battersea as the current map: the shelter has no exits
+    // (homecoming visits are scripted round-trips) — a reload mid-visit would
+    // otherwise strand the Chief Mouser at the shelter forever
+    const atShelter = G.intro.phase === 'done' && G.mapId === 'shelter';
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
-      bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: G.mapId,
-      x: G.larry.x, y: G.larry.y, secrets: Array.from(G.secretsFound),
+      bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
+      x: atShelter ? 10.5 * TILE : G.larry.x, y: atShelter ? 6.5 * TILE : G.larry.y, secrets: Array.from(G.secretsFound),
       honours: Array.from(G.honours), nightCatches: G.nightCatches, briefsDone: G.briefsDone, briefStage: G.briefStage, escapes: G.escapes,
       approval: Math.round(G.approval), diff: G.diff, tie: G.tie,
       mischief: Array.from(G.mischief),
@@ -3874,13 +3878,24 @@ function photoOpScene(S) {
   sceneGuest(P_VISITOR, tx - 2, ty, false);      // the PM, ushered in
   sceneGuest(P_PRESS, tx + 2, ty + 1, true);     // the photographer
   sceneGuest(P_AIDE, tx + 2, ty - 1, true);      // the aide, hovering
-  playScene([
+  // the first shoot gets the full ceremony; veterans go straight to work
+  const first = !G.met.has('event:photoop');
+  if (first) G.met.add('event:photoop');
+  const steps = first ? [
     { who: 'THE PHOTOGRAPHER', text: 'Right — ' + S.why + '. Chief Mouser front and centre, please. Everyone else, do your best to look elected.', do: () => tone(1900, 1200, 0.04, 'square', 0.04) },
     { who: 'THE PM', text: pick(PM_NERVES) },
     { who: 'THE AIDE', text: 'The cat knows what he is doing, Prime Minister. The cat always knows what he is doing.' },
     { who: 'THE PHOTOGRAPHER', text: 'Now — HOLD the pose. I watch the tail: when the tail settles, I shoot. Three frames. Make them count.' },
-  ], () => startPhotoShoot(S), true); // the cast stays for the shoot
+  ] : [
+    { who: 'THE PHOTOGRAPHER', text: 'Right — ' + S.why + '. You know the drill, Chief Mouser: watch the tail, hold the pose, three frames. ' + pick(PM_NERVES_SHORT), do: () => tone(1900, 1200, 0.04, 'square', 0.04) },
+  ];
+  playScene(steps, () => startPhotoShoot(S), true); // the cast stays for the shoot
 }
+const PM_NERVES_SHORT = [
+  'The PM is already sweating.', 'The PM practises a wave. At nobody.',
+  'The PM asks if THEY should also hold a pose. No one answers.',
+  'The PM stands very straight, like a person being judged. Correct.',
+];
 
 /* ---- HOLD THE POSE: the photo-op mini game. Larry's tail is the needle —
    tap when it settles in the gold to lock each of the three frames. It
@@ -5667,7 +5682,7 @@ function openHouseMap() {
   const onFloor = HOUSE_FLOORS.some(f => f.id === G.mapId);
   // after the Garter, the Chief Mouser goes where he pleases: tap a floor to travel
   const canTravel = G.honours.has('garter') && !G.daily && !SCENE && !G.mini;
-  const FT_SPOTS = { street: [10, 6], flat: [4, 15], first: [4, 12], ground: [4, 13], basement: [3, 3] };
+  const FT_SPOTS = { street: [10, 6], flat: [4, 15], first: [4, 12], ground: [4, 13], basement: [4, 4] };
   document.getElementById('mapHere').textContent = (G.mapId === 'street'
     ? 'outside, on Downing Street'
     : onFloor ? (G.region || '—') + ' · ' + floorLabel(G.mapId).toLowerCase()
@@ -5726,12 +5741,12 @@ function openHouseMap() {
 function houseMapOpen() { return !document.getElementById('mapWrap').classList.contains('hidden'); }
 function closeHouseMap() {
   document.getElementById('mapWrap').classList.add('hidden');
-  G.paused = false;
+  G.paused = !!SCENE; // a scene, if one is somehow up, keeps the world held
   sClick();
 }
 // pull the map up (or put it away) from anywhere in play — Pokémon-style
 function toggleHouseMap() {
-  if (!G.running) return;
+  if (!G.running || SCENE) return; // a scene has the floor
   if (houseMapOpen()) { closeHouseMap(); return; }
   // don't pop it over a story card or the daily results
   if (!document.getElementById('cardWrap').classList.contains('hidden')) return;

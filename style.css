@@ -174,3 +174,11 @@ body.scene #gadgets, body.scene #btns, body.scene #stick, body.scene #daybox { d
   #xpbar { width:96px; }
   #hudRight { max-width:52vw; }
 }
+/* narrow phones: the top-centre buttons collide with the HUD panels — stack
+   them down the right edge, under the PM box, where a thumb can reach them */
+@media (max-width:430px) {
+  #btnMute, #btnMap, #btnMenu { left:auto; right:10px; transform:none; }
+  #btnMute { top:calc(92px + env(safe-area-inset-top)); }
+  #btnMap  { top:calc(132px + env(safe-area-inset-top)); }
+  #btnMenu { top:calc(172px + env(safe-area-inset-top)); }
+}
