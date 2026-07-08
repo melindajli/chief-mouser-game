@@ -3721,8 +3721,9 @@ function catchMouse(i) {
 function queueBeat(level) {
   const b = beatFor(level);
   // the FIRST van waits for day two: outlasting a PM should take at least one
-  // night's sleep. The dawn handler re-queues this beat once the sun comes up.
-  if (b.pmChange && pmCount <= 1 && Math.floor(G.time / DAYLEN) < 1 && !G.daily) return;
+  // night's sleep. Only the level-3 beat defers (the dawn handler re-queues it);
+  // later pmChange beats fire on their level regardless, so none are ever lost.
+  if (b.pmChange && level === 3 && pmCount <= 1 && Math.floor(G.time / DAYLEN) < 1 && !G.daily) return;
   let body = b.body, newPM = null;
   if (b.pmChange) {
     const old = G.pm;
