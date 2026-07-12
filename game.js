@@ -1250,6 +1250,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
     { x: 19, y: 32, emoji: '🎤', type: 'text', texts: TXT_LECTERN },
     { x: 24, y: 32, emoji: '☂️', type: 'text', texts: TXT_UMBRELLA },
     { x: 21, y: 33, emoji: '📮', type: 'post', texts: TXT_LETTERBOX },
+    { x: 20, y: 27, emoji: '💨', type: 'race' },   // the zoomies, when they take you
     { x: 24, y: 26, emoji: '🎖️', type: 'honours' },
     { x: 28, y: 6, emoji: '🤝', type: 'gardendeal' },   // the gardener knows where they dig
     { x: 6, y: 10, emoji: '🖼️', type: 'commission' },   // vanity, in oils, on the Grand Staircase
@@ -1611,6 +1612,7 @@ const HONOURS = [
   { id: 'home', name: 'Local Cat Made Good', hint: 'Go home again, decorated.' },
   { id: 'incident', name: 'The Incident Was Handled', hint: 'Hold your ground when the dog comes to the garden.' },
   { id: 'gravy', name: 'Not One Pea Lost', hint: 'A perfect Kitchen Supper: catch every falling scrap.' },
+  { id: 'zoomgold', name: 'The 3 A.M. Protocol', hint: 'Run the Zoomies course at full tilt. Gold pace.' },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -1739,6 +1741,95 @@ function miniTap() {
   else if (G.mini.type === 'photo') photoTap();
 }
 
+/* ---------- THE MIDNIGHT ZOOMIES: the whole house is the racetrack ----------
+   Every cat knows the moment: the legs decide before the brain does. A course
+   of paw-print gates around the ground floor at full zoomies speed — pounce to
+   dash (it recharges instantly while they hold). Beat the clock for medals;
+   gold at 3 a.m. pace earns The 3 A.M. Protocol. */
+// each gate is roughly followable from the last — doorways are gates, so the
+// arrow never asks you to run through a wall for long
+const RACE_GATES = [
+  [22, 25], [22, 13],            // down the corridor, hard north
+  [26, 13], [42, 16], [30, 17],  // a lap of the Cabinet Room
+  [15, 13], [5, 13],             // through the Press Office to the staircase
+  [21, 19], [6, 22],             // back out, hairpin into the Study
+  [16, 29],                      // and home across the chequerboard
+];
+function startRace() {
+  G.mini = { type: 'race', t: 0, idx: 0 };
+  toast('💨 THE ZOOMIES — hit every paw-print gate! Pounce to dash. GO GO GO GO GO');
+  tone(300, 900, 0.3, 'sawtooth', 0.07);
+  addParticle(G.larry.x, G.larry.y + 4, '#e9c46a', 10, 44);
+}
+function updateRace(dt) {
+  if (G.raceCD > 0) G.raceCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'race') return;
+  M.t += dt;
+  G.zoomiesT = Math.max(G.zoomiesT || 0, 0.4); // the zoomies do not run out mid-zoom
+  const [gx, gy] = RACE_GATES[M.idx];
+  if (dist(G.larry.x, G.larry.y, (gx + 0.5) * TILE, (gy + 0.5) * TILE) < 15) {
+    M.idx++;
+    addParticle((gx + 0.5) * TILE, (gy + 0.5) * TILE, '#ffd98a', 8, 36);
+    addFloat((gx + 0.5) * TILE, (gy + 0.5) * TILE - 10, '⚡ ' + M.idx + '/' + RACE_GATES.length, '#ffe8b8');
+    tone(500 + M.idx * 60, 700 + M.idx * 60, 0.08, 'triangle', 0.07);
+    if (M.idx >= RACE_GATES.length) finishRace();
+  }
+  // speed lines: the corridor should feel like it's streaming past
+  if (Math.random() < dt * 24) addParticle(G.larry.x - G.larry.cvx * 0.06, G.larry.y - G.larry.cvy * 0.06, 'rgba(255,235,200,0.5)', 1, 8);
+}
+function finishRace() {
+  const M = G.mini;
+  G.mini = null;
+  G.raceCD = 100 + Math.random() * 50;
+  const t = M.t;
+  const medal = t <= 35 ? 'gold' : t <= 48 ? 'silver' : 'bronze';
+  const fish = medal === 'gold' ? 5 : medal === 'silver' ? 3 : 2;
+  const xp = medal === 'gold' ? 15 : medal === 'silver' ? 10 : 6;
+  G.fish += fish; G.xp += xp;
+  const isBest = !G.raceBest || t < G.raceBest;
+  if (isBest) G.raceBest = t;
+  if (medal === 'gold') earnHonour('zoomgold');
+  toast((medal === 'gold' ? '🥇 ' + t.toFixed(1) + 's — FULL ZOOMIES. The portraits are still rattling.'
+    : medal === 'silver' ? '🥈 ' + t.toFixed(1) + 's — a highly professional tear around the premises.'
+      : '🏁 ' + t.toFixed(1) + 's — the zoomies subside, dignity intact. Mostly.')
+    + (isBest ? ' NEW RECORD.' : '') + ' +' + fish + ' 🐟 +' + xp + ' XP');
+  [523, 659, 784, medal === 'gold' ? 1047 : 784].forEach((f, i) => tone(f, f, 0.11, 'square', 0.06, i * 0.09));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  updateHUD();
+}
+function drawRace() {
+  const M = G.mini;
+  RACE_GATES.forEach(([gx, gy], i) => {
+    if (i < M.idx) return; // cleared gates vanish behind you
+    const x = (gx + 0.5) * TILE, y = (gy + 0.5) * TILE;
+    const next = i === M.idx;
+    const pulse = next ? 1 + Math.sin(M.t * 7) * 0.18 : 1;
+    ctx.strokeStyle = next ? '#ffd98a' : 'rgba(255,217,138,0.28)';
+    ctx.lineWidth = next ? 2 : 1;
+    ctx.beginPath(); ctx.arc(x, y, 9 * pulse, 0, 7); ctx.stroke();       // the pad
+    ctx.fillStyle = next ? '#ffd98a' : 'rgba(255,217,138,0.28)';
+    for (let a = 0; a < 4; a++) {                                         // four toes
+      const ang = -Math.PI / 2 + (a - 1.5) * 0.5;
+      ctx.beginPath(); ctx.arc(x + Math.cos(ang) * 12 * pulse, y + Math.sin(ang) * 12 * pulse, 2, 0, 7); ctx.fill();
+    }
+    if (next) { ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.fillText(i + 1 + '', x, y + 3); }
+  });
+  // the clock rides with you; an arrow points the way
+  const L = G.larry, [gx, gy] = RACE_GATES[Math.min(M.idx, RACE_GATES.length - 1)];
+  const ang = Math.atan2((gy + 0.5) * TILE - L.y, (gx + 0.5) * TILE - L.x);
+  ctx.save();
+  ctx.translate(L.x + Math.cos(ang) * 20, L.y + Math.sin(ang) * 20);
+  ctx.rotate(ang);
+  ctx.fillStyle = '#ffd98a';
+  ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3, -4); ctx.lineTo(-3, 4); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.65)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
+  ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.t.toFixed(1) + 's', L.x, L.y - 23);
+}
+
 /* ---------- KITCHEN SUPPERS: the PM cooks; gravity does the rest ----------
    Scraps drop from the supper table. Be underneath each one when it falls —
    walk, or pounce for a longer lunge. The floor gets whatever you miss. */
@@ -1785,6 +1876,7 @@ function updateSupper(dt) {
       addFloat(s.x, s.y - 10, 'nom!', '#ffe8b8');
       addParticle(s.x, s.y, SCRAP_KINDS[s.kind].c, 4, 20);
       tone(500, 380, 0.06, 'triangle', 0.06);
+      briefEvent('scrap');
     } else if (s.y >= 8.6 * TILE) {
       s.landed = true;
       addFloat(s.x, s.y - 6, 'splat.', '#b9b2a2');
@@ -1891,12 +1983,14 @@ function postSwat() {
     l.vx = (l.x < L.x ? -1 : 1) * (130 + Math.random() * 60);
     l.vy = -70;
     M.hit++;
-    addFloat(l.x, l.y - 8, 'SWAT!', '#ffe8b8');
-    addParticle(l.x, l.y, '#efe9dc', 5, 30);
-    tone(900, 500, 0.06, 'triangle', 0.07);
+    M.streak = (M.streak || 0) + 1;
+    addFloat(l.x, l.y - 8, M.streak >= 2 ? 'SWAT! ×' + M.streak : 'SWAT!', M.streak >= 4 ? '#ffd98a' : '#ffe8b8');
+    addParticle(l.x, l.y, '#efe9dc', 5 + M.streak, 30);
+    tone(900 + M.streak * 90, 500 + M.streak * 90, 0.06, 'triangle', 0.07); // the streak sings
     briefEvent('post');
   } else {
     M.lock = 0.55; // swung at a rumour
+    M.streak = 0;
     addFloat(L.x, L.y - 18, 'whiff', '#b9b2a2');
     tone(300, 200, 0.05, 'sine', 0.04);
   }
@@ -1998,6 +2092,8 @@ const CAMPAIGN = [
     why: 'They are in the FLAT. Past the green door at the end of the First Floor landing, up where you SLEEP, where the good sofa is. This stopped being politics the moment they crossed the residence line. Catch two, and let the whole skirting-board world hear about it.' },
   { text: 'Intercept the post (bat 4 letters)', kind: 'post', n: 4,
     why: 'MI-Paw intercepts chatter from below: the mice are riding the eleven o\'clock post in padded envelopes. Take up position at the Entrance Hall letterbox and bat down four before they clear the doormat.' },
+  { text: 'Attend a Kitchen Supper (catch 4 scraps)', kind: 'scrap', n: 4,
+    why: 'The mice have been feasting on what the Prime Minister drops at supper — morale-critical crumbs, straight to the enemy. Up to the flat with you: sit under the little table and intercept four scraps before the floor does.' },
   { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8,
     why: 'The mice have discovered PAPERWORK. Red tape spools down the Corridor again, nearly to the Cabinet Room door. Slash every strip before the government notices the mice run it better than they do.' },
   { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1,
@@ -2331,7 +2427,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, dog: null, tape: [],
+  mini: null, postCD: 0, supperCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
@@ -2415,7 +2511,7 @@ function save() {
       mischief: Array.from(G.mischief),
       met: Array.from(G.met || []),
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
-      donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0,
+      donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0, raceBest: G.raceBest || 0,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -2537,7 +2633,7 @@ function goalEvent(kind, info = {}) {
   }
   if (changed && !DAY.doneAll && !DAY.pending && DAY.goals.every(g => g.prog >= g.n)) {
     // the box is cleared, but a paper prints at dusk, not the moment the ink dries
-    if (G.isNight) eveningPaper();
+    if (G.isNight && !G.mini) eveningPaper();
     else {
       DAY.pending = true;
       toast('📦 The Red Box is CLEARED. The Evening Paper has everything it needs — it goes to print at dusk.');
@@ -2659,7 +2755,7 @@ function inputEnd(id, cx, cy) {
   if (!joy.active || id !== joy.id) return;
   // a quick press that never dragged = "walk here" (or a chin-scritch meow on Larry)
   if (!joy.moved && performance.now() - joy.t0 < 350 && G.running && !G.paused) {
-    if (G.mini && G.mini.type !== 'supper') { miniTap(); resetStick(); return; } // a quick tap plays the mini game (suppers keep tap-to-walk)
+    if (G.mini && G.mini.type !== 'supper' && G.mini.type !== 'race') { miniTap(); resetStick(); return; } // tap games take the tap; suppers and races keep tap-to-walk
     const wx = clamp(G.camX + cx * DPR / ZOOM, TILE, (curMap().w - 1) * TILE);
     const wy = clamp(G.camY + cy * DPR / ZOOM, TILE, (curMap().h - 1) * TILE);
     if (dist(wx, wy, G.larry.x, G.larry.y) < 16 && !G.napping) {
@@ -2842,6 +2938,16 @@ function interactPoi(p) {
   if (p.type === 'honours') {
     toast('🎖️ Career: ' + G.catches + ' caught, ' + G.escapes + ' escaped, ' + G.secretsFound.size + ' secrets uncovered.');
     openHonours(); // the board itself, in full
+    return;
+  }
+  if (p.type === 'race') {
+    if (G.mini) return;
+    if (G.daily) { toast('💨 The zoomies respect the sortie clock. Barely.'); sClick(); return; }
+    if (G.raceCD > 0) { toast('💨 The zoomies have passed. For now. You can feel them out there, circling.'); sClick(); return; }
+    showChoice('SOMETHING STIRS IN YOUR LEGS', 'THE ZOOMIES',
+      'It begins as a tingle in the back paws. The corridor stretches out before you, impossibly long, impossibly runnable. The house holds its breath.\n\nA course of paw-print gates, the full ground floor, ludicrous speed. Pounce to dash — it recharges instantly while the zoomies hold.'
+      + (G.raceBest ? '\n\n🏁 Your record: ' + G.raceBest.toFixed(1) + 's' : ''),
+      '💨 LET THEM TAKE YOU', '🧘 Resist. This time.', which => { if (which === 'a') startRace(); });
     return;
   }
   if (p.type === 'supper') {
@@ -3038,7 +3144,7 @@ const POUNCE_SPD = 265;
 // stray tap on another input can't detonate someone else's wind-up
 function chargeStart(src) {
   const L = G.larry;
-  if (G.mini && G.mini.type !== 'supper') { miniTap(); return false; } // during a mini game the pounce IS the move (suppers keep real pounces)
+  if (G.mini && G.mini.type !== 'supper' && G.mini.type !== 'race') { miniTap(); return false; } // tap games take the pounce; suppers and races keep the real one
   if (!G.running || G.paused || L.charging) return false;
   L.charging = true;
   L.chargeSrc = src;
@@ -4365,7 +4471,8 @@ const MEETINGS = {
   'butler@flat': () => [
     { who: 'THE HOUSEKEEPER', text: 'So you found your way up. Good. Kettle\'s on, telly\'s murmuring, and nobody on this floor wants a single thing from you.' },
     { who: 'THE HOUSEKEEPER', text: 'That\'s the point of the place, you understand. Downstairs you\'re an institution. Up here you\'re just the cat. The sofa is yours. Mind the cocoa.' },
-    { who: 'LARRY', text: '(Just the cat. You try the words on. They fit like a warm windowsill.)' },
+    { who: 'THE HOUSEKEEPER', text: 'Oh — and the PM cooks at that little table. Badly. Generously. Things… fall. If a cat with quick paws were to sit underneath, well. I\'ve seen nothing yet.' },
+    { who: 'LARRY', text: '(Just the cat. With a standing dinner reservation. You try the words on. They fit like a warm windowsill.)' },
   ],
   'officer@street': () => [
     { who: 'THE OFFICER', text: 'Evening, Chief Mouser. Or morning. It all runs together on this door.' },
@@ -4414,7 +4521,7 @@ function showCard(kicker, title, body, gadgetHtml, onClose) {
 }
 
 function maybeShowCard() {
-  if (G.paused || !G.cardQueue.length) return;
+  if (G.paused || G.mini || !G.cardQueue.length) return; // story waits for the game in hand
   const c = G.cardQueue.shift();
   sLevel();
   // some beats play out in the room instead of on a card
@@ -5071,6 +5178,8 @@ function update(dt) {
   updateSupper(dt);
   updateDog(dt);
   updateTape(dt);
+  updateRace(dt);
+  if (G.cardQueue.length && !G.mini && !SCENE) maybeShowCard(); // deferred dispatches surface once play is clear
   // removal boxes demand supervision
   if (!G.mischief.has('boxes')) {
     for (const b of G.boxes) if (dist(b.x, b.y, L.x, L.y) < 18) { earnMischief('boxes'); break; }
@@ -5340,6 +5449,7 @@ function draw() {
   if (G.mini && G.mini.type === 'post') drawPostWatch();
   if (G.mini && G.mini.type === 'photo') drawPhotoShoot();
   if (G.mini && G.mini.type === 'supper') drawSupper();
+  if (G.mini && G.mini.type === 'race') drawRace();
   for (const p of G.particles) {
     ctx.globalAlpha = Math.min(1, p.t * 2);
     ctx.fillStyle = p.color;
@@ -5752,6 +5862,7 @@ function startGame(fresh) {
     G.donated = s.donated || 0;
     G.homecoming = !!s.homecoming;
     G.auditAt = s.auditAt || 0;
+    G.raceBest = s.raceBest || 0;
     // saves from before the flatter XP curve can bank xp above the new,
     // lower thresholds — clamp so one catch doesn't fire a burst of level-ups
     G.xp = Math.min(G.xp, Math.max(0, xpNeed(G.level) - 1));
