@@ -397,6 +397,18 @@ function buildDog() {
   return sCanvas(s);
 }
 const DOG_SPRITE = buildDog();
+function buildPigeon() {
+  const s = mkS(12, 10);
+  sell(s, 5.5, 6, 3.8, 2.8, '#8b93a6');                 // body, civil-service grey
+  sell(s, 9, 4, 2.0, 1.8, '#6e7688');                   // head
+  sp(s, 9.6, 3.4, '#2a2522');                            // eye
+  sp(s, 11, 4.4, '#e0a03c');                             // beak
+  sell(s, 4.5, 5, 2.2, 1.6, '#a6adbd');                 // wing sheen
+  srect(s, 4, 8.6, 1, 1.4, '#c0662f'); srect(s, 7, 8.6, 1, 1.4, '#c0662f'); // feet
+  soutline(s, '#2a2522'); sshade(s, '#2a2522', { '#8b93a6': '#6e7688' });
+  return sCanvas(s);
+}
+const PIGEON_SPRITE = buildPigeon();
 function buildRat() {
   const s = mkS(19, 13);
   sell(s, 8, 8, 6.4, 4.0, '#8a7f74');
@@ -1193,7 +1205,10 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   [[5, 4], [12, 6], [33, 6], [20, 3], [44, 6], [16, 2]].forEach(([x, y]) => set(x, y, 'G'));
   [[8, 2], [16, 5], [25, 3], [30, 7], [43, 2], [10, 7], [22, 6], [28, 2], [34, 4]].forEach(([x, y]) => { if (m.grid[y][x] === 'g') set(x, y, 'f'); });
   rect(38, 3, 43, 6, 'q');                      // the pond
-  m.pois = [{ x: 37, y: 4, emoji: '🐟', type: 'text', texts: TXT_POND }];
+  m.pois = [
+    { x: 37, y: 4, emoji: '🐟', type: 'text', texts: TXT_POND },
+    { x: 39, y: 7, emoji: '🐦', type: 'agm' },  // the pigeons, in session
+  ];
   rect(36, 5, 37, 8, 'a');                      // stone path from the terrace
   rect(30, 5, 35, 5, 'a');
   set(36, 9, 'a'); set(37, 9, 'a');             // terrace steps into the garden
@@ -1315,6 +1330,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
       'No digging. I know that look.',
       'Found a fresh mouse hole by the wall. Thought you\'d want first refusal.',
       'The pigeons and I have an understanding. You\'re welcome to renegotiate it.',
+      'Them pigeons hold their little meeting down at the pond. Very formal. Very smug. You didn\'t hear it from me.',
     ] },
   ];
   m.cats = [
@@ -1366,6 +1382,7 @@ MAPS.basement = makeMap('basement', 30, 20, (m, set, rect) => {
   m.transitions = [{ x: 2, y: 2, to: 'ground', tx: 4, ty: 15 }];
   // the chef's counter: slip him kippers, he opens the pantry door a crack
   m.pois = [{ x: 7, y: 1, emoji: '🤝', type: 'chefdeal' }];
+  m.pois.push({ x: 24, y: 14, emoji: '🎯', type: 'moles' }); // the holes, singing
   m.regions = [
     [1, 1, 18, 17, 'The Kitchen'],
     [21, 1, 28, 7, 'The Pantry'],
@@ -1378,6 +1395,7 @@ MAPS.basement = makeMap('basement', 30, 20, (m, set, rect) => {
     'Cabinet lunch is at one. The mice have already RSVP\'d.',
     'You catch \'em, I ask no questions. That\'s our arrangement.',
     'There\'s a bit of leftover salmon with your name on it. Literally — I labelled it.',
+    'Hear the holes at night? SINGING. Taunting us in our own cellar. Someone ought to go down there and answer.',
   ] }];
   m.mouseCap = lvl => Math.min(5 + Math.floor(lvl * 0.8), 11);
 });
@@ -1613,6 +1631,8 @@ const HONOURS = [
   { id: 'incident', name: 'The Incident Was Handled', hint: 'Hold your ground when the dog comes to the garden.' },
   { id: 'gravy', name: 'Not One Pea Lost', hint: 'A perfect Kitchen Supper: catch every falling scrap.' },
   { id: 'zoomgold', name: 'The 3 A.M. Protocol', hint: 'Run the Zoomies course at full tilt. Gold pace.' },
+  { id: 'agm', name: 'Item One, Resolved', hint: 'Reach the pigeons\' pond congress undetected.' },
+  { id: 'bonk', name: 'Bonk Diplomacy', hint: 'A perfect Whack-a-Mouse: every head answered.' },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -1733,8 +1753,11 @@ function drawKnock(kn) {
    tap / SPACE at the right moment to bat them out of the air. Decoy rattles
    punish button-mashing with a short whiff lockout. The world keeps playing —
    it is, after all, just a cat attacking the mail. */
-// one button, many games: any pounce input routes to the active mini game
-// (Kitchen Suppers is the exception — there, moving and pouncing ARE the game)
+// one button, many games: any pounce input routes to the active TAP game.
+// Movement games (suppers, races, the stalk, the gallery) keep real walking
+// and pouncing — there, moving IS the game.
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1 };
+const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
   if (G.mini.type === 'post') postSwat();
@@ -1828,6 +1851,165 @@ function drawRace() {
   ctx.font = '8px monospace'; ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(12,10,20,0.65)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
   ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.t.toFixed(1) + 's', L.x, L.y - 23);
+}
+
+/* ---------- THE PIGEON AGM: grandmother's footsteps, feline rules ----------
+   The pigeons convene at the pond. Creep close while they peck; FREEZE the
+   moment they look up. Move under observation and the congress scatters.
+   Reach the quorum undetected and the matter of Item One is resolved. */
+const AGM_C = { x: 40.5, y: 7.3 }; // the quorum, on the south bank
+const AGM_SEATS = [[0, 0], [14, -5], [-13, -3], [7, 9], [-9, 8]];
+function startAGM() {
+  G.mini = { type: 'agm', t: 0, phase: 'peck', phT: 1.6 + Math.random() * 1.2, lx: G.larry.x, ly: G.larry.y };
+  toast('🐦 THE AGM IS IN SESSION — creep while they peck, FREEZE when they look. Reach the pond undetected.');
+  tone(400, 300, 0.12, 'sine', 0.05);
+}
+function agmScatter(win) {
+  const M = G.mini;
+  G.mini = null;
+  for (const [dx, dy] of AGM_SEATS) addParticle(AGM_C.x * TILE + dx, AGM_C.y * TILE + dy, '#c9cfda', 6, 46); // feathers
+  tone(700, 1400, 0.2, 'sine', 0.06); tone(600, 1200, 0.2, 'sine', 0.05, 0.08);
+  if (win) {
+    G.agmCD = 150 + Math.random() * 60;
+    G.fish += 4; G.xp += 12;
+    earnHonour('agm');
+    briefEvent('agm');
+    toast('🐦 The AGM erupts in disarray — Item One RESOLVED, in person. The minutes record only feathers. +4 🐟 +12 XP');
+    [659, 784, 1047].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+    while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+    save();
+  } else {
+    G.agmCD = 45 + Math.random() * 30;
+    toast('🐦 SPOTTED. The congress scatters, cooing procedural objections. They will reconvene — and so will you.');
+  }
+  updateHUD();
+}
+function updateAGM(dt) {
+  if (G.agmCD > 0) G.agmCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'agm') return;
+  M.t += dt;
+  const L = G.larry;
+  const moved = dist(L.x, L.y, M.lx, M.ly) / Math.max(dt, 0.001); // px/s this frame
+  M.lx = L.x; M.ly = L.y;
+  M.phT -= dt;
+  if (M.phase === 'peck' && M.phT <= 0) {
+    M.phase = 'tell'; M.phT = 0.45;
+    addFloat(AGM_C.x * TILE, (AGM_C.y - 1.2) * TILE, '!', '#ffd98a');
+    tone(430, 320, 0.09, 'sine', 0.05); // a warning coo
+  } else if (M.phase === 'tell' && M.phT <= 0) {
+    M.phase = 'watch'; M.phT = 0.9 + Math.random() * 0.9;
+  } else if (M.phase === 'watch') {
+    if (moved > 10 || L.pounceT > 0) { agmScatter(false); return; }
+    if (M.phT <= 0) { M.phase = 'peck'; M.phT = 1.3 + Math.random() * 1.5; }
+  }
+  if (dist(L.x, L.y, AGM_C.x * TILE, AGM_C.y * TILE) < 36) agmScatter(true);
+}
+function drawAGM() {
+  const M = G.mini;
+  const watching = M.phase === 'watch', telling = M.phase === 'tell';
+  AGM_SEATS.forEach(([dx, dy], i) => {
+    const x = AGM_C.x * TILE + dx, y = AGM_C.y * TILE + dy;
+    const peck = watching ? 0 : Math.abs(Math.sin(M.t * 6 + i * 1.7)) * 2; // heads down, pecking
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(x, y + 4, 5, 1.6, 0, 0, 7); ctx.fill();
+    ctx.translate(x, y + peck * 0.4);
+    ctx.scale(i % 2 ? -1 : 1, 1);
+    ctx.drawImage(PIGEON_SPRITE, -6, -5 - (watching ? 1.5 : 0)); // heads UP when watching
+    ctx.restore();
+  });
+  ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  const bx = AGM_C.x * TILE, by = (AGM_C.y - 2.1) * TILE;
+  ctx.fillStyle = 'rgba(12,10,20,0.65)';
+  ctx.fillRect(bx - 30, by - 9, 60, 12);
+  ctx.fillStyle = watching ? '#ff8080' : telling ? '#ffd98a' : '#9fe8a0';
+  ctx.fillText(watching ? '👀 WATCHING' : telling ? '…' : 'pecking', bx, by);
+  // the distance to the quorum rides with you
+  const L = G.larry, d = Math.max(0, Math.round(dist(L.x, L.y, AGM_C.x * TILE, AGM_C.y * TILE)) - 36);
+  ctx.fillStyle = 'rgba(12,10,20,0.65)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
+  ctx.fillStyle = '#ffe8b8'; ctx.fillText('👣' + d, L.x, L.y - 23);
+}
+
+/* ---------- WHACK-A-MOUSE: the holes are singing tonight ----------
+   Heads pop from the basement's mouseholes to taunt the management. Watch
+   for the dust, be at the right hole, answer every head. Firmly. */
+function startMoles() {
+  G.mini = { type: 'moles', t: 0, total: 12, done: 0, bonks: 0, hole: -1, phase: 'wait', phT: 1.0 };
+  toast('🎯 TWELVE HEADS — watch for the dust at the hole, be there when the head pops. BONK accordingly.');
+  tone(500, 700, 0.12, 'triangle', 0.06);
+}
+function molesHolePos(i) {
+  const [hx, hy] = curMap().holes[i];
+  return [(hx + 0.5) * TILE, (hy + 0.5) * TILE];
+}
+function updateMoles(dt) {
+  if (G.molesCD > 0) G.molesCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'moles') return;
+  M.t += dt;
+  M.phT -= dt;
+  if (M.phase === 'wait' && M.phT <= 0) {
+    M.hole = (Math.random() * curMap().holes.length) | 0;
+    M.phase = 'tell'; M.phT = 0.55;
+    const [x, y] = molesHolePos(M.hole);
+    addParticle(x, y, '#b3aa99', 4, 16); // the tell-tale dust
+    tone(1500, 1900, 0.05, 'sine', 0.04); // a muffled squeak of intent
+  } else if (M.phase === 'tell' && M.phT <= 0) {
+    M.phase = 'up'; M.phT = Math.max(0.55, 0.95 - M.done * 0.035); // windows shrink as they wise up
+  } else if (M.phase === 'up') {
+    const [x, y] = molesHolePos(M.hole);
+    if (dist(G.larry.x, G.larry.y, x, y) < 22) { // BONK
+      M.bonks++;
+      addFloat(x, y - 10, 'BONK! ' + M.bonks + '/' + M.total, '#ffe8b8');
+      addParticle(x, y, '#b4aea6', 6, 28);
+      tone(300, 180, 0.07, 'square', 0.07);
+      briefEvent('bonk');
+      M.done++; M.phase = 'wait'; M.phT = 0.5 + Math.random() * 0.9;
+    } else if (M.phT <= 0) {
+      const [mx, my] = molesHolePos(M.hole);
+      addFloat(mx, my - 8, 'nyeh!', '#b9b2a2'); // it got its taunt off
+      M.done++; M.phase = 'wait'; M.phT = 0.5 + Math.random() * 0.9;
+    }
+    if (M.done >= M.total) { finishMoles(); return; }
+  }
+}
+function finishMoles() {
+  const M = G.mini;
+  G.mini = null;
+  G.molesCD = 100 + Math.random() * 60;
+  const b = M.bonks;
+  const fish = b >= 12 ? 5 : b >= 9 ? 4 : b >= 6 ? 3 : b >= 3 ? 2 : 1;
+  G.fish += fish; G.xp += b;
+  if (b >= 12) earnHonour('bonk');
+  toast(b >= 12 ? '🎯 TWELVE FOR TWELVE. The holes fall silent. Somewhere below, a king revises his opinion of the management. +' + fish + ' 🐟 +' + b + ' XP'
+    : b >= 8 ? '🎯 ' + b + '/12 answered. The singing has stopped. Mostly. +' + fish + ' 🐟 +' + b + ' XP'
+      : '🎯 ' + b + '/12. The holes consider this a win. The holes should enjoy it while it lasts. +' + fish + ' 🐟' + (b ? ' +' + b + ' XP' : ''));
+  [659, 784, b >= 9 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  updateHUD();
+}
+function drawMoles() {
+  const M = G.mini;
+  if (M.phase === 'tell' || M.phase === 'up') {
+    const [x, y] = molesHolePos(M.hole);
+    ctx.strokeStyle = M.phase === 'up' ? '#ffd98a' : 'rgba(255,217,138,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, 10 + (M.phase === 'tell' ? Math.sin(M.t * 12) * 2 : 0), 0, 7); ctx.stroke();
+    if (M.phase === 'up') { // the head, mid-taunt
+      ctx.fillStyle = '#b4aea6';
+      ctx.beginPath(); ctx.arc(x, y - 2, 3.5, 0, 7); ctx.fill();
+      ctx.fillStyle = '#d78f92';
+      ctx.beginPath(); ctx.arc(x - 3, y - 5, 1.5, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 3, y - 5, 1.5, 0, 7); ctx.fill();
+      ctx.fillStyle = '#2a2522';
+      ctx.fillRect(x - 2, y - 3, 1, 1); ctx.fillRect(x + 1, y - 3, 1, 1);
+    }
+  }
+  const L = G.larry;
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.65)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
+  ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.bonks + '/' + M.total, L.x, L.y - 23);
 }
 
 /* ---------- KITCHEN SUPPERS: the PM cooks; gravity does the rest ----------
@@ -2094,6 +2276,10 @@ const CAMPAIGN = [
     why: 'MI-Paw intercepts chatter from below: the mice are riding the eleven o\'clock post in padded envelopes. Take up position at the Entrance Hall letterbox and bat down four before they clear the doormat.' },
   { text: 'Attend a Kitchen Supper (catch 4 scraps)', kind: 'scrap', n: 4,
     why: 'The mice have been feasting on what the Prime Minister drops at supper — morale-critical crumbs, straight to the enemy. Up to the flat with you: sit under the little table and intercept four scraps before the floor does.' },
+  { text: 'Disperse the Pigeon AGM', kind: 'agm', n: 1,
+    why: 'MI-Paw believes the pond pigeons have been passing intelligence to the mice — minutes of their AGM were found behind the skirting board, annotated. Attend their next session at the garden pond. Uninvited. Undetected.' },
+  { text: 'Answer the singing holes (8 bonks)', kind: 'bonk', n: 8,
+    why: 'The basement holes have begun SINGING at night — coordinated taunting, straight from the Rat King\'s songbook. Take up the drum at the Cellar and answer eight heads personally. Morale is watching.' },
   { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8,
     why: 'The mice have discovered PAPERWORK. Red tape spools down the Corridor again, nearly to the Cabinet Room door. Slash every strip before the government notices the mice run it better than they do.' },
   { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1,
@@ -2427,7 +2613,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0,
+  mini: null, postCD: 0, supperCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
@@ -2755,7 +2941,7 @@ function inputEnd(id, cx, cy) {
   if (!joy.active || id !== joy.id) return;
   // a quick press that never dragged = "walk here" (or a chin-scritch meow on Larry)
   if (!joy.moved && performance.now() - joy.t0 < 350 && G.running && !G.paused) {
-    if (G.mini && G.mini.type !== 'supper' && G.mini.type !== 'race') { miniTap(); resetStick(); return; } // tap games take the tap; suppers and races keep tap-to-walk
+    if (miniTakesInput()) { miniTap(); resetStick(); return; } // tap games take the tap; movement games keep tap-to-walk
     const wx = clamp(G.camX + cx * DPR / ZOOM, TILE, (curMap().w - 1) * TILE);
     const wy = clamp(G.camY + cy * DPR / ZOOM, TILE, (curMap().h - 1) * TILE);
     if (dist(wx, wy, G.larry.x, G.larry.y) < 16 && !G.napping) {
@@ -2948,6 +3134,27 @@ function interactPoi(p) {
       'It begins as a tingle in the back paws. The corridor stretches out before you, impossibly long, impossibly runnable. The house holds its breath.\n\nA course of paw-print gates, the full ground floor, ludicrous speed. Pounce to dash — it recharges instantly while the zoomies hold.'
       + (G.raceBest ? '\n\n🏁 Your record: ' + G.raceBest.toFixed(1) + 's' : ''),
       '💨 LET THEM TAKE YOU', '🧘 Resist. This time.', which => { if (which === 'a') startRace(); });
+    return;
+  }
+  if (p.type === 'agm') {
+    if (G.mini) return;
+    if (G.daily) { toast('🐦 The pigeons refuse to convene on sortie day. Scheduling conflict, they say.'); sClick(); return; }
+    if (G.dog) { toast('🐦 The AGM is postponed. There is a DOG in the garden. The pigeons cite "security concerns".'); sClick(); return; }
+    if (G.agmCD > 0) { toast('🐦 The pigeons are between sessions. They reconvene shortly — check the agenda.'); sClick(); return; }
+    showChoice('THE GARDEN POND', 'The Pigeon AGM',
+      'The pigeons are in session at the pond. Item One on the agenda: YOU. Again.\n\nTake up position downwind and STALK: creep close while they peck — and FREEZE when they look up. One twitch under observation and the whole congress scatters. Reach the quorum undetected, and the minutes write themselves.',
+      '🐾 Table a motion. Personally.', '🚶 Let democracy have its day', which => {
+        if (which === 'a') startFade(() => { G.larry.x = 4 * TILE; G.larry.y = 7.5 * TILE; startAGM(); }); // downwind, on the clear south lawn
+      });
+    return;
+  }
+  if (p.type === 'moles') {
+    if (G.mini) return;
+    if (G.daily) { toast('🎯 The holes are quiet during the sortie. Even taunting has hours.'); sClick(); return; }
+    if (G.molesCD > 0) { toast('🎯 The holes are quiet. Regrouping, probably. Composing new taunts.'); sClick(); return; }
+    showChoice('THE CELLAR', 'The Holes Are Singing',
+      'From every mousehole in the basement: squeaking. Rhythmic. TAUNTING. Heads pop out, pull faces, and vanish before an honest paw can answer.\n\nTwelve heads. Watch for the tell-tale dust, be at the right hole when the head appears, and answer it. Firmly.',
+      '🐾 Answer every single one', '🚶 Rise above it (for now)', which => { if (which === 'a') startMoles(); });
     return;
   }
   if (p.type === 'supper') {
@@ -3144,7 +3351,7 @@ const POUNCE_SPD = 265;
 // stray tap on another input can't detonate someone else's wind-up
 function chargeStart(src) {
   const L = G.larry;
-  if (G.mini && G.mini.type !== 'supper' && G.mini.type !== 'race') { miniTap(); return false; } // tap games take the pounce; suppers and races keep the real one
+  if (miniTakesInput()) { miniTap(); return false; } // tap games take the pounce; movement games keep the real one
   if (!G.running || G.paused || L.charging) return false;
   L.charging = true;
   L.chargeSrc = src;
@@ -5179,6 +5386,8 @@ function update(dt) {
   updateDog(dt);
   updateTape(dt);
   updateRace(dt);
+  updateAGM(dt);
+  updateMoles(dt);
   if (G.cardQueue.length && !G.mini && !SCENE) maybeShowCard(); // deferred dispatches surface once play is clear
   // removal boxes demand supervision
   if (!G.mischief.has('boxes')) {
@@ -5450,6 +5659,8 @@ function draw() {
   if (G.mini && G.mini.type === 'photo') drawPhotoShoot();
   if (G.mini && G.mini.type === 'supper') drawSupper();
   if (G.mini && G.mini.type === 'race') drawRace();
+  if (G.mini && G.mini.type === 'agm') drawAGM();
+  if (G.mini && G.mini.type === 'moles') drawMoles();
   for (const p of G.particles) {
     ctx.globalAlpha = Math.min(1, p.t * 2);
     ctx.fillStyle = p.color;
