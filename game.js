@@ -5635,6 +5635,8 @@ function startDaily() {
   G.ratKingCD = 1e9;
   G.summons = null; G.summonsCD = 1e9;
   G.fish = 10; G.stam = 100; G.larder = 0; // fixed ration: gadget budgeting is part of the puzzle
+  // a level playing field: career buffs never ride into the sortie
+  G.nv = false; G.dream = null; G.superArmed = false;
   if (G.dailyMod.id === 'night') G.nv = true; // night sorties come with the monocle fitted
   bootWorld();
   toast('📅 TODAY\'S SORTIE — 120 seconds. Everyone in the world gets these exact mice today.'
