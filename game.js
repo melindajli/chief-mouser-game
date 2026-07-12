@@ -1975,8 +1975,8 @@ const CAMPAIGN = [
     why: 'Your first morning as Chief Mouser. The Cabinet Office would like proof you can, in fact, catch mice. Catch two, anywhere. Set the tone for the reign.' },
   { text: 'Clear 3 mice from the Kitchen', kind: 'catch', map: 'basement', n: 3,
     why: 'Word has gone round the skirting boards that the new cat is untested. The mice strike the Kitchen first, to see what you do. Clear three (downstairs, down the Grand Staircase).' },
-  { text: 'Cut through the red tape', kind: 'yarn', n: 8,
-    why: 'Your first true adversary at No. 10 is not a mouse. A ball of ministerial red tape has come loose in the corridors — and the mice are watching to see whether bureaucracy defeats you as it defeats everyone else. Cut through it.' },
+  { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8,
+    why: 'Your first true adversary at No. 10 is not a mouse. A spool of ministerial red tape has come loose and unrolled the LENGTH of the Corridor — and the mice are watching to see whether bureaucracy defeats you as it defeats everyone else. Cut through it: every strip, claws out.' },
   { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1,
     why: 'They send a fast one — a scout, testing your speed while the rest watch from the dark. Catch the swift brown mouse and end the experiment before they draw conclusions.' },
   { text: 'Catch 2 mice in the Garden', kind: 'catch', region: 'The Garden', n: 2,
@@ -1998,15 +1998,15 @@ const CAMPAIGN = [
     why: 'They are in the FLAT. Past the green door at the end of the First Floor landing, up where you SLEEP, where the good sofa is. This stopped being politics the moment they crossed the residence line. Catch two, and let the whole skirting-board world hear about it.' },
   { text: 'Intercept the post (bat 4 letters)', kind: 'post', n: 4,
     why: 'MI-Paw intercepts chatter from below: the mice are riding the eleven o\'clock post in padded envelopes. Take up position at the Entrance Hall letterbox and bat down four before they clear the doormat.' },
-  { text: 'Cut through the red tape', kind: 'yarn', n: 8,
-    why: 'The mice have discovered PAPERWORK. Red tape spools loose through every corridor, nearly to the Cabinet Room. Cut through it before the government notices the mice run it better than they do.' },
+  { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8,
+    why: 'The mice have discovered PAPERWORK. Red tape spools down the Corridor again, nearly to the Cabinet Room door. Slash every strip before the government notices the mice run it better than they do.' },
   { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1,
     why: 'A coordinated night assault, floor to floor, directed by something large beneath the Cellar. Catch one after dark and send the message back up the chain: the night is still, and will remain, yours.' },
   { text: 'Hold the Garden (2 mice)', kind: 'catch', region: 'The Garden', n: 2,
     why: 'The siege spills outdoors; every wall of the house is being tested at once. Hold the Garden — catch two — and hold the line. They will not find it undefended while you draw breath.' },
 ];
 const BRIEF_LOOP_FROM = 10; // once the campaign is done, cycle the "siege" tail forever
-const HOLDING_BRIEF = { text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2,
+const HOLDING_BRIEF = { holding: true, text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2,
   why: 'The picture below is still forming. Keep the pressure on while it clears — catch two more on your rounds.' };
 // swift mice spawn from lv3, tricksters lv5, Very Still Mice lv7
 function briefPossible(d) {
@@ -2053,6 +2053,7 @@ function newBrief() {
     toast('📕 NEW RED BOX TASK — ' + (def.why || def.text));
     tone(500, 700, 0.15, 'triangle', 0.06);
   }
+  syncTape(); // red-tape tasks lay their strips down the Corridor immediately
   updateHUD();
 }
 function briefEvent(kind, info = {}) {
@@ -2330,7 +2331,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, dog: null,
+  mini: null, postCD: 0, supperCD: 0, dog: null, tape: [],
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
@@ -2406,7 +2407,10 @@ function save() {
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
       x: atShelter ? 10.5 * TILE : G.larry.x, y: atShelter ? 6.5 * TILE : G.larry.y, secrets: Array.from(G.secretsFound),
-      honours: Array.from(G.honours), nightCatches: G.nightCatches, briefsDone: G.briefsDone, briefStage: G.briefStage, escapes: G.escapes,
+      // an in-flight campaign task rewinds one stage so a reload re-issues it
+      // instead of silently skipping the beat (stage points at next-to-issue)
+      honours: Array.from(G.honours), nightCatches: G.nightCatches, briefsDone: G.briefsDone,
+      briefStage: G.briefStage - (G.brief && !G.brief.def.holding && G.briefStage > 0 ? 1 : 0), escapes: G.escapes,
       approval: Math.round(G.approval), diff: G.diff, tie: G.tie,
       mischief: Array.from(G.mischief),
       met: Array.from(G.met || []),
@@ -3454,7 +3458,56 @@ function circleFreeOn(m, px, py, r) {
   return !isSolidOn(m, px - r, py - r) && !isSolidOn(m, px + r, py - r) && !isSolidOn(m, px - r, py + r) && !isSolidOn(m, px + r, py + r);
 }
 
-// ---------- Yarn balls: battable physics toys ----------
+/* ---------- RED TAPE: the bureaucracy, made cuttable ----------
+   When a "cut the red tape" task is live, a trail of actual red tape strips
+   unrolls down the ground-floor Corridor. Walk over or pounce a strip to
+   slash it — a paper tear, a ✂️ counter, and one less piece of government.
+   (The yarn balls are just toys again; they never were the tape.) */
+const TAPE_SPOTS = [ // down the Corridor, hall end to the Cabinet Room door
+  // (the hall-end strip stays two tiles clear of the front door — slashing
+  //  bureaucracy should never accidentally put you on the doorstep)
+  [21.5, 31], [21.6, 29], [22.4, 27], [22, 24.5], [21.5, 22], [22.5, 19], [22, 16], [22.3, 13],
+];
+function syncTape() {
+  const active = G.brief && G.brief.def.kind === 'yarn' && G.mapId === 'ground' && !G.daily;
+  if (!active) { G.tape = []; return; }
+  const remaining = G.brief.def.n - G.brief.prog;
+  G.tape = TAPE_SPOTS.slice(0, Math.max(0, remaining)).map(([x, y], i) => ({
+    x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, ang: (hash2(x * 7, y * 3) - 0.5) * 1.1, i,
+  }));
+}
+function updateTape(dt) {
+  if (!G.tape || !G.tape.length) return;
+  const L = G.larry;
+  for (let i = G.tape.length - 1; i >= 0; i--) {
+    const t = G.tape[i];
+    if (dist(t.x, t.y, L.x, L.y) < 11 && (L.moving || L.pounceT > 0)) {
+      G.tape.splice(i, 1);
+      addParticle(t.x, t.y, '#cf2b3a', 7, 30);
+      const prog = G.brief ? G.brief.prog + 1 : 0;
+      addFloat(t.x, t.y - 10, '✂️ ' + prog + '/8', '#ffe8b8');
+      tone(1400, 500, 0.05, 'square', 0.05);            // the tear
+      tone(900, 300, 0.06, 'square', 0.04, 0.05);
+      briefEvent('yarn');
+      if (!G.brief) { G.tape = []; break; }              // task done: the corridor is clear
+    }
+  }
+}
+function drawTape() {
+  for (const t of G.tape || []) {
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.rotate(t.ang);
+    ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(-7, 3, 14, 2);
+    ctx.fillStyle = '#cf2b3a'; ctx.fillRect(-7, -2, 14, 5);         // the strip
+    ctx.fillStyle = '#a31f2e'; ctx.fillRect(-7, 2, 14, 1);
+    ctx.fillStyle = '#f0e3c0';                                       // OFFICIAL, in tiny print
+    ctx.fillRect(-5, 0, 2, 1); ctx.fillRect(-1, 0, 2, 1); ctx.fillRect(3, 0, 2, 1);
+    ctx.restore();
+  }
+}
+
+// ---------- Yarn balls: battable physics toys (purely recreational) ----------
 function setupToys() {
   G.toys = (curMap().toys || []).map(([x, y, color]) => ({
     x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, vx: 0, vy: 0, color, spin: 0,
@@ -3464,7 +3517,6 @@ function updateToy(t, dt) {
   const L = G.larry;
   const d = dist(t.x, t.y, L.x, L.y);
   if (d < 10 && (L.moving || L.pounceT > 0)) { // batted!
-    if (Math.hypot(t.vx, t.vy) < 20) briefEvent('yarn');
     const push = L.pounceT > 0 ? 190 : 120;
     const dx2 = (t.x - L.x) / Math.max(1, d), dy2 = (t.y - L.y) / Math.max(1, d);
     t.vx = dx2 * push + L.cvx * 0.4;
@@ -4559,6 +4611,7 @@ function switchMap(id, x, y) {
   G.camX = clamp(x - VW / 2, 0, Math.max(0, m.w * TILE - VW));
   G.camY = clamp(y - VH / 2, 0, Math.max(0, m.h * TILE - VH));
   G.region = '';
+  syncTape(); // a live red-tape task re-lays its strips when you arrive on the floor
   // a decorated cat gets invited home — the van waits outside
   if (id === 'street' && G.honours.has('garter') && !G.homecoming && !G.daily) {
     toast('🚐 A Battersea van waits at the kerb, engine idling. The driver tips his cap. They\'d love to see you, you know.');
@@ -5017,6 +5070,7 @@ function update(dt) {
   updatePhotoShoot(dt);
   updateSupper(dt);
   updateDog(dt);
+  updateTape(dt);
   // removal boxes demand supervision
   if (!G.mischief.has('boxes')) {
     for (const b of G.boxes) if (dist(b.x, b.y, L.x, L.y) < 18) { earnMischief('boxes'); break; }
@@ -5282,6 +5336,7 @@ function draw() {
     ctx.fillStyle = '#33261a'; ctx.fillRect(b.x, b.y, 1, 2);
   }
 
+  drawTape();
   if (G.mini && G.mini.type === 'post') drawPostWatch();
   if (G.mini && G.mini.type === 'photo') drawPhotoShoot();
   if (G.mini && G.mini.type === 'supper') drawSupper();
