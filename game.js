@@ -1925,10 +1925,14 @@ function drawAGM() {
   ctx.fillRect(bx - 30, by - 9, 60, 12);
   ctx.fillStyle = watching ? '#ff8080' : telling ? '#ffd98a' : '#9fe8a0';
   ctx.fillText(watching ? '👀 WATCHING' : telling ? '…' : 'pecking', bx, by);
-  // the distance to the quorum rides with you
+  // the signal rides WITH you — the pond is off-screen for most of the stalk,
+  // so Larry's own counter is the traffic light: creep / brace / FREEZE
   const L = G.larry, d = Math.max(0, Math.round(dist(L.x, L.y, AGM_C.x * TILE, AGM_C.y * TILE)) - 36);
-  ctx.fillStyle = 'rgba(12,10,20,0.65)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
-  ctx.fillStyle = '#ffe8b8'; ctx.fillText('👣' + d, L.x, L.y - 23);
+  const w = watching ? 52 : telling ? 40 : 34;
+  ctx.fillStyle = watching ? 'rgba(60,10,14,0.8)' : telling ? 'rgba(60,45,10,0.8)' : 'rgba(12,10,20,0.65)';
+  ctx.fillRect(L.x - w / 2, L.y - 32, w, 11);
+  ctx.fillStyle = watching ? '#ff8080' : telling ? '#ffd98a' : '#9fe8a0';
+  ctx.fillText(watching ? '👀 FREEZE' : telling ? '! ' + d : '👣' + d, L.x, L.y - 23);
 }
 
 /* ---------- WHACK-A-MOUSE: the holes are singing tonight ----------
@@ -2022,11 +2026,11 @@ function startSupper() {
   toast('🍝 KITCHEN SUPPER — scraps incoming! Be under each one before it lands. The floor is the enemy.');
   tone(523, 659, 0.15, 'triangle', 0.06);
 }
-const SCRAP_KINDS = [
-  { c: '#b5651d', w: 5, h: 2 },  // sausage end
-  { c: '#7a9c62', w: 2, h: 2 },  // a pea, absconding
-  { c: '#e0c084', w: 3, h: 3 },  // roast potato
-  { c: '#c94a3a', w: 3, h: 2 },  // mystery in tomato
+const SCRAP_KINDS = [ // sized to be seen falling from across the kitchen
+  { c: '#b5651d', w: 8, h: 3 },  // sausage end
+  { c: '#7a9c62', w: 4, h: 4 },  // a pea, absconding
+  { c: '#e0c084', w: 5, h: 5 },  // roast potato
+  { c: '#c94a3a', w: 6, h: 4 },  // mystery in tomato
 ];
 function updateSupper(dt) {
   if (G.supperCD > 0) G.supperCD -= dt;
@@ -2091,7 +2095,10 @@ function drawSupper() {
     const k = SCRAP_KINDS[s.kind];
     ctx.fillStyle = s.landed ? '#8a8478' : k.c;
     ctx.fillRect(s.x - k.w / 2, s.y - k.h / 2, k.w, k.h);
-    if (!s.landed) { ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(s.x - 2, 8.6 * TILE, 4, 1); } // landing shadow
+    if (!s.landed) {
+      ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(s.x - k.w / 2, s.y - k.h / 2, k.w, 1); // glint
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(s.x - 3, 8.6 * TILE, 6, 2); // landing shadow, unmissable
+    }
   }
   ctx.font = '8px monospace'; ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(12,10,20,0.65)';
