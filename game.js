@@ -1295,12 +1295,12 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
     { x: 2, y: 16, f: 'The Grand Staircase, where every important arrival trips exactly once. You have seen everything. You will say nothing. For tuna.' },
     { x: 44, y: 7, f: 'The Downing Street pigeons hold their AGM at this pond. You are Item One on the agenda. Again.' },
     { x: 3, y: 2, f: 'Palmerston of the Foreign Office occupied this tree for six hours in 2016. Historians call it The Incident. You call it Tuesday.' },
-    { x: 35, y: 11, f: 'Larry fact: the only picture in the Cabinet Room is Robert Walpole — the first Prime Minister — over the fireplace. Everyone else who ever mattered got a chair. He got the wall.' },
-    { x: 33, y: 17, f: "Larry fact: the PM's chair is the only one at the table with arms, set midway down, facing the windows. You have tested it. It is, you can confirm, the good chair." },
-    { x: 7, y: 12, f: 'Larry fact: the staircase portraits were a gift of Sir Edward Hamilton of the Treasury in 1907. They descend the wall in strict order, back to Walpole — and the wall is nearly full.' },
+    { x: 35, y: 11, f: 'Larry fact: the Cabinet Room\'s only picture is Walpole, the first PM. Everyone else got a chair; he got the wall.' },
+    { x: 33, y: 17, f: "Larry fact: the PM's chair is the only one with arms. You have tested it. It is the good chair." },
+    { x: 7, y: 12, f: 'Larry fact: the staircase portraits, in strict order back to Walpole, since 1907. The wall is nearly full.' },
     { x: 5, y: 14, f: 'Larry fact: Winston Churchill is the only Prime Minister on this staircase to appear twice. You have counted. Repeatedly. Twice.' },
-    { x: 6, y: 22, f: "Larry fact: this study was Margaret Thatcher's own office; her portrait by Richard Stone still keeps the room. She worked a cat's hours. You keep them for her." },
-    { x: 14, y: 4, f: 'Larry fact: entire governments have been launched at a podium on this lawn, before the roses and the cameras. You have inspected the podium spot thoroughly. It smells of nerves.' },
+    { x: 6, y: 22, f: "Larry fact: this study was Thatcher's office; her portrait still keeps the room. She worked a cat's hours." },
+    { x: 14, y: 4, f: 'Larry fact: governments have been launched at a podium on this lawn. The spot smells of nerves.' },
   ];
   m.holes = [[12, 29], [31, 30], [47, 15], [20, 23], [24, 16], [10, 1], [33, 6]]; // last two: garden burrows (tree + hedge)
   m.knockables = [
@@ -1349,6 +1349,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
       'Found a fresh mouse hole by the wall. Thought you\'d want first refusal.',
       'The pigeons and I have an understanding. You\'re welcome to renegotiate it.',
       'Them pigeons hold their little meeting down at the pond. Very formal. Very smug. You didn\'t hear it from me.',
+      'Every reception, same story: platters out, gulls circling. One day some hero\'ll sort them birds out.',
     ] },
   ];
   m.cats = [
@@ -1464,9 +1465,9 @@ MAPS.first = makeMap('first', 44, 26, (m, set, rect) => {
   m.secrets = [
     { x: 41, y: 9, f: 'Larry fact: a President of the United States once bent down to greet Larry near this spot. Larry permitted 4.0 seconds of contact. A record.' },
     { x: 23, y: 24, f: 'The state dinner service, in use since 1735. You have never broken a single piece. The humans have broken nine.' },
-    { x: 12, y: 22, f: 'Larry fact: the State Dining Room was raised by Sir John Soane in the 1820s — a soaring vaulted chamber bolted onto the house purely for banquets. It seats a Cabinet of egos. You seat one cat, centrally.' },
-    { x: 24, y: 7, f: "Larry fact: the Doric columns framing the Terracotta Room are Quinlan Terry's, from the 1980s restoration. Grand, load-bearing, and — you have quietly confirmed — climbable." },
-    { x: 40, y: 7, f: 'Larry fact: the Pillared Drawing Room is the largest of the state rooms, named for its screen of columns. It is where Prime Ministers pose with presidents. You have photobombed four such photographs.' },
+    { x: 12, y: 22, f: 'Larry fact: Soane built this vaulted room in the 1820s, purely for banquets. It seats a Cabinet of egos. You seat one cat, centrally.' },
+    { x: 24, y: 7, f: "Larry fact: the Doric columns are Quinlan Terry's, from the 1980s. Load-bearing and — quietly confirmed — climbable." },
+    { x: 40, y: 7, f: 'Larry fact: the largest state room, where PMs pose with presidents. You have photobombed four such photographs.' },
   ];
   // the No. 11 connecting door, at the far end of the landing — through to the residence
   m.decor.push({ x: 43, y: 13, t: 'door11' }, { x: 42, y: 13, t: 'doormat' }); // the passage, marked
@@ -1547,9 +1548,9 @@ MAPS.flat = makeMap('flat', 34, 22, (m, set, rect) => {
     { x: 31, y: 13, emoji: '🚪', type: 'text', texts: TXT_DOOR11 },
   ];
   m.secrets = [
-    { x: 8, y: 14, f: 'Larry fact: the Prime Minister lives up here, in the flat above No. 11 — the larger of the two. The Chancellor takes the smaller flat over No. 10. Occupants have been known to swap. You never move; you simply RESIDE.' },
-    { x: 27, y: 15, f: 'The wallpaper up here has, on occasion, cost more than anyone in public life cares to admit. You decline to take a view. You do, however, choose to sharpen your claws in the OTHER room.' },
-    { x: 5, y: 16, f: 'Larry fact: officially, no cat has the run of the private flat. Officially. You have made your own arrangements — as you have with every rule in this house.' },
+    { x: 8, y: 14, f: 'Larry fact: the PM lives up here, above No. 11 — the larger flat. Occupants swap. You simply RESIDE.' },
+    { x: 27, y: 15, f: 'The wallpaper cost more than anyone cares to admit. You take no view. You sharpen your claws in the OTHER room.' },
+    { x: 5, y: 16, f: 'Larry fact: officially, no cat has the run of the flat. Officially. You have made arrangements.' },
   ];
   m.holes = [[0, 14], [33, 16], [9, 10]];
   m.knockables = [{ kind: 'mug', x: 24, y: 5 }];    // the PM's cocoa, on the supper table
@@ -1918,6 +1919,7 @@ function drawGameMarkers() {
     if (!em) continue;
     if (p.type === 'gauntlet' && !G.gauntletOpen) continue;   // still just a crack
     if (p.type === 'protocol' && !G.protocolOpen) continue;   // still just a dark box
+    if (p.type === 'gulls' && !G.gullsReady) continue;        // no platters, no raid
     if (G.nearPoi === p) continue;                            // the close-up indicator takes over
     const mx = (p.x + 0.5) * TILE, my = (p.y - 0.2) * TILE + Math.sin(t * 2.2 + p.x) * 1.8;
     ctx.save();
@@ -1994,7 +1996,8 @@ function updateGulls(dt) {
 function finishGulls() {
   const M = G.mini;
   G.mini = null;
-  G.gullsCD = 100 + Math.random() * 50;
+  G.gullsReady = false; // the platters are cleared; the next reception re-arms the raid
+  save();
   const s = M.saved;
   const fish = s >= 8 ? 5 : s >= 6 ? 4 : s >= 4 ? 3 : s >= 2 ? 2 : 1;
   G.fish += fish; G.xp += s * 2;
@@ -2200,7 +2203,7 @@ function finishGauntlet(win) {
       G.protocolOpen = true;
       G.cardQueue.push({
         level: G.level, title: 'The Red Dot Protocol',
-        body: 'A letter under the Study door, unsigned, smelling faintly of ozone:\n\n"The Under-Road run has been NOTED. Reflexes of that grade require formal development. A training terminal has been installed beside the Study desk. Authorization: granted. Bring your whole self.\n\n— M."\n\n(A red 🔴 terminal now glows in the PM\'s Study.)',
+        body: 'A letter under the Study door, unsigned, smelling of ozone:\n\n"The Under-Road run has been NOTED. A training terminal is installed by the Study desk. Authorization: granted.\n\n— M."',
       });
     }
     save();
@@ -2320,10 +2323,10 @@ function drawProtocol() {
    the way wars actually end. */
 function coronationScene() {
   playScene([
-    { who: 'THE CELLAR', text: '(Every hole at once begins to SING — not taunting, this time. An anthem. Formal. Rehearsed. Somewhere below, something is being placed upon someone.)', do: () => { tone(220, 220, 0.4, 'triangle', 0.05); tone(277, 277, 0.4, 'triangle', 0.04, 0.1); } },
-    { who: 'THE HERALD MOUSE', text: 'By unanimous acclaim of the Under-Parliament — there was one abstention; he has been dealt with — the Crown Below passes. HER ENORMITY: THE QUEEN.' },
-    { who: 'THE HERALD MOUSE', text: 'She has read your file, Chief Mouser. All of it. The margins of it. She proposes, and I quote precisely, "a conversation between professionals." The Under-Road stands open. The patrols will stand aside.' },
-    { who: 'MI-PAW', text: 'A monarch who READS is a different proposition entirely. Go when you are ready — and Chief Mouser: consider listening. Wars end in rooms.' },
+    { who: 'THE CELLAR', text: '(Every hole begins to SING — an anthem, formal, rehearsed. Below, something is being placed upon someone.)', do: () => { tone(220, 220, 0.4, 'triangle', 0.05); tone(277, 277, 0.4, 'triangle', 0.04, 0.1); } },
+    { who: 'THE HERALD MOUSE', text: 'By acclaim of the Under-Parliament — one abstention, since dealt with — the Crown passes. HER ENORMITY: THE QUEEN.' },
+    { who: 'THE HERALD MOUSE', text: 'She has read your file. All of it. The margins. She proposes "a conversation between professionals." The patrols will stand aside.' },
+    { who: 'MI-PAW', text: 'A monarch who READS is a different proposition. Go when ready — and consider listening. Wars end in rooms.' },
   ], () => toast('👑 ACT THREE — the crack awaits. The patrols will stand aside. She is expecting you.'));
 }
 function startSummit() {
@@ -2355,10 +2358,10 @@ function treatyScene() {
   G.sceneNpcs = [];
   sceneGuest('ratking', tx, ty - 2, false, true); // Her Enormity, at the head of the table
   playScene([
-    { who: 'THE QUEEN BELOW', text: 'So. The cat who deposed a king and then burgled his heirs three times, on principle. Sit. The cheese is real; the courtesy is calculated. Both are yours.' },
+    { who: 'THE QUEEN BELOW', text: 'The cat who deposed a king, then burgled his heirs on principle. Sit. The cheese is real; the courtesy is calculated.' },
     { who: 'LARRY', text: '(You sit. Professionals.)' },
-    { who: 'THE QUEEN BELOW', text: 'Terms. The war ends. Below stairs keeps a ration — the CRUMB SETTLEMENT, indexed to state dinners. Above stairs is yours, the kitchen included. Raiders lose crown protection the moment they cross the skirting.' },
-    { who: 'THE QUEEN BELOW', text: 'The chase itself continues — my subjects require the exercise and, if the file is accurate, so do you. But nobody starves, and nobody else is escorted anywhere by PIGEONS.' },
+    { who: 'THE QUEEN BELOW', text: 'Terms. The war ends. Below stairs keeps the CRUMB SETTLEMENT, indexed to state dinners. Above stairs is yours. Raiders lose crown protection.' },
+    { who: 'THE QUEEN BELOW', text: 'The chase continues — my subjects need the exercise and, per your file, so do you. But nobody starves, and nobody else is escorted by PIGEONS.' },
     {
       who: 'LARRY', text: 'A treaty, mouse-sized but genuine, waits for a paw print.', choice: [
         ['🐾 Sign. Statesman to stateswoman.', () => {
@@ -2369,8 +2372,8 @@ function treatyScene() {
         }],
       ],
     },
-    { who: 'MI-PAW', text: 'THE TREATY OF THE UNDER-ROAD is filed. War: concluded. The file closes with the rarest commendation we issue, Chief Mouser — the one for a war that ENDED.' },
-    { who: 'LARRY', text: '(You walk back up to a house that is yours, through a tunnel that is theirs, under a peace that is everyone\'s. The radiator — in writing — is waiting.)' },
+    { who: 'MI-PAW', text: 'THE TREATY OF THE UNDER-ROAD is filed. War: concluded. The rarest commendation we issue — for a war that ENDED.' },
+    { who: 'LARRY', text: '(Back up to a house that is yours, through a tunnel that is theirs. The radiator — in writing — is waiting.)' },
   ], () => {
     G.mini = null;
     G.treaty = true;
@@ -3133,17 +3136,17 @@ function beatFor(level) {
     case 6: return { title: 'The Delegation', body: 'A foreign delegation visited the Terracotta Room today. They ignored the Foreign Secretary entirely and queued to meet you. One of them left a gift.', gadget: 'collar' };
     case 7: return { title: 'Reports from Below', scene: 'herald', body: 'The kitchen staff refuse to fetch the good cheese after dark. The junior mice have started PAYING TRIBUTE. Somewhere beneath the Cellar, something enormous is holding court. MI-Paw stamps the file: KING RAT — AT LARGE. Keep an eye on the basement.' };
     case 8: return { title: 'The Cabinet Requisition', body: 'A red dot has been appearing on the Cabinet Room wall during meetings, reducing ministers to helpless distraction. Nobody could find the source. The source has now been requisitioned. It is yours.', gadget: 'laser' };
-    case 9: return { title: 'The Palmerston Incident', body: '{OLD} {EXIT} Incoming: {NEW}. Meanwhile: the Foreign Office cat has been seen in YOUR garden, at YOUR pond, watching YOUR pigeons. He left a single feather on the terrace. This means war. Diplomatic war. (Win the stare-off.)', pmChange: true };
+    case 9: return { title: 'The Palmerston Incident', body: '{OLD} {EXIT} Incoming: {NEW}. Meanwhile: the Foreign Office cat was seen at YOUR pond. He left one feather. This means war. Diplomatic war. (Win the stare-off.)', pmChange: true };
     case 10: return { title: 'Night Duty', body: 'MI-Paw has been watching your after-dark patrols with quiet approval. A flat package arrives, unmarked: their finest optics, cut for a cat. The Cellar holds no shadows for you now.', gadget: 'monocle' };
     case 11: return { title: 'The State Visit', body: 'A motorcade. Flags. A visiting head of state who, live on camera, walked straight past the receiving line and crouched to greet YOU. Two protocol officers fainted. The photograph is already framed in the Press Office.' };
     case 12: return { title: 'By Royal Appointment', body: 'A ceremony was held in the garden. For you. You are presented with a ceremonial cape, By Appointment. You wear it as though you were born in it — which, arguably, you were.', gadget: 'cape' };
     // ---- act three: the legend years ----
-    case 13: return { title: 'The Van, and a Committee', body: '{OLD} {EXIT} Incoming: {NEW}. Downstairs, the mice have formed a negotiating committee. Their demands: unrestricted pantry access and a formal apology. Your counter-offer is scheduled for tonight. The counter-offer is you.', pmChange: true };
+    case 13: return { title: 'The Van, and a Committee', body: '{OLD} {EXIT} Incoming: {NEW}. The mice have formed a negotiating committee. Their demands: pantry access and an apology. The counter-offer is you.', pmChange: true };
     case 14: return { title: 'The Christmas Card', body: "This year's official No. 10 Christmas card is a photograph of you on the Grand Staircase. The Prime Minister appears in the background, slightly out of focus. Nobody involved considers this an accident." };
-    case 15: return { title: 'A Question in the House', body: '{OLD} {EXIT} Incoming: {NEW}. Also today, an MP formally asked the House whether the Chief Mouser is now "doing more governing than the government". The Speaker ruled the question "self-evidently true" and moved on.', pmChange: true };
-    case 16: return { title: 'The Biography', body: 'An unauthorised biography has entered its third printing: "LARRY: THE POWER BEHIND THE DOOR". Serialised in three papers. You have not read it. You do not read about yourself. You simply occur, and history keeps up.' };
+    case 15: return { title: 'A Question in the House', body: '{OLD} {EXIT} Incoming: {NEW}. An MP asked whether the Chief Mouser now "does more governing than the government". The Speaker ruled it "self-evidently true".', pmChange: true };
+    case 16: return { title: 'The Biography', body: 'An unauthorised biography is in its third printing: "LARRY: THE POWER BEHIND THE DOOR". You have not read it. You simply occur, and history keeps up.' };
     // ---- the finale (a credits card follows; the game continues after) ----
-    case 17: return { title: 'By Order of the Crown', body: 'A letter arrives bearing a seal you have only seen on television. The Palace "notes with approval the continued excellence of the Chief Mouser" and confers upon you the ORDER OF THE GARTER (FELINE DIVISION). The ceremony is held in the garden. Even Palmerston attends. He nods. Once.', finale: true };
+    case 17: return { title: 'By Order of the Crown', body: 'A letter bearing a seal you have only seen on television: the Palace confers the ORDER OF THE GARTER (FELINE DIVISION). The ceremony is in the garden. Even Palmerston attends.', finale: true };
     default: {
       // past the Garter the churn slows: a van every FOURTH level. The joke
       // needs air between tellings — and the real story down here is the war.
@@ -3165,7 +3168,7 @@ const G = {
   sceneNpcs: [], met: new Set(),
   mini: null, postCD: 0, supperCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
-  underroadWins: 0, coronation: false, treaty: false,
+  underroadWins: 0, coronation: false, treaty: false, gullsReady: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
@@ -3251,7 +3254,7 @@ function save() {
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
       donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0, raceBest: G.raceBest || 0,
       gauntletOpen: !!G.gauntletOpen, protocolOpen: !!G.protocolOpen, gauntletBest: G.gauntletBest || 0, protocolBest: G.protocolBest || 0, climbBest: G.climbBest || 0,
-      underroadWins: G.underroadWins || 0, coronation: !!G.coronation, treaty: !!G.treaty,
+      underroadWins: G.underroadWins || 0, coronation: !!G.coronation, treaty: !!G.treaty, gullsReady: !!G.gullsReady,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -3685,7 +3688,7 @@ function interactPoi(p) {
     if (G.daily) { toast('💨 The zoomies respect the sortie clock. Barely.'); sClick(); return; }
     if (G.raceCD > 0) { toast('💨 The zoomies have passed. For now. You can feel them out there, circling.'); sClick(); return; }
     showChoice('SOMETHING STIRS IN YOUR LEGS', 'THE ZOOMIES',
-      'It begins as a tingle in the back paws. The corridor stretches out before you, impossibly long, impossibly runnable. The house holds its breath.\n\nA course of paw-print gates, the full ground floor, ludicrous speed. Pounce to dash — it recharges instantly while the zoomies hold.'
+      'It begins as a tingle in the back paws. The corridor stretches out, impossibly runnable.\n\nPaw-print gates, the full ground floor, ludicrous speed. Pounce to dash.'
       + (G.raceBest ? '\n\n🏁 Your record: ' + G.raceBest.toFixed(1) + 's' : ''),
       '💨 LET THEM TAKE YOU', '🧘 Resist. This time.', which => { if (which === 'a') startRace(); });
     return;
@@ -3693,9 +3696,9 @@ function interactPoi(p) {
   if (p.type === 'gulls') {
     if (G.mini) return;
     if (G.daily) { toast('🥪 The gulls respect the sortie. Nothing else, but the sortie, yes.'); sClick(); return; }
-    if ((G.gullsCD || 0) > 0) { toast('🥪 The airspace is quiet. The gulls are regrouping over the Thames, planning something legal-adjacent.'); sClick(); return; }
+    if (!G.gullsReady) { toast('🥪 The terrace is clear. The gulls only come when a reception leaves something worth stealing.'); sClick(); return; }
     showChoice('THE TERRACE', 'The Gull Affair',
-      'The garden reception has left three platters of sandwiches on the terrace — and the SEAGULLS have noticed. Eight inbound, low and fast, absolutely without shame.\n\nEach raider telegraphs its run, then strafes the lawn. Be in its path — a pounce works beautifully — and turn it back. Every miss costs the nation a sandwich.',
+      'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
       '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
     return;
   }
@@ -3704,7 +3707,7 @@ function interactPoi(p) {
     if (G.daily) { toast('📚 The Heights will keep. The clock will not.'); sClick(); return; }
     if ((G.climbCD || 0) > 0) { toast('📚 The bookcase is being re-shelved after your last ascent. The books have filed a complaint.'); sClick(); return; }
     showChoice('THE STUDY', 'The Heights',
-      'The tallest bookcase in government, and above it — the HIGHEST PERCH IN THE HOUSE. No cat has sat it. Officially, no cat has tried.\n\nPOUNCE from ledge to ledge (hold to charge a longer leap). Off a ledge you SLIDE — and the wobbly shelves tip if you linger. The perch waits at the top, and so does the view.'
+      'The tallest bookcase in government; above it, the HIGHEST PERCH IN THE HOUSE. No cat has sat it. Officially.\n\nPOUNCE ledge to ledge. Off a ledge you slide; wobbly shelves tip. The perch waits.'
       + (G.climbBest ? '\n\n🏁 Best ascent: ' + G.climbBest.toFixed(1) + 's' : ''),
       '🐾 Begin the ascent', '🚶 Respect gravity today', which => {
         if (which === 'a') startFade(() => startClimb());
@@ -3729,7 +3732,7 @@ function interactPoi(p) {
     if (G.daily) { toast('🕳️ The Under-Road can wait. You are on the clock.'); sClick(); return; }
     if (G.coronation && !G.treaty) { // the summit takes precedence over sport
       showChoice('THE CRACK IN THE CELLAR WALL', 'The Summit',
-        'The tunnel is silent. The patrols stand at the walls, eyes front, going nowhere. At the far end, at the head of the larder, HER ENORMITY waits with terms.\n\nMI-Paw\'s note, clipped to the file: "Wars end in rooms. Go and sit in one."',
+        'The tunnel is silent; the patrols stand aside. At the head of the larder, HER ENORMITY waits with terms.\n\nMI-Paw\'s note: "Wars end in rooms. Go and sit in one."',
         '🐾 Walk up. Alone.', '🚶 Keep her waiting (bold)', which => {
           if (which === 'a') startFade(() => startSummit());
         });
@@ -3738,8 +3741,8 @@ function interactPoi(p) {
     if ((G.gauntletCD || 0) > 0) { toast('🕳️ The tunnel patrols have doubled since your last visit. Give them a moment to get complacent again.'); sClick(); return; }
     showChoice('THE CRACK IN THE CELLAR WALL', G.treaty ? 'The Under-Road (Joint Exercises)' : 'The Under-Road',
       (G.treaty
-        ? 'Treaty Article 4: the lanes stay open and the chase stays sharp — a joint exercise, by mutual agreement. The patrols will pursue with enthusiasm and absolutely no malice. The cheese remains the trophy.'
-        : 'The heirs of the deposed King dug it: a smuggling tunnel under the Cellar, and the STOLEN LARDER sits at the far end of it. Six patrol lanes between you and the cheese.\n\nCross the lanes. Time the gaps. Get seized and you start again — five seizures and the tunnel spits you out. Speed is glory.')
+        ? 'Treaty Article 4: joint exercises. The patrols pursue with enthusiasm and no malice. The cheese remains the trophy.'
+        : 'The heirs\' smuggling tunnel, with the STOLEN LARDER at the far end. Six patrol lanes between.\n\nTime the gaps. Five seizures and the tunnel spits you out. Speed is glory.')
       + (G.gauntletBest ? '\n\n🏁 Best run: ' + G.gauntletBest.toFixed(1) + 's' : ''),
       '🐾 Go under', '🚶 The cheese can keep', which => {
         if (which === 'a') startFade(() => startGauntlet());
@@ -3752,7 +3755,7 @@ function interactPoi(p) {
     if (G.daily) { toast('🔴 No training on sortie day. Perform instead.'); sClick(); return; }
     if ((G.protocolCD || 0) > 0) { toast('🔴 The terminal is recompiling the dot. It says this is normal.'); sClick(); return; }
     showChoice('THE STUDY — MI-PAW TERMINAL', 'The Red Dot Protocol',
-      'The terminal hums awake. "TRAINING CONSTRUCT LOADED," it says. "SUBJECT: THE DOT. DURATION: 45 SECONDS. CATCHES EXPECTED: DOUBLE DIGITS."\n\nA dream, weaponized: the dot appears, the dot relocates, the dot is faster every time you touch it. Catch it anyway. Catch it repeatedly.'
+      'The terminal hums awake. "SUBJECT: THE DOT. DURATION: 45 SECONDS. EXPECTED: DOUBLE DIGITS."\n\nThe dot relocates faster every time you touch it. Catch it anyway.'
       + (G.protocolBest ? '\n\n🏁 Best: ' + G.protocolBest + ' catches' : ''),
       '🔴 Enter the Protocol', '🚶 Remain in reality', which => {
         if (which === 'a') startFade(() => startProtocol());
@@ -3765,7 +3768,7 @@ function interactPoi(p) {
     if (G.dog) { toast('🐦 The AGM is postponed. There is a DOG in the garden. The pigeons cite "security concerns".'); sClick(); return; }
     if (G.agmCD > 0) { toast('🐦 The pigeons are between sessions. They reconvene shortly — check the agenda.'); sClick(); return; }
     showChoice('THE GARDEN POND', 'The Pigeon AGM',
-      'The pigeons are in session at the pond. Item One on the agenda: YOU. Again.\n\nTake up position downwind and STALK: creep close while they peck — and FREEZE when they look up. One twitch under observation and the whole congress scatters. Reach the quorum undetected, and the minutes write themselves.',
+      'The pigeons are in session. Item One: YOU. Again.\n\nCreep while they peck; FREEZE when they look. One twitch under observation scatters the congress.',
       '🐾 Table a motion. Personally.', '🚶 Let democracy have its day', which => {
         if (which === 'a') startFade(() => { G.larry.x = 4 * TILE; G.larry.y = 7.5 * TILE; startAGM(); }); // downwind, on the clear south lawn
       });
@@ -3776,7 +3779,7 @@ function interactPoi(p) {
     if (G.daily) { toast('🎯 The holes are quiet during the sortie. Even taunting has hours.'); sClick(); return; }
     if (G.molesCD > 0) { toast('🎯 The holes are quiet. Regrouping, probably. Composing new taunts.'); sClick(); return; }
     showChoice('THE CELLAR', 'The Holes Are Singing',
-      'From every mousehole in the basement: squeaking. Rhythmic. TAUNTING. Heads pop out, pull faces, and vanish before an honest paw can answer.\n\nTwelve heads. Watch for the tell-tale dust, be at the right hole when the head appears, and answer it. Firmly.',
+      'From every mousehole: rhythmic, TAUNTING squeaking.\n\nTwelve heads. Watch the dust, be at the hole, answer firmly.',
       '🐾 Answer every single one', '🚶 Rise above it (for now)', which => { if (which === 'a') startMoles(); });
     return;
   }
@@ -3785,7 +3788,7 @@ function interactPoi(p) {
     if (G.daily) { toast('🍝 No suppers on sortie day. Focus, Chief Mouser.'); sClick(); return; }
     if (G.supperCD > 0) { toast(pick(p.texts)); sClick(); return; } // between suppers, the table is just a table
     showChoice('THE FLAT KITCHEN', 'Kitchen Supper',
-      'The Prime Minister is cooking. Personally. The kitchen smells of ambition and slightly burnt garlic — and where there is an amateur at a hob, there WILL be falling scraps.\n\nTake up position under the table and catch what drops — walk (or pounce) to be underneath each scrap before it lands.',
+      'The PM is cooking. Personally. The kitchen smells of ambition and burnt garlic.\n\nSit under the table; be beneath each scrap before it lands.',
       '🍝 Assume the position', '🚶 Let the floor have it', which => { if (which === 'a') startSupper(); });
     return;
   }
@@ -3815,7 +3818,7 @@ function interactPoi(p) {
       sClick(); return;
     }
     showChoice('DOWNING STREET', 'An Invitation Home',
-      'The shelter van idles at the kerb. The driver leans out: "They\'d love to see you, you know. The whole cattery watched the ceremony. Hop in — I\'ll have you back before the evening box."\n\nBattersea. Where it all began.',
+      'The van idles at the kerb. "They\'d love to see you. The whole cattery watched the ceremony."\n\nBattersea. Where it all began.',
       '🚐 Go home. Just for an hour.', '🐾 Another day', which => {
         if (which !== 'a') return;
         startFade(() => {
@@ -3847,7 +3850,7 @@ function interactPoi(p) {
   if (p.type === 'donate') {
     if (G.fish < 10) { toast('🎁 The Battersea tin. Ten kippers posts a parcel home. You are, at present, ' + (10 - G.fish) + ' short — the mice can fix that.'); sClick(); return; }
     showChoice('THE ENTRANCE HALL', 'The Battersea Tin',
-      'A small red collection tin, kept by the door: BATTERSEA DOGS & CATS HOME. You came from there, on merit. Some cats there are still waiting on theirs.\n\nPost 10 🐟 back home?',
+      'The red tin by the door: BATTERSEA DOGS & CATS HOME. You came from there on merit; some are still waiting on theirs.\n\nPost 10 🐟 home?',
       '🎁 Donate 10 🐟', '🚶 Another time', which => {
         if (which !== 'a') return;
         G.fish -= 10;
@@ -3866,7 +3869,7 @@ function interactPoi(p) {
     if (G.daily) { toast('📮 The post can wait. You are on the clock, Chief Mouser.'); sClick(); return; }
     if (G.postCD > 0) { toast(pick(p.texts)); sClick(); return; } // between deliveries, the flap is quiet
     showChoice('THE ENTRANCE HALL', "The Eleven O'Clock Post",
-      'The flap gives its warning rattle: the post is due. Tradition demands it be inspected. At speed. With claws.\n\nBat the letters out of the air as they come through — tap or SPACE, timing over enthusiasm. Beware the decoy rattles.',
+      'The post is due. Tradition demands it be inspected — at speed, with claws.\n\nTap as each letter pops through. Beware the decoy rattles.',
       '🐾 Take up position', '🚶 The mail can wait', which => { if (which === 'a') startPostWatch(); });
     return;
   }
@@ -4564,9 +4567,9 @@ function updateRival(c, dt) {
       G.met.add('event:glad2');
       c.quipCD = 20;
       playScene([
-        { who: 'GLADSTONE', text: 'The Treasury has scored your war. Total cost: some forty tins of kippers and one commemorative plaque. Total return: a functioning government and a legally binding radiator.' },
-        { who: 'GLADSTONE', text: 'I have marked the file — reluctantly, and in pencil — VALUE FOR MONEY. Do not let it go to your head. It went to the last cat\'s head.' },
-        { who: 'LARRY', text: '(There was no last cat. You are the first of your name. You let him have this one; audit is a lonely business.)' },
+        { who: 'GLADSTONE', text: 'The Treasury has scored your war. Cost: forty tins of kippers. Return: a functioning government and a legally binding radiator.' },
+        { who: 'GLADSTONE', text: 'The file is marked — reluctantly, in pencil — VALUE FOR MONEY. Don\'t let it go to your head.' },
+        { who: 'LARRY', text: '(You let him have this one. Audit is a lonely business.)' },
       ], () => save());
       return;
     }
@@ -4575,8 +4578,8 @@ function updateRival(c, dt) {
       G.met.add('event:palmpeace');
       c.quipCD = 20;
       playScene([
-        { who: 'PALMERSTON', text: 'You wear it well. The Garter. I had opinions about that appointment, historically. I find I have… fewer.' },
-        { who: 'LARRY', text: '(You sit down beside him at the pond. Two professionals, off the clock. The pigeons, wisely, adjourn.)' },
+        { who: 'PALMERSTON', text: 'You wear it well. The Garter. I had opinions about that, historically. I find I have… fewer.' },
+        { who: 'LARRY', text: '(You sit beside him at the pond. Two professionals, off the clock.)' },
         { who: 'PALMERSTON', text: '…' },
         { who: 'LARRY', text: '(Nothing is said. Everything is settled.)' },
       ], () => { earnHonour('detente'); save(); });
@@ -5154,6 +5157,11 @@ function finishPhotoShoot() {
     toast('📸 Photo-op: ' + pts + '/6 composure. +' + fish + ' 🐟 +15 XP');
     [659, 784, 988].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+    if (M.S && M.S.region === 'The Garden') { // the reception leaves its platters out
+      G.gullsReady = true;
+      save();
+      toast('🥪 The reception left the platters on the terrace. The gulls have noticed.');
+    }
     updateHUD();
   }); // the cast disperses when the verdict lands
 }
@@ -5184,7 +5192,7 @@ function heraldScene(onDone) {
   playScene([
     { who: 'A SMALL VOICE', text: '(Something at paw height clears its throat. Twice. The second time with visible regret.)', do: () => tone(1800, 1400, 0.05, 'sine', 0.03) },
     { who: 'THE HERALD MOUSE', text: 'A-HEM. By proclamation of His Enormity, KING RAT — First of His Name, Sovereign of the Under-Cellar, Keeper of the Lost Cheddar —' },
-    { who: 'THE HERALD MOUSE', text: 'You are invited to surrender the Kitchen, effective tonight. In exchange, your radiator will be spared the coming unpleasantness. His Enormity is assured this is "generous".' },
+    { who: 'THE HERALD MOUSE', text: 'Surrender the Kitchen tonight, and your radiator will be spared. His Enormity is assured this is "generous".' },
     {
       who: 'LARRY', text: 'The herald waits, quivering. Protocol demands a response.', choice: [
         ['🐾 Lean in. Very. Slowly.', () => {
@@ -5208,7 +5216,7 @@ function heraldScene(onDone) {
         }],
       ],
     },
-    { who: 'MI-PAW', text: 'File updated. Stamped. Sealed: KING RAT — AT LARGE, somewhere beneath the Cellar. Keep an eye on the basement, Chief Mouser.' },
+    { who: 'MI-PAW', text: 'File stamped: KING RAT — AT LARGE. Watch the basement, Chief Mouser.' },
   ], onDone);
 }
 
@@ -5256,22 +5264,22 @@ function pmMeetScene(newPM, onDone) {
 /* ---------- The King rises, and the King falls (once each, in person) ---------- */
 function kingRiseScene() {
   playScene([
-    { who: 'THE CELLAR', text: '(The floor itself seems to lean. Barrels shift. Behind the wine racks, something enormous straightens up and clears its throat.)', do: () => { G.shake = 0.25; tone(90, 50, 0.6, 'sawtooth', 0.09); } },
+    { who: 'THE CELLAR', text: '(Barrels shift. Behind the wine racks, something enormous clears its throat.)', do: () => { G.shake = 0.25; tone(90, 50, 0.6, 'sawtooth', 0.09); } },
     { who: 'KING RAT', text: 'SO. The cat who frightened my herald into early retirement.' },
     { who: 'LARRY', text: '(You did not eat the herald. You would like that minuted. AGAIN.)' },
-    { who: 'KING RAT', text: 'My terms were GENEROUS. Now they are REVISED: everything below stairs is mine, and my raiders keep what they carry. Chase me if you must, little minister. Kings do not tire.' },
+    { who: 'KING RAT', text: 'My terms were GENEROUS. Now: everything below stairs is mine. Chase me if you must, little minister. Kings do not tire.' },
     { who: 'MI-PAW', text: 'Sighting confirmed. The file was right, Chief Mouser. Depose him — quietly if possible, loudly if necessary.' },
   ]);
 }
 function kingFallScene() {
   playScene([
-    { who: 'THE CELLAR', text: '(A very long silence. Then, from every mousehole at once: the sound of six hundred small subjects discovering they never really knew him.)' },
+    { who: 'THE CELLAR', text: '(A long silence. Then, from every hole: six hundred subjects discovering they never really knew him.)' },
     { who: 'KING RAT', text: '…noted. The Crown — ahem — passes. Keep the cellar. Keep the KITCHEN. I shall be… abroad. Indefinitely. For my health.' },
-    { who: 'LARRY', text: '(He is escorted to the garden wall by two pigeons acting in an official capacity. You return to the radiator. Kings come and go. The radiator is forever.)' },
-    { who: 'MI-PAW', text: 'File closed: KING RAT — DEPOSED. The mice will crown another by Thursday; they always do. But tonight the house sleeps soundly — and it sleeps soundly because of you.' },
+    { who: 'LARRY', text: '(Two pigeons, acting officially, escort him to the garden wall. Kings come and go. The radiator is forever.)' },
+    { who: 'MI-PAW', text: 'File closed: KING RAT — DEPOSED. They\'ll crown another by Thursday. Tonight, the house sleeps soundly because of you.' },
     { who: 'A SMALL VOICE', text: '(A familiar throat-clearing, from a new crack in the Cellar wall.)', do: () => tone(1800, 1400, 0.05, 'sine', 0.03) },
-    { who: 'THE HERALD MOUSE', text: 'For the RECORD: His Late Enormity\'s heirs do not recognise the deposition. They have opened the UNDER-ROAD — the old smuggling tunnel — and the larder moves through it NIGHTLY. Good luck finding— oh. Oh no. I\'ve said too much.' },
-    { who: 'MI-PAW', text: 'The herald is, as ever, a gift. New file, Chief Mouser: THE UNDER-ROAD — a crack in the Cellar wall, south side. The war goes below. When you\'re ready.' },
+    { who: 'THE HERALD MOUSE', text: 'For the RECORD: the heirs do not recognise the deposition. They\'ve opened the UNDER-ROAD, and the larder moves NIGHTLY. Good luck find— oh no. I\'ve said too much.' },
+    { who: 'MI-PAW', text: 'The herald is, as ever, a gift. New file: THE UNDER-ROAD — a crack in the Cellar wall. The war goes below.' },
   ], () => {
     G.gauntletOpen = true;
     save();
@@ -5290,12 +5298,12 @@ function garterScene(onDone) {
   sceneCatGuest('tux', tx + 2, ty + 2, true);   // Palmerston. In attendance. Voluntarily.
   playScene([
     { who: 'THE OCCASION', text: '(Bunting. A small dais. The good chairs, brought outside. Somebody has polished the pond. Even the pigeons are wearing their formal grey.)' },
-    { who: 'THE PM', text: 'We are gathered — and I quote the Palace directly — "to note with approval the continued excellence of the Chief Mouser." Which makes you, officially, the only member of this government in good standing.' },
+    { who: 'THE PM', text: 'We are gathered — the Palace\'s words — "to note the continued excellence of the Chief Mouser." Officially the only member of this government in good standing.' },
     { who: 'THE BUTLER', text: 'The Order of the Garter, Feline Division, sir. Worn at the collar. I have taken the liberty of steaming it.' },
     { who: 'PALMERSTON', text: '…' },
     { who: 'PALMERSTON', text: '(He nods. Once. From Palmerston of the Foreign Office, this is a twenty-one-gun salute.)' },
-    { who: 'LARRY', text: '(You accept the highest honour in the land with the same expression you give the vacuum cleaner. History will record it as composure.)', do: () => pressFlashes(G.larry.x, G.larry.y - 6, 10) },
-    { who: 'THE AIDE', text: 'Photographs in every morning paper. A statue, presumably, to follow. Speech? …No. No, of course not. Carry on, Chief Mouser.' },
+    { who: 'LARRY', text: '(You accept the highest honour in the land with the expression you give the vacuum cleaner. History will call it composure.)', do: () => pressFlashes(G.larry.x, G.larry.y - 6, 10) },
+    { who: 'THE AIDE', text: 'Photographs in every paper; a statue, presumably, to follow. Speech? …No. Of course not. Carry on.' },
   ], onDone);
 }
 
@@ -5305,50 +5313,50 @@ function garterScene(onDone) {
 const MEETINGS = {
   'guard@ground': () => [
     { who: 'THE GUARD', text: 'Chief Mouser. Heard you\'d been appointed. The door is mine; the house is yours. That\'s the arrangement.' },
-    { who: 'THE GUARD', text: 'Quick tour: radiator under the front window — finest posting in government. Letterbox rattles at eleven. Tourists at the railings all day, every weather. They\'re here for you, not the door.' },
-    { who: 'LARRY', text: '(You have already chosen the radiator. You chose it from across the room. It is warm. It is yours. It is policy.)' },
+    { who: 'THE GUARD', text: 'Quick tour: radiator under the window, letterbox at eleven. The tourists are here for you, not the door.' },
+    { who: 'LARRY', text: '(You have already chosen the radiator. It is warm. It is policy.)' },
   ],
   'aide@ground': () => [
     { who: 'THE AIDE', text: 'Oh good. The cat. Wonderful. Do NOT sit on the morning briefing — that is the ONLY copy of the morning briefing.' },
     { who: 'LARRY', text: '(You look at the briefing. You look at the aide. You look back at the briefing.)' },
     { who: 'THE AIDE', text: '…I will make a copy.' },
-    { who: 'THE AIDE', text: 'While you\'re here: the Red Box has taken an interest in you. Tasks, from the very top. See them done and there\'s tuna in it. Probably. Budgets permitting.' },
+    { who: 'THE AIDE', text: 'The Red Box has taken an interest in you. Tasks from the very top. There\'s tuna in it. Budgets permitting.' },
   ],
   'gardener@ground': () => [
     { who: 'THE GARDENER', text: 'Afternoon. Mind the begonias. Everything else out here is negotiable.' },
-    { who: 'THE GARDENER', text: 'You\'ll be wanting the burrows. Bring me three kippers and my rake finds one — whatever bolts out is your department. The roses saw nothing.' },
+    { who: 'THE GARDENER', text: 'Three kippers and my rake finds a burrow. Whatever bolts out is your department. The roses saw nothing.' },
     { who: 'LARRY', text: '(You inspect the rake. The rake passes inspection. This one can stay.)' },
   ],
   'chef@basement': () => [
     { who: 'THE CHEF', text: 'Oi. New management upstairs, is it? Down HERE, I\'m the management.' },
-    { who: 'THE CHEF', text: 'House rules: paws off my counter, and anything that squeaks is yours. In return — four kippers buys thirty seconds of open pantry door. Whatever runs out of it runs to you. I was never here.' },
+    { who: 'THE CHEF', text: 'Paws off my counter; anything that squeaks is yours. Four kippers opens the pantry for thirty seconds. I was never here.' },
     { who: 'LARRY', text: 'Mrrp.' },
     { who: 'THE CHEF', text: 'Good lad. There\'s a saucer of milk with your name on it. Literally. I labelled it.' },
   ],
   'butler@first': () => [
-    { who: 'THE BUTLER', text: 'Welcome upstairs, sir. The state rooms: ambassadors to your left, chandeliers above, and mice — regrettably — behind every skirting board with a view.' },
-    { who: 'THE BUTLER', text: 'Should you require the residence: the green door at the end of this landing goes through to Eleven, and up to the flat. I shall not have seen you use it.' },
-    { who: 'LARRY', text: '(A door that does not officially exist, to a floor you are not officially allowed on. Your favourite kind of door.)' },
+    { who: 'THE BUTLER', text: 'Welcome upstairs, sir. Ambassadors to your left, chandeliers above, mice — regrettably — everywhere.' },
+    { who: 'THE BUTLER', text: 'The green door at the end of the landing goes up to the flat. I shall not have seen you use it.' },
+    { who: 'LARRY', text: '(A door that does not officially exist. Your favourite kind.)' },
   ],
   'butler@flat': () => [
-    { who: 'THE HOUSEKEEPER', text: 'So you found your way up. Good. Kettle\'s on, telly\'s murmuring, and nobody on this floor wants a single thing from you.' },
-    { who: 'THE HOUSEKEEPER', text: 'That\'s the point of the place, you understand. Downstairs you\'re an institution. Up here you\'re just the cat. The sofa is yours. Mind the cocoa.' },
-    { who: 'THE HOUSEKEEPER', text: 'Oh — and the PM cooks at that little table. Badly. Generously. Things… fall. If a cat with quick paws were to sit underneath, well. I\'ve seen nothing yet.' },
-    { who: 'LARRY', text: '(Just the cat. With a standing dinner reservation. You try the words on. They fit like a warm windowsill.)' },
+    { who: 'THE HOUSEKEEPER', text: 'Found your way up, then. Kettle\'s on, telly\'s murmuring, nobody up here wants a thing from you.' },
+    { who: 'THE HOUSEKEEPER', text: 'Downstairs you\'re an institution. Up here you\'re just the cat. Sofa\'s yours. Mind the cocoa.' },
+    { who: 'THE HOUSEKEEPER', text: 'The PM cooks at that little table. Badly. Generously. Things… fall. I see nothing.' },
+    { who: 'LARRY', text: '(Just the cat. The words fit like a warm windowsill.)' },
   ],
   'officer@street': () => [
     { who: 'THE OFFICER', text: 'Evening, Chief Mouser. Or morning. It all runs together on this door.' },
-    { who: 'THE OFFICER', text: 'Forty photographers over the road, and every lens pointed at you. Wave a paw, don\'t wave a paw — either way it\'s the front page.' },
+    { who: 'THE OFFICER', text: 'Forty lenses over the road, all pointed at you. Either way, it\'s the front page.' },
     { who: 'LARRY', text: '(You sit on the step. Forty shutters go off at once. You did nothing. You did everything.)' },
   ],
   'cat:Palmerston': () => [
     { who: 'PALMERSTON', text: 'So. The domestic appointment. Palmerston — Foreign Office. Senior service. Superior garden.' },
-    { who: 'PALMERSTON', text: 'We shall settle precedence properly: eyes locked, first to blink loses the afternoon. Whenever you are ready. If ever.' },
+    { who: 'PALMERSTON', text: 'Precedence is settled properly: eyes locked, first blink loses. Whenever you\'re ready. If ever.' },
     { who: 'LARRY', text: '(You have already begun. He simply has not noticed yet.)' },
   ],
   'cat:Gladstone': () => [
-    { who: 'GLADSTONE', text: 'Gladstone. Treasury. I am told you are classified as an "asset". I decide asset classifications here.' },
-    { who: 'GLADSTONE', text: 'Every mouse you take is a liability off MY books. Do keep it up. Do keep the receipts.' },
+    { who: 'GLADSTONE', text: 'Gladstone. Treasury. You are classified as an "asset". I decide those.' },
+    { who: 'GLADSTONE', text: 'Every mouse you take is off MY books. Keep it up. Keep the receipts.' },
     { who: 'LARRY', text: '(You will not be keeping the receipts.)' },
   ],
 };
@@ -5358,17 +5366,17 @@ const SECOND_SCENES = [
   {
     sprite: 'chef', map: 'basement', key: 'event:chef2', gate: () => G.kingDeposed,
     steps: () => [
-      { who: 'THE CHEF', text: 'They\'re saying you had him ESCORTED OUT. The King. By pigeons. In this kitchen we call that plating up.' },
-      { who: 'THE CHEF', text: 'The saucer of milk is a standing order now. Don\'t tell the vet. Don\'t tell ANYONE — you know how this house leaks.' },
-      { who: 'LARRY', text: '(You accept the promotion with the dignity of a cat who was always going to drink it anyway.)' },
+      { who: 'THE CHEF', text: 'They say you had the King ESCORTED OUT. By pigeons. In this kitchen we call that plating up.' },
+      { who: 'THE CHEF', text: 'The saucer of milk is a standing order now. Tell no one — you know how this house leaks.' },
+      { who: 'LARRY', text: '(You accept with the dignity of a cat who was drinking it anyway.)' },
     ],
   },
   {
     sprite: 'butler', map: 'flat', key: 'event:hk2', gate: () => G.homecoming,
     steps: () => [
-      { who: 'THE HOUSEKEEPER', text: 'You went back, then. To Battersea. …Good. The ones who never look back get strange about it.' },
-      { who: 'THE HOUSEKEEPER', text: 'Cocoa\'s on. The sofa has learned your shape by now — I\'ve given up correcting it.' },
-      { who: 'LARRY', text: '(Home is apparently several places at once. You file this under: acceptable.)' },
+      { who: 'THE HOUSEKEEPER', text: 'You went back. To Battersea. …Good. The ones who never look back get strange.' },
+      { who: 'THE HOUSEKEEPER', text: 'Cocoa\'s on. The sofa has learned your shape; I\'ve given up correcting it.' },
+      { who: 'LARRY', text: '(Home is several places at once. Filed under: acceptable.)' },
     ],
   },
 ];
@@ -5427,7 +5435,7 @@ function maybeShowCard() {
         if (pmCount === 10) {
           G.cardQueue.unshift({
             level: G.level, title: 'The Institution',
-            body: 'PM #10 moves in today. Ten Prime Ministers. One cat. The papers have stopped calling you a pet; the word now used is "constant". Somewhere in the building a civil servant updates your file to read, simply: PERMANENT.',
+            body: 'PM #10 moves in. Ten Prime Ministers, one cat. The papers now use the word "constant". Your file is updated to read: PERMANENT.',
           });
         }
         checkHonours();
@@ -5530,15 +5538,15 @@ function beginPressIntro() {
   G.larry.dir = 'down'; G.larry.flip = false; G.larry.idleT = 6; // face the cameras, sit
   const CARDS = [
     ['DOWNING STREET — LIVE', 'The World\'s Press',
-      'You are carried over the threshold and set down on the most famous doorstep in Britain. Thirty cameras go off at once; a wall of microphones descends. Somebody bellows, "LARRY! THIS WAY, LARRY!"\n\nUntil roughly an hour ago you were a stray in a Battersea shelter with strong opinions about a cardboard box. You have agreed to NONE of this.'],
+      'You are set down on the most famous doorstep in Britain. Thirty cameras; a wall of microphones; somebody bellows "LARRY!"\n\nAn hour ago you were a stray with strong opinions about a cardboard box. You have agreed to NONE of this.'],
     ['THE QUESTIONS BEGIN', 'On How It Feels',
-      '"Chief Mouser! How does it FEEL, serving at the very heart of government?"\n\nYou consider the question. You consider the microphone. You briefly consider batting the microphone. You rise above it — barely — and give them one long, unbothered blink.\n\n(Privately: you do not know what a civil servant is. You know what tuna is. You are prepared to negotiate.)'],
+      '"Chief Mouser! How does it FEEL, serving at the heart of government?"\n\nYou consider the microphone. You consider batting it. You rise above — barely — and give one long, unbothered blink.'],
     ['ON THE RECORD', 'Priorities for the Term',
-      '"And your priorities in office, Larry?"\n\nIn strict order: the warm radiator, the sunny windowsill, and whoever is presently holding the tuna. You are fairly sure that is the entire job. You are fairly sure you are already better at it than most of the building.\n\n(You decline to take follow-ups. Legends do not do follow-ups.)'],
+      '"And your priorities in office?"\n\nIn order: the radiator, the windowsill, whoever holds the tuna. You are fairly sure that is the entire job.\n\n(No follow-ups. Legends do not do follow-ups.)'],
     ['THE LIFESTYLE PIECE', 'Quite the Upgrade',
-      '"A Battersea rescue, now living at No. 10 — bit bougie for a shelter cat, isn\'t it?"\n\nIt IS drafty. It IS full of important people who trip on the doorstep. You do not know which fork is for statecraft, and you have owned a bow tie for all of forty minutes.\n\nBut the food, they keep telling you, is free. And endless. …You could, conceivably, get used to that.'],
+      '"Battersea to No. 10 — bit bougie for a shelter cat, isn\'t it?"\n\nIt IS drafty. You have owned a bow tie for forty minutes.\n\nBut the food, they keep saying, is free. And endless. …Conceivably, you could adjust.'],
     ['TOMORROW\'S FRONT PAGE', 'Just Larry',
-      'You sit. You face the flashbulbs dead-on and say absolutely nothing, with tremendous authority.\n\nBy morning it runs on every front page — one word, no surname: LARRY. You have not spoken a syllable. You never will. It will not matter.\n\nBehind you, someone holds the great black door open. Time to inspect the house. It is yours now; you simply have not told them yet.'],
+      'You face the flashbulbs and say nothing, with tremendous authority.\n\nBy morning it is every front page — one word: LARRY.\n\nBehind you, the black door opens. The house is yours now; you simply have not told them yet.'],
   ];
   let i = 0;
   const step = () => {
@@ -6803,6 +6811,7 @@ function startGame(fresh) {
     G.underroadWins = s.underroadWins || 0;
     G.coronation = !!s.coronation;
     G.treaty = !!s.treaty;
+    G.gullsReady = !!s.gullsReady;
     // saves from before the flatter XP curve can bank xp above the new,
     // lower thresholds — clamp so one catch doesn't fire a burst of level-ups
     G.xp = Math.min(G.xp, Math.max(0, xpNeed(G.level) - 1));
@@ -6847,7 +6856,7 @@ function startGame(fresh) {
   initDay(); // the morning Red Box (career mode, once the intro is done)
   if (fresh && G.intro.phase === 'shelter' && !location.search.includes('nocard')) {
     showCard('SOUTH LONDON, PRESENT DAY', 'Battersea',
-      'The shelter is warm. The service is adequate. The other cats lack ambition. You are LARRY — currently between opportunities — and the mice in Cattery 4 have grown complacent. Show whoever is watching what you can do. (Catch 2 mice.)',
+      'The shelter is warm; the other cats lack ambition. You are LARRY, between opportunities — and the Cattery 4 mice have grown complacent. (Catch 2.)',
       null, () => toast('🐾 Tap the paw / press SPACE to pounce — HOLD it first to charge a longer leap. Release to fly.'));
   }
 }
