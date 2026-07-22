@@ -48,15 +48,24 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Three mini games
+## Eight mini games, one per cat instinct
 
 - **Post Watch** — the eleven o'clock delivery shoots through the letterbox;
   bat the letters out of the air, and mind the decoy rattles
 - **Hold the Pose** — photo-ops are a composure meter: tap when the tail
-  settles in the gold, three frames, faster each shot, red dot of temptation
-  included
+  settles in the gold, three frames, faster each shot
 - **Kitchen Suppers** — the PM cooks, scraps fall from the flat's supper
   table, and the floor is the enemy
+- **The Midnight Zoomies** — ten paw-print gates around the whole ground
+  floor at ludicrous speed; gold pace earns The 3 A.M. Protocol
+- **The Pigeon AGM** — grandmother's footsteps at the pond: creep while
+  they peck, FREEZE when they look
+- **Whack-a-Mouse** — the basement holes are singing; answer every head
+- **The Under-Road** — Act Two of the war: a smuggling tunnel below the
+  Cellar, six lanes of rat patrol, one stolen larder (unlocked by deposing
+  the Rat King)
+- **The Red Dot Protocol** — MI-Paw's dream construct: 45 seconds, one
+  dot, and only a landed pounce counts (unlocked by running the Under-Road)
 
 ## Everything else
 

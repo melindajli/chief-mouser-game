@@ -593,7 +593,8 @@ function floorUnder(grid, x, y) {
 function wallStyle(grid, x, y, mapId) {
   if (mapId === 'shelter') return 'block';
   if (mapId === 'street') return 'georgian';
-  if (mapId === 'basement') return 'stone';
+  if (mapId === 'basement' || mapId === 'underroad') return 'stone';
+  if (mapId === 'dreamvoid') return 'block';
   if (mapId === 'ground') {
     if (y >= 34) return 'brick';
     const n = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]];
@@ -1237,6 +1238,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   m.toys = [[18, 29, '#3f6fae'], [30, 4, '#e9c46a']];
   m.decor.push({ x: 4, y: 18, t: 'books' }, { x: 5, y: 18, t: 'books' }, { x: 10, y: 18, t: 'books' }, { x: 11, y: 18, t: 'painting' });
   set(20, 21, 'v'); set(20, 22, 'v');
+  m.pois.push({ x: 15, y: 23, emoji: '🔴', type: 'protocol' }); // MI-Paw's training terminal, by the Study desk
   // Entrance Hall (the checkerboard floor and the black door)
   rect(13, 26, 30, 33, 'c');
   set(21, 34, 'D'); set(22, 34, 'D');
@@ -1383,6 +1385,7 @@ MAPS.basement = makeMap('basement', 30, 20, (m, set, rect) => {
   // the chef's counter: slip him kippers, he opens the pantry door a crack
   m.pois = [{ x: 7, y: 1, emoji: '🤝', type: 'chefdeal' }];
   m.pois.push({ x: 24, y: 14, emoji: '🎯', type: 'moles' }); // the holes, singing
+  m.pois.push({ x: 27, y: 17, emoji: '🕳️', type: 'gauntlet' }); // the crack in the Cellar wall — the Under-Road
   m.regions = [
     [1, 1, 18, 17, 'The Kitchen'],
     [21, 1, 28, 7, 'The Pantry'],
@@ -1554,6 +1557,23 @@ MAPS.flat = makeMap('flat', 34, 22, (m, set, rect) => {
   m.mouseCap = lvl => Math.min(2 + Math.floor(lvl * 0.3), 4);
 });
 
+// --- The Under-Road: the rats' smuggling tunnel, below the Cellar ---
+// A pocket map (no exits — entry and return are scripted): six patrol lanes
+// between you and the stolen larder. Not part of the house. Not on any plan.
+MAPS.underroad = makeMap('underroad', 13, 24, (m, set, rect) => {
+  rect(1, 1, 11, 22, 'z');
+  m.lamps = [[6.5, 2.5], [2.5, 12.5], [10.5, 18.5]];
+  m.regions = [[1, 1, 11, 22, 'The Under-Road']];
+  m.mouseCap = () => 0; // the patrols are the mice
+});
+
+// --- The dream void: MI-Paw's training construct (a nap, weaponized) ---
+MAPS.dreamvoid = makeMap('dreamvoid', 15, 11, (m, set, rect) => {
+  rect(1, 1, 13, 9, 'z');
+  m.regions = [[1, 1, 13, 9, 'The Protocol']];
+  m.mouseCap = () => 0; // nothing here but you and the dot
+});
+
 // --- Downing Street: the famous front of No. 10 ---
 MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
   rect(1, 4, 20, 10, 'k');                 // the pavement (grey flagstones)
@@ -1633,6 +1653,8 @@ const HONOURS = [
   { id: 'zoomgold', name: 'The 3 A.M. Protocol', hint: 'Run the Zoomies course at full tilt. Gold pace.' },
   { id: 'agm', name: 'Item One, Resolved', hint: 'Reach the pigeons\' pond congress undetected.' },
   { id: 'bonk', name: 'Bonk Diplomacy', hint: 'A perfect Whack-a-Mouse: every head answered.' },
+  { id: 'underroad', name: 'Keeper of the Under-Road', hint: 'Reclaim the larder from the tunnel in under 20 seconds.' },
+  { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -1756,7 +1778,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -1851,6 +1873,195 @@ function drawRace() {
   ctx.font = '8px monospace'; ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(12,10,20,0.65)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
   ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.t.toFixed(1) + 's', L.x, L.y - 23);
+}
+
+/* ---------- Game markers: the six-plus arcade spots, visible from anywhere ----------
+   Secrets stay hidden until you stumble on them — that's their charm. But the
+   mini games are headline content, so their spots carry a soft, bobbing badge
+   you can see across the room. Locked doors show nothing. */
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴' };
+function drawGameMarkers() {
+  if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
+  const t = performance.now() / 1000;
+  for (const p of curMap().pois) {
+    const em = GAME_MARKS[p.type];
+    if (!em) continue;
+    if (p.type === 'gauntlet' && !G.gauntletOpen) continue;   // still just a crack
+    if (p.type === 'protocol' && !G.protocolOpen) continue;   // still just a dark box
+    if (G.nearPoi === p) continue;                            // the close-up indicator takes over
+    const mx = (p.x + 0.5) * TILE, my = (p.y - 0.2) * TILE + Math.sin(t * 2.2 + p.x) * 1.8;
+    ctx.save();
+    ctx.globalAlpha = 0.8 + Math.sin(t * 2.2 + p.x) * 0.2;
+    ctx.fillStyle = 'rgba(12,10,20,0.55)';
+    ctx.beginPath(); ctx.arc(mx, my - 4, 8, 0, 7); ctx.fill();
+    ctx.font = '11px serif'; ctx.textAlign = 'center';
+    ctx.fillText(em, mx, my);
+    ctx.restore();
+  }
+}
+
+/* ---------- THE UNDER-ROAD: six lanes of rat patrol, one stolen larder ----------
+   Act Two of the war. A pocket map below the Cellar — cross the patrol lanes,
+   grab the cheese, and get the time on the board. Seized five times and the
+   tunnel spits you out; the rats consider this a moral victory. */
+const GAUNTLET_LANES = [4, 7, 10, 13, 16, 19]; // patrol rows, fastest nearest the prize
+function startGauntlet() {
+  switchMap('underroad', 6.5 * TILE, 22 * TILE);
+  const rats = [];
+  GAUNTLET_LANES.forEach((row, i) => {
+    const dir = i % 2 ? -1 : 1;
+    const spd = 42 + (GAUNTLET_LANES.length - 1 - i) * 9; // deeper lanes crawl, top lanes fly
+    for (let k = 0; k < 2; k++) rats.push({ row, x: (1 + (k * 5.5 + i * 2.3) % 10) * TILE, dir, spd, animT: Math.random() * 9 });
+  });
+  G.mini = { type: 'gauntlet', t: 0, rats, seized: 0 };
+  toast('🕳️ THE UNDER-ROAD — six lanes, one larder. Time the gaps. GO.');
+  tone(120, 70, 0.4, 'sawtooth', 0.07);
+}
+function updateGauntlet(dt) {
+  if ((G.gauntletCD || 0) > 0) G.gauntletCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'gauntlet') return;
+  M.t += dt;
+  const L = G.larry;
+  for (const r of M.rats) {
+    r.animT += dt;
+    r.x += r.dir * r.spd * dt;
+    if (r.x < 1 * TILE) { r.x = 1 * TILE; r.dir = 1; }
+    if (r.x > 11.5 * TILE) { r.x = 11.5 * TILE; r.dir = -1; }
+    if (Math.abs(L.y - (r.row + 0.5) * TILE) < 9 && Math.abs(L.x - r.x) < 11) {
+      M.seized++;
+      addFloat(L.x, L.y - 14, 'SEIZED!', '#ff8080');
+      addParticle(L.x, L.y, '#8a7f74', 6, 30);
+      tone(180, 90, 0.18, 'sawtooth', 0.08);
+      L.x = 6.5 * TILE; L.y = 22 * TILE; L.cvx = 0; L.cvy = 0;
+      if (M.seized >= 5) { finishGauntlet(false); return; }
+    }
+  }
+  if (L.y < 3 * TILE) finishGauntlet(true); // the larder, reclaimed
+}
+function finishGauntlet(win) {
+  const M = G.mini;
+  G.mini = null;
+  G.gauntletCD = win ? 90 + Math.random() * 40 : 40;
+  if (win) {
+    const t = M.t;
+    G.fish += 4; G.xp += 12;
+    const isBest = !G.gauntletBest || t < G.gauntletBest;
+    if (isBest) G.gauntletBest = t;
+    if (t <= 20) earnHonour('underroad');
+    briefEvent('gauntlet');
+    toast('🧀 THE LARDER, RECLAIMED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Somewhere below, an heir apparent files a complaint. +4 🐟 +12 XP');
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+    while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+    if (!G.protocolOpen) { // the first run home earns MI-Paw's full attention
+      G.protocolOpen = true;
+      G.cardQueue.push({
+        level: G.level, title: 'The Red Dot Protocol',
+        body: 'A letter under the Study door, unsigned, smelling faintly of ozone:\n\n"The Under-Road run has been NOTED. Reflexes of that grade require formal development. A training terminal has been installed beside the Study desk. Authorization: granted. Bring your whole self.\n\n— M."\n\n(A red 🔴 terminal now glows in the PM\'s Study.)',
+      });
+    }
+    save();
+  } else {
+    toast('🕳️ Five seizures. The tunnel spits you out, and the patrols add a commemorative plaque. The cheese remains — for now — theirs.');
+    tone(220, 120, 0.3, 'square', 0.06);
+  }
+  startFade(() => switchMap('basement', 26 * TILE, 16 * TILE));
+  updateHUD();
+}
+function drawGauntlet() {
+  const M = G.mini;
+  // the prize
+  const cx = 6.5 * TILE, cy = 2 * TILE;
+  ctx.fillStyle = '#e9c46a'; ctx.beginPath(); ctx.moveTo(cx - 7, cy + 5); ctx.lineTo(cx + 7, cy + 5); ctx.lineTo(cx + 5, cy - 4); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#c9a227'; ctx.beginPath(); ctx.arc(cx + 1, cy + 1, 1.5, 0, 7); ctx.fill(); ctx.beginPath(); ctx.arc(cx - 3, cy + 3, 1, 0, 7); ctx.fill();
+  // the patrols
+  for (const r of M.rats) drawMouse({ x: r.x, y: (r.row + 0.5) * TILE, type: 'rat', dir: r.dir, scale: 1, animT: r.animT, state: 'wander', busy: 0 });
+  // the clock and the count
+  const L = G.larry;
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 26, L.y - 32, 52, 11);
+  ctx.fillStyle = M.seized >= 4 ? '#ff8080' : '#ffe8b8';
+  ctx.fillText(M.t.toFixed(1) + 's · ✋' + M.seized, L.x, L.y - 23);
+}
+
+/* ---------- THE RED DOT PROTOCOL: a dream, weaponized ----------
+   MI-Paw's training construct. 45 seconds, one dot, no mercy. It relocates
+   the instant you touch it, faster every time. Double digits expected. */
+function startProtocol() {
+  switchMap('dreamvoid', 7.5 * TILE, 5.5 * TILE);
+  G.mini = { type: 'dot', t: 45, hits: 0, dx: 4.5 * TILE, dy: 3.5 * TILE, moveT: 1.6, pulse: 0 };
+  toast('🔴 PROTOCOL RUNNING — 45 seconds. POUNCE the dot (walk at it and it will simply not be there). Land the leap.');
+  tone(1200, 2400, 0.2, 'sawtooth', 0.05);
+}
+function protocolWarp(M) {
+  M.dx = (1.8 + Math.random() * 10.4) * TILE;
+  M.dy = (1.8 + Math.random() * 6.4) * TILE;
+  M.moveT = Math.max(0.7, 1.6 - M.hits * 0.06);
+}
+function updateProtocol(dt) {
+  if ((G.protocolCD || 0) > 0) G.protocolCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'dot') return;
+  M.t -= dt; M.pulse += dt;
+  M.moveT -= dt;
+  if (M.moveT <= 0) { protocolWarp(M); tone(1600, 1200, 0.04, 'sine', 0.03); }
+  const L = G.larry;
+  const d = dist(L.x, L.y, M.dx, M.dy);
+  if (d < 14 && L.pounceT > 0) { // only a LEAP counts — this is the whole discipline
+    M.hits++;
+    addFloat(M.dx, M.dy - 10, 'CAUGHT ×' + M.hits, '#ff8080');
+    addParticle(M.dx, M.dy, '#ff4040', 8, 34);
+    tone(880 + M.hits * 40, 1320 + M.hits * 40, 0.09, 'triangle', 0.07);
+    briefEvent('dot');
+    protocolWarp(M);
+  } else if (d < 24 && L.pounceT <= 0) { // walk up to it and it simply… isn't there
+    addFloat(M.dx, M.dy - 8, 'zip.', '#b9b2a2');
+    tone(1900, 2400, 0.04, 'sine', 0.03);
+    protocolWarp(M);
+  }
+  if (M.t <= 0) finishProtocol();
+}
+function finishProtocol() {
+  const M = G.mini;
+  G.mini = null;
+  G.protocolCD = 90 + Math.random() * 40;
+  const h = M.hits;
+  const fish = 1 + Math.floor(h / 3);
+  G.fish += fish; G.xp += h;
+  const isBest = h > (G.protocolBest || 0);
+  if (isBest) G.protocolBest = h;
+  if (h >= 10) earnHonour('protocol');
+  toast(h >= 10 ? '🔴 ' + h + ' CATCHES. The terminal prints a certificate it clearly did not expect to need. +' + fish + ' 🐟 +' + h + ' XP'
+    : h >= 5 ? '🔴 ' + h + ' catches. "ADEQUATE," says the terminal, warmly for a terminal. +' + fish + ' 🐟 +' + h + ' XP'
+      : '🔴 ' + h + ' catches. The dot sends its regards. +' + fish + ' 🐟' + (h ? ' +' + h + ' XP' : ''));
+  [659, 784, h >= 10 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  startFade(() => switchMap('ground', 15 * TILE, 23.5 * TILE));
+  updateHUD();
+}
+function drawProtocol() {
+  const M = G.mini;
+  const m = curMap();
+  // the dream wash: deep violet, starred
+  ctx.fillStyle = 'rgba(48,24,88,0.42)';
+  ctx.fillRect(0, 0, m.w * TILE, m.h * TILE);
+  for (let i = 0; i < 26; i++) {
+    const sx = (hash2(i, 7) * m.w) * TILE, sy = (hash2(3, i) * m.h) * TILE;
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.12 + 0.3 * Math.abs(Math.sin(M.pulse * 1.5 + i))) + ')';
+    ctx.fillRect(sx, sy, 1, 1);
+  }
+  // THE DOT
+  const g = 3 + Math.sin(M.pulse * 9) * 1.2;
+  ctx.fillStyle = 'rgba(255,64,64,0.25)'; ctx.beginPath(); ctx.arc(M.dx, M.dy, g + 5, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ff4040'; ctx.beginPath(); ctx.arc(M.dx, M.dy, g, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffb0b0'; ctx.beginPath(); ctx.arc(M.dx - 1, M.dy - 1, 1.2, 0, 7); ctx.fill();
+  // clock and count
+  const L = G.larry;
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 26, L.y - 32, 52, 11);
+  ctx.fillStyle = M.t < 10 ? '#ff8080' : '#ffe8b8';
+  ctx.fillText(Math.ceil(M.t) + 's · 🔴' + M.hits, L.x, L.y - 23);
 }
 
 /* ---------- THE PIGEON AGM: grandmother's footsteps, feline rules ----------
@@ -2287,6 +2498,10 @@ const CAMPAIGN = [
     why: 'MI-Paw believes the pond pigeons have been passing intelligence to the mice — minutes of their AGM were found behind the skirting board, annotated. Attend their next session at the garden pond. Uninvited. Undetected.' },
   { text: 'Answer the singing holes (8 bonks)', kind: 'bonk', n: 8,
     why: 'The basement holes have begun SINGING at night — coordinated taunting, straight from the Rat King\'s songbook. Take up the drum at the Cellar and answer eight heads personally. Morale is watching.' },
+  { text: 'Run the Under-Road', kind: 'gauntlet', n: 1,
+    why: 'The heirs move the stolen larder through their tunnel tonight. Go under — the crack in the Cellar wall — cross the patrol lanes, and take the cheese back where they sleep. Nothing says DEPOSED like a burglary.' },
+  { text: 'Complete a Red Dot Protocol (8 catches)', kind: 'dot', n: 8,
+    why: 'MI-Paw requires evidence the reflexes are being MAINTAINED. Report to the Study terminal, enter the construct, and log eight catches on the dot. It has been patched since your last session. It is faster. It is smug about it.' },
   { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8,
     why: 'The mice have discovered PAPERWORK. Red tape spools down the Corridor again, nearly to the Cabinet Room door. Slash every strip before the government notices the mice run it better than they do.' },
   { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1,
@@ -2302,6 +2517,8 @@ function briefPossible(d) {
   if (d.type === 'swift' && G.level < 3) return false;
   if (d.type === 'trick' && G.level < 5) return false;
   if (d.type === 'still' && G.level < 7) return false;
+  if (d.kind === 'gauntlet' && !G.gauntletOpen) return false; // the crack hasn't opened yet
+  if (d.kind === 'dot' && !G.protocolOpen) return false;      // the terminal hasn't chosen you yet
   return true;
 }
 // the campaign's biggest escalations arrive in person: the aide finds you,
@@ -2606,8 +2823,11 @@ function beatFor(level) {
     // ---- the finale (a credits card follows; the game continues after) ----
     case 17: return { title: 'By Order of the Crown', body: 'A letter arrives bearing a seal you have only seen on television. The Palace "notes with approval the continued excellence of the Chief Mouser" and confers upon you the ORDER OF THE GARTER (FELINE DIVISION). The ceremony is held in the garden. Even Palmerston attends. He nods. Once.', finale: true };
     default: {
-      if (level % 2 === 1) return { title: 'The Van. Again.', body: '{OLD} {EXIT} Incoming: {NEW}. The staircase is running out of wall for the portraits. You have been replaced zero times.', pmChange: true };
-      return { title: 'Meanwhile, at No. 10…', body: FLAVOUR[(level / 2 | 0) % FLAVOUR.length] + ' The mice grow bolder. So do you.' };
+      // past the Garter the churn slows: a van every FOURTH level. The joke
+      // needs air between tellings — and the real story down here is the war.
+      if (level % 4 === 1) return { title: 'The Van. Again.', body: '{OLD} {EXIT} Incoming: {NEW}. The staircase is running out of wall for the portraits. You have been replaced zero times.', pmChange: true };
+      if (level % 2 === 0) return { title: 'Meanwhile, at No. 10…', body: FLAVOUR[(level / 2 | 0) % FLAVOUR.length] + ' The mice grow bolder. So do you.' };
+      return { title: 'Dispatches from Below', body: 'MI-Paw\'s file on the Under-Cellar thickens. Tunnels re-dug. Larders raided. A crown, they say, being re-fitted. The war does not end; it changes management — much like everything else in this building.' };
     }
   }
 }
@@ -2621,6 +2841,7 @@ const G = {
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
   mini: null, postCD: 0, supperCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
@@ -2688,10 +2909,10 @@ const tieDef = () => TIES.find(t => t.id === G.tie) || TIES[0];
 function save() {
   if (G.daily) return; // daily sorties never touch the career save
   try {
-    // never persist Battersea as the current map: the shelter has no exits
-    // (homecoming visits are scripted round-trips) — a reload mid-visit would
-    // otherwise strand the Chief Mouser at the shelter forever
-    const atShelter = G.intro.phase === 'done' && G.mapId === 'shelter';
+    // never persist a pocket map as the current map: the shelter, the
+    // Under-Road and the dream void have no exits (visits are scripted
+    // round-trips) — a reload mid-visit would strand the Chief Mouser there
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -2705,6 +2926,7 @@ function save() {
       met: Array.from(G.met || []),
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
       donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0, raceBest: G.raceBest || 0,
+      gauntletOpen: !!G.gauntletOpen, protocolOpen: !!G.protocolOpen, gauntletBest: G.gauntletBest || 0, protocolBest: G.protocolBest || 0,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -3141,6 +3363,32 @@ function interactPoi(p) {
       'It begins as a tingle in the back paws. The corridor stretches out before you, impossibly long, impossibly runnable. The house holds its breath.\n\nA course of paw-print gates, the full ground floor, ludicrous speed. Pounce to dash — it recharges instantly while the zoomies hold.'
       + (G.raceBest ? '\n\n🏁 Your record: ' + G.raceBest.toFixed(1) + 's' : ''),
       '💨 LET THEM TAKE YOU', '🧘 Resist. This time.', which => { if (which === 'a') startRace(); });
+    return;
+  }
+  if (p.type === 'gauntlet') {
+    if (G.mini) return;
+    if (!G.gauntletOpen) { toast('🕳️ A hairline crack in the Cellar wall. Cold air behind it. Something, far below, is COUNTING. (Depose what rules down there, and the way opens.)'); sClick(); return; }
+    if (G.daily) { toast('🕳️ The Under-Road can wait. You are on the clock.'); sClick(); return; }
+    if ((G.gauntletCD || 0) > 0) { toast('🕳️ The tunnel patrols have doubled since your last visit. Give them a moment to get complacent again.'); sClick(); return; }
+    showChoice('THE CRACK IN THE CELLAR WALL', 'The Under-Road',
+      'The heirs of the deposed King dug it: a smuggling tunnel under the Cellar, and the STOLEN LARDER sits at the far end of it. Six patrol lanes between you and the cheese.\n\nCross the lanes. Time the gaps. Get seized and you start again — five seizures and the tunnel spits you out. Speed is glory.'
+      + (G.gauntletBest ? '\n\n🏁 Best run: ' + G.gauntletBest.toFixed(1) + 's' : ''),
+      '🐾 Go under', '🚶 The cheese can keep', which => {
+        if (which === 'a') startFade(() => startGauntlet());
+      });
+    return;
+  }
+  if (p.type === 'protocol') {
+    if (G.mini) return;
+    if (!G.protocolOpen) { toast('🔴 A matte-black terminal, unpowered. A brass plate reads: MI-PAW — AUTHORIZED PAWS ONLY. It has not decided about you yet.'); sClick(); return; }
+    if (G.daily) { toast('🔴 No training on sortie day. Perform instead.'); sClick(); return; }
+    if ((G.protocolCD || 0) > 0) { toast('🔴 The terminal is recompiling the dot. It says this is normal.'); sClick(); return; }
+    showChoice('THE STUDY — MI-PAW TERMINAL', 'The Red Dot Protocol',
+      'The terminal hums awake. "TRAINING CONSTRUCT LOADED," it says. "SUBJECT: THE DOT. DURATION: 45 SECONDS. CATCHES EXPECTED: DOUBLE DIGITS."\n\nA dream, weaponized: the dot appears, the dot relocates, the dot is faster every time you touch it. Catch it anyway. Catch it repeatedly.'
+      + (G.protocolBest ? '\n\n🏁 Best: ' + G.protocolBest + ' catches' : ''),
+      '🔴 Enter the Protocol', '🚶 Remain in reality', which => {
+        if (which === 'a') startFade(() => startProtocol());
+      });
     return;
   }
   if (p.type === 'agm') {
@@ -4628,7 +4876,14 @@ function kingFallScene() {
     { who: 'KING RAT', text: '…noted. The Crown — ahem — passes. Keep the cellar. Keep the KITCHEN. I shall be… abroad. Indefinitely. For my health.' },
     { who: 'LARRY', text: '(He is escorted to the garden wall by two pigeons acting in an official capacity. You return to the radiator. Kings come and go. The radiator is forever.)' },
     { who: 'MI-PAW', text: 'File closed: KING RAT — DEPOSED. The mice will crown another by Thursday; they always do. But tonight the house sleeps soundly — and it sleeps soundly because of you.' },
-  ]);
+    { who: 'A SMALL VOICE', text: '(A familiar throat-clearing, from a new crack in the Cellar wall.)', do: () => tone(1800, 1400, 0.05, 'sine', 0.03) },
+    { who: 'THE HERALD MOUSE', text: 'For the RECORD: His Late Enormity\'s heirs do not recognise the deposition. They have opened the UNDER-ROAD — the old smuggling tunnel — and the larder moves through it NIGHTLY. Good luck finding— oh. Oh no. I\'ve said too much.' },
+    { who: 'MI-PAW', text: 'The herald is, as ever, a gift. New file, Chief Mouser: THE UNDER-ROAD — a crack in the Cellar wall, south side. The war goes below. When you\'re ready.' },
+  ], () => {
+    G.gauntletOpen = true;
+    save();
+    toast('🕳️ ACT TWO: THE UNDER-ROAD — a new crack has opened in the Cellar wall. The war goes below.');
+  });
 }
 
 /* ---------- The Garter ceremony: the career's summit, staged ---------- */
@@ -5395,6 +5650,8 @@ function update(dt) {
   updateRace(dt);
   updateAGM(dt);
   updateMoles(dt);
+  updateGauntlet(dt);
+  updateProtocol(dt);
   if (G.cardQueue.length && !G.mini && !SCENE) maybeShowCard(); // deferred dispatches surface once play is clear
   // removal boxes demand supervision
   if (!G.mischief.has('boxes')) {
@@ -5668,6 +5925,9 @@ function draw() {
   if (G.mini && G.mini.type === 'race') drawRace();
   if (G.mini && G.mini.type === 'agm') drawAGM();
   if (G.mini && G.mini.type === 'moles') drawMoles();
+  if (G.mini && G.mini.type === 'gauntlet') drawGauntlet();
+  if (G.mini && G.mini.type === 'dot') drawProtocol();
+  drawGameMarkers();
   for (const p of G.particles) {
     ctx.globalAlpha = Math.min(1, p.t * 2);
     ctx.fillStyle = p.color;
@@ -6081,6 +6341,10 @@ function startGame(fresh) {
     G.homecoming = !!s.homecoming;
     G.auditAt = s.auditAt || 0;
     G.raceBest = s.raceBest || 0;
+    G.gauntletOpen = !!s.gauntletOpen || !!s.kingDeposed; // veterans who already deposed him find the crack open
+    G.protocolOpen = !!s.protocolOpen;
+    G.gauntletBest = s.gauntletBest || 0;
+    G.protocolBest = s.protocolBest || 0;
     // saves from before the flatter XP curve can bank xp above the new,
     // lower thresholds — clamp so one catch doesn't fire a burst of level-ups
     G.xp = Math.min(G.xp, Math.max(0, xpNeed(G.level) - 1));
