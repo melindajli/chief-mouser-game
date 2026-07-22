@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Eight mini games, one per cat instinct
+## Ten mini games, one per cat instinct
 
 - **Post Watch** — the eleven o'clock delivery shoots through the letterbox;
   bat the letters out of the air, and mind the decoy rattles
@@ -66,6 +66,14 @@ the front door having no outside handle:
   the Rat King)
 - **The Red Dot Protocol** — MI-Paw's dream construct: 45 seconds, one
   dot, and only a landed pounce counts (unlocked by running the Under-Road)
+- **The Gull Affair** — eight seagulls strafe the garden-party sandwiches;
+  read the telegraph, lead the target, close the airspace
+- **The Heights** — pounce ledge to ledge up the tallest bookcase in
+  government; wobbly shelves tip, the air does not hold cats, and the
+  highest perch in the house has never held one. Officially.
+
+(There is also something behind the garden hedge. It is protected by
+statute. No further questions.)
 
 ## Everything else
 

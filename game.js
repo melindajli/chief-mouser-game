@@ -409,6 +409,19 @@ function buildPigeon() {
   return sCanvas(s);
 }
 const PIGEON_SPRITE = buildPigeon();
+function buildGull() {
+  // bigger, whiter, meaner: the true menace of every British garden party
+  const s = mkS(16, 11);
+  sell(s, 7, 6, 5.2, 2.9, '#f0ece2');                   // body
+  sell(s, 12.5, 4, 2.4, 2.0, '#f0ece2');                // head
+  sp(s, 13.4, 3.2, '#2a2522');                           // the cold eye
+  srect(s, 14.6, 3.8, 2, 1, '#e0a03c');                  // that beak
+  sell(s, 5, 4.5, 3.6, 1.6, '#b9b2a2');                 // folded wing, grey mantle
+  srect(s, 1, 5.5, 2, 1, '#b9b2a2');                     // wingtip
+  soutline(s, '#2a2522'); sshade(s, '#2a2522', { '#f0ece2': '#c9c2b0' });
+  return sCanvas(s);
+}
+const GULL_SPRITE = buildGull();
 function buildRat() {
   const s = mkS(19, 13);
   sell(s, 8, 8, 6.4, 4.0, '#8a7f74');
@@ -1209,6 +1222,8 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   m.pois = [
     { x: 37, y: 4, emoji: '🐟', type: 'text', texts: TXT_POND },
     { x: 39, y: 7, emoji: '🐦', type: 'agm' },  // the pigeons, in session
+    { x: 32, y: 5, emoji: '🥪', type: 'gulls' }, // the reception sandwiches, under threat from above
+    { x: 45, y: 2, type: 'privacy' },           // behind the hedge. No marker. Obviously.
   ];
   rect(36, 5, 37, 8, 'a');                      // stone path from the terrace
   rect(30, 5, 35, 5, 'a');
@@ -1239,6 +1254,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   m.decor.push({ x: 4, y: 18, t: 'books' }, { x: 5, y: 18, t: 'books' }, { x: 10, y: 18, t: 'books' }, { x: 11, y: 18, t: 'painting' });
   set(20, 21, 'v'); set(20, 22, 'v');
   m.pois.push({ x: 15, y: 23, emoji: '🔴', type: 'protocol' }); // MI-Paw's training terminal, by the Study desk
+  m.pois.push({ x: 5, y: 19, emoji: '📚', type: 'climb' });     // the Study bookcase — government's tallest
   // Entrance Hall (the checkerboard floor and the black door)
   rect(13, 26, 30, 33, 'c');
   set(21, 34, 'D'); set(22, 34, 'D');
@@ -1567,6 +1583,15 @@ MAPS.underroad = makeMap('underroad', 13, 24, (m, set, rect) => {
   m.mouseCap = () => 0; // the patrols are the mice
 });
 
+// --- The Heights: the tallest bookcase in government, seen side-on ---
+// A pocket shaft (no exits — scripted round-trip). The mini game draws and
+// enforces its own ledges; the map is just the air between them.
+MAPS.heights = makeMap('heights', 11, 26, (m, set, rect) => {
+  rect(1, 1, 9, 24, 'z');
+  m.regions = [[1, 1, 9, 24, 'The Heights']];
+  m.mouseCap = () => 0; // nothing up here but gravity and glory
+});
+
 // --- The dream void: MI-Paw's training construct (a nap, weaponized) ---
 MAPS.dreamvoid = makeMap('dreamvoid', 15, 11, (m, set, rect) => {
   rect(1, 1, 13, 9, 'z');
@@ -1655,6 +1680,9 @@ const HONOURS = [
   { id: 'bonk', name: 'Bonk Diplomacy', hint: 'A perfect Whack-a-Mouse: every head answered.' },
   { id: 'underroad', name: 'Keeper of the Under-Road', hint: 'Reclaim the larder from the tunnel in under 20 seconds.' },
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
+  { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
+  { id: 'perch', name: 'The Highest Authority', hint: 'Reach the perch atop the tallest bookcase in government.' },
+  { id: 'redacted', name: '[REDACTED]', hint: '[REDACTED]' },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -1778,7 +1806,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -1879,7 +1907,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -1898,6 +1926,218 @@ function drawGameMarkers() {
     ctx.fillText(em, mx, my);
     ctx.restore();
   }
+}
+
+/* ---------- THE GULL AFFAIR: eight raiders, three platters, zero shame ----------
+   Interception: each gull telegraphs its strafing run, then crosses the lawn
+   low and fast toward a sandwich platter. Be in its path — lead the target —
+   and it banks off in disgrace. Every miss costs the nation a sandwich. */
+const GULL_PLATTERS = [[29, 5], [32, 5], [35, 5]];
+function startGulls() {
+  G.mini = { type: 'gulls', total: 8, launched: 0, saved: 0, lost: 0, gull: null, next: 1.6, t: 0 };
+  toast('🥪 THE GULL AFFAIR — eight inbound. Watch the telegraph, be in the path, turn them back!');
+  tone(1500, 900, 0.15, 'square', 0.06);
+}
+function updateGulls(dt) {
+  if ((G.gullsCD || 0) > 0) G.gullsCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'gulls') return;
+  M.t += dt;
+  if (!M.gull && M.launched < M.total) {
+    M.next -= dt;
+    if (M.next <= 0) {
+      M.launched++;
+      const [px] = GULL_PLATTERS[(Math.random() * GULL_PLATTERS.length) | 0];
+      const fromLeft = Math.random() < 0.5;
+      M.gull = {
+        x: (fromLeft ? -1 : 48) * TILE, y: (1.5 + Math.random() * 4.5) * TILE,
+        tx: (px + 0.5) * TILE, ty: 5.5 * TILE,
+        dir: fromLeft ? 1 : -1, spd: 105 + M.launched * 9, // each raider bolder than the last
+        tel: 0.8, animT: 0,
+      };
+      addFloat(M.gull.x + M.gull.dir * 30, M.gull.y, '!', '#ffd98a');
+      tone(1700, 1100, 0.1, 'square', 0.05); // the incoming cry
+    }
+  }
+  const g = M.gull;
+  if (g) {
+    g.animT += dt;
+    if (g.tel > 0) { g.tel -= dt; } // hovering at the boundary, committing to the run
+    else {
+      // strafe: home toward the platter, then carry on past
+      const dx = g.tx - g.x, dy = g.ty - g.y;
+      const d = Math.max(1, Math.hypot(dx, dy));
+      const past = (g.dir === 1 && g.x > g.tx) || (g.dir === -1 && g.x < g.tx);
+      g.x += (past ? g.dir * g.spd : dx / d * g.spd) * dt;
+      g.y += (past ? -30 : dy / d * g.spd) * dt; // climbs away after the snatch point
+      if (!past && Math.abs(g.x - g.tx) < 8 && Math.abs(g.y - g.ty) < 10) {
+        M.lost++;
+        addFloat(g.tx, g.ty - 10, '🥪 LOST', '#ff8080');
+        tone(300, 150, 0.15, 'square', 0.06);
+        g.tx = g.x + g.dir * 900; // and away, with the goods
+      }
+      if (g.x < -2 * TILE || g.x > 50 * TILE || g.y < -2 * TILE) { M.gull = null; M.next = 1.2 + Math.random() * 1.2; }
+    }
+    // interception: be in the path (a pounce counts double-distance)
+    if (g && g.tel <= 0 && dist(G.larry.x, G.larry.y, g.x, g.y) < (G.larry.pounceT > 0 ? 17 : 12)) {
+      M.saved++;
+      addFloat(g.x, g.y - 12, 'INTERCEPTED! ' + M.saved + '/' + M.total, '#ffe8b8');
+      addParticle(g.x, g.y, '#f0ece2', 8, 40);
+      tone(880, 1320, 0.1, 'triangle', 0.08);
+      M.gull = null; M.next = 1.2 + Math.random() * 1.2;
+    }
+  }
+  if (M.launched >= M.total && !M.gull) finishGulls();
+}
+function finishGulls() {
+  const M = G.mini;
+  G.mini = null;
+  G.gullsCD = 100 + Math.random() * 50;
+  const s = M.saved;
+  const fish = s >= 8 ? 5 : s >= 6 ? 4 : s >= 4 ? 3 : s >= 2 ? 2 : 1;
+  G.fish += fish; G.xp += s * 2;
+  if (s >= 8) earnHonour('airspace');
+  toast(s >= 8 ? '🥪 EIGHT INTERCEPTIONS. The airspace is closed; catering weeps with gratitude. +' + fish + ' 🐟 +' + s * 2 + ' XP'
+    : s >= 5 ? '🥪 ' + s + '/8 turned back. The reception is saved. Mostly. +' + fish + ' 🐟 +' + s * 2 + ' XP'
+      : '🥪 ' + s + '/8. The gulls dine well tonight, and without remorse. +' + fish + ' 🐟' + (s ? ' +' + s * 2 + ' XP' : ''));
+  [659, 784, s >= 6 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  updateHUD();
+}
+function drawGulls() {
+  const M = G.mini;
+  for (const [px, py] of GULL_PLATTERS) { // the platters, patriotically laden
+    const x = (px + 0.5) * TILE, y = (py + 0.5) * TILE;
+    ctx.fillStyle = '#e6dcc4'; ctx.fillRect(x - 6, y - 2, 12, 4);
+    ctx.fillStyle = '#e0c084'; ctx.fillRect(x - 4, y - 4, 3, 2); ctx.fillRect(x + 1, y - 4, 3, 2);
+  }
+  const g = M.gull;
+  if (g) {
+    if (g.tel > 0) { // the telegraph: a shadow of intent at the boundary
+      ctx.globalAlpha = 0.4 + Math.sin(M.t * 14) * 0.25;
+      ctx.fillStyle = '#ffd98a';
+      const ex = g.dir === 1 ? 1.2 * TILE : 46.5 * TILE;
+      ctx.beginPath(); ctx.moveTo(ex, g.y); ctx.lineTo(ex - g.dir * 8, g.y - 5); ctx.lineTo(ex - g.dir * 8, g.y + 5); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath(); ctx.ellipse(g.x, 7.6 * TILE, 6, 1.6, 0, 0, 7); ctx.fill(); // its shadow on the lawn
+      ctx.translate(g.x, g.y + Math.sin(g.animT * 18) * 1.5);
+      ctx.scale(g.dir === 1 ? 1 : -1, 1);
+      ctx.drawImage(GULL_SPRITE, -8, -5);
+      ctx.restore();
+    }
+  }
+  const L = G.larry;
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 26, L.y - 32, 52, 11);
+  ctx.fillStyle = '#ffe8b8'; ctx.fillText('🕊' + M.saved + ' 🥪-' + M.lost, L.x, L.y - 23);
+}
+
+/* ---------- THE HEIGHTS: pounce by pounce to the highest perch ----------
+   A side-on shaft up the Study bookcase. Ledges hold you; the air does not —
+   off a ledge you slide, and wobbly shelves tip if you linger. The perch at
+   the top has never held a cat. Officially. */
+const CLIMB_LEDGES = [
+  { x0: 1, x1: 9, y: 24 },                 // the floor
+  { x0: 2, x1: 4, y: 21 }, { x0: 7, x1: 9, y: 21, wob: true },
+  { x0: 1, x1: 3, y: 18, wob: true }, { x0: 5, x1: 7, y: 18 },
+  { x0: 3, x1: 5, y: 15 }, { x0: 8, x1: 9, y: 15, wob: true },
+  { x0: 1, x1: 2, y: 12, wob: true }, { x0: 6, x1: 8, y: 12 },
+  { x0: 3, x1: 6, y: 9 },
+  { x0: 8, x1: 9, y: 7, wob: true },
+  { x0: 2, x1: 4, y: 5 },
+  { x0: 5, x1: 7, y: 3, perch: true },     // THE PERCH
+];
+function startClimb() {
+  switchMap('heights', 5.5 * TILE, 23.5 * TILE);
+  G.mini = { type: 'climb', t: 0, stand: new Map(), gone: new Map() };
+  toast('📚 THE HEIGHTS — pounce ledge to ledge (hold to charge). Wobbly shelves tip. The perch is at the top.');
+  tone(392, 523, 0.2, 'triangle', 0.06);
+}
+function climbLedgeAt(x, y) {
+  const M = G.mini;
+  for (let i = 0; i < CLIMB_LEDGES.length; i++) {
+    const l = CLIMB_LEDGES[i];
+    if ((M.gone.get(i) || 0) > 0) continue;
+    if (x >= l.x0 * TILE && x <= (l.x1 + 1) * TILE && Math.abs(y + 5 - (l.y + 0.5) * TILE) < 8) return i;
+  }
+  return -1;
+}
+function updateClimb(dt) {
+  if ((G.climbCD || 0) > 0) G.climbCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'climb') return;
+  M.t += dt;
+  for (const [i, tLeft] of M.gone) { const nt = tLeft - dt; if (nt <= 0) M.gone.delete(i); else M.gone.set(i, nt); }
+  const L = G.larry;
+  const li = climbLedgeAt(L.x, L.y);
+  if (li >= 0) {
+    const l = CLIMB_LEDGES[li];
+    if (l.perch) { finishClimb(); return; }
+    if (l.wob) {
+      const st = (M.stand.get(li) || 0) + dt;
+      M.stand.set(li, st);
+      if (st > 0.35 && Math.random() < dt * 8) addParticle(L.x, (l.y + 0.5) * TILE, '#c9a26a', 1, 8); // creaking dust
+      if (st > 0.75) {
+        M.gone.set(li, 3);
+        M.stand.delete(li);
+        addFloat(L.x, L.y - 12, 'TIP!', '#ff8080');
+        tone(200, 90, 0.2, 'square', 0.07);
+      }
+    }
+  } else {
+    for (const k of [...M.stand.keys()]) if (k !== li) M.stand.delete(k);
+    if (L.pounceT <= 0) { // the air does not hold cats
+      const ny = L.y + 95 * dt;
+      if (circleFreeOn(curMap(), L.x, ny, 5)) L.y = ny;
+    }
+  }
+}
+function finishClimb() {
+  const M = G.mini;
+  G.mini = null;
+  G.climbCD = 100 + Math.random() * 50;
+  const t = M.t;
+  G.fish += 4; G.xp += 12;
+  const isBest = !G.climbBest || t < G.climbBest;
+  if (isBest) G.climbBest = t;
+  earnHonour('perch');
+  toast('👑 THE HIGHEST PERCH — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. From up here you can see everything. Everything is, on reflection, yours. +4 🐟 +12 XP');
+  [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.11, 'triangle', 0.06, i * 0.09));
+  addParticle(G.larry.x, G.larry.y - 8, '#ffd98a', 14, 50);
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  startFade(() => switchMap('ground', 5 * TILE, 20 * TILE));
+  updateHUD();
+}
+function drawClimb() {
+  const M = G.mini;
+  // the bookcase behind everything: warm wood wash
+  ctx.fillStyle = 'rgba(90,58,32,0.35)';
+  ctx.fillRect(TILE, TILE, 9 * TILE, 24 * TILE);
+  CLIMB_LEDGES.forEach((l, i) => {
+    if ((M.gone.get(i) || 0) > 0) return;
+    const x = l.x0 * TILE, w = (l.x1 - l.x0 + 1) * TILE, y = (l.y + 0.5) * TILE;
+    const wobbling = (M.stand.get(i) || 0) > 0.35 ? Math.sin(M.t * 30) * 1.2 : 0;
+    ctx.save();
+    ctx.translate(0, wobbling);
+    ctx.fillStyle = l.perch ? '#a22525' : '#8a5a30';   // the perch cushion is scarlet, naturally
+    ctx.fillRect(x, y, w, 4);
+    ctx.fillStyle = l.perch ? '#c73a3a' : '#a5713f';
+    ctx.fillRect(x, y, w, 1);
+    if (!l.perch) { // book spines along the shelf
+      const cols = ['#a33636', '#3f6fae', '#c98d2c', '#476b4e', '#8a5a8f'];
+      for (let b = 0; b < w / 6 - 1; b++) { ctx.fillStyle = cols[(b + i) % 5]; ctx.fillRect(x + 3 + b * 6, y - 6, 4, 6); }
+    } else { ctx.fillStyle = '#e9c46a'; ctx.fillRect(x + w / 2 - 1, y - 3, 2, 3); } // a tassel
+    if (l.wob) { ctx.fillStyle = 'rgba(255,217,138,0.7)'; ctx.fillRect(x + 1, y + 1, 2, 2); } // the warning peg
+    ctx.restore();
+  });
+  const L = G.larry;
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
+  ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.t.toFixed(1) + 's', L.x, L.y - 23);
 }
 
 /* ---------- THE UNDER-ROAD: six lanes of rat patrol, one stolen larder ----------
@@ -2841,7 +3081,7 @@ const G = {
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
   mini: null, postCD: 0, supperCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
-  gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0,
+  gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
@@ -2912,7 +3152,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -2926,7 +3166,7 @@ function save() {
       met: Array.from(G.met || []),
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
       donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0, raceBest: G.raceBest || 0,
-      gauntletOpen: !!G.gauntletOpen, protocolOpen: !!G.protocolOpen, gauntletBest: G.gauntletBest || 0, protocolBest: G.protocolBest || 0,
+      gauntletOpen: !!G.gauntletOpen, protocolOpen: !!G.protocolOpen, gauntletBest: G.gauntletBest || 0, protocolBest: G.protocolBest || 0, climbBest: G.climbBest || 0,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -3363,6 +3603,39 @@ function interactPoi(p) {
       'It begins as a tingle in the back paws. The corridor stretches out before you, impossibly long, impossibly runnable. The house holds its breath.\n\nA course of paw-print gates, the full ground floor, ludicrous speed. Pounce to dash — it recharges instantly while the zoomies hold.'
       + (G.raceBest ? '\n\n🏁 Your record: ' + G.raceBest.toFixed(1) + 's' : ''),
       '💨 LET THEM TAKE YOU', '🧘 Resist. This time.', which => { if (which === 'a') startRace(); });
+    return;
+  }
+  if (p.type === 'gulls') {
+    if (G.mini) return;
+    if (G.daily) { toast('🥪 The gulls respect the sortie. Nothing else, but the sortie, yes.'); sClick(); return; }
+    if ((G.gullsCD || 0) > 0) { toast('🥪 The airspace is quiet. The gulls are regrouping over the Thames, planning something legal-adjacent.'); sClick(); return; }
+    showChoice('THE TERRACE', 'The Gull Affair',
+      'The garden reception has left three platters of sandwiches on the terrace — and the SEAGULLS have noticed. Eight inbound, low and fast, absolutely without shame.\n\nEach raider telegraphs its run, then strafes the lawn. Be in its path — a pounce works beautifully — and turn it back. Every miss costs the nation a sandwich.',
+      '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
+    return;
+  }
+  if (p.type === 'climb') {
+    if (G.mini) return;
+    if (G.daily) { toast('📚 The Heights will keep. The clock will not.'); sClick(); return; }
+    if ((G.climbCD || 0) > 0) { toast('📚 The bookcase is being re-shelved after your last ascent. The books have filed a complaint.'); sClick(); return; }
+    showChoice('THE STUDY', 'The Heights',
+      'The tallest bookcase in government, and above it — the HIGHEST PERCH IN THE HOUSE. No cat has sat it. Officially, no cat has tried.\n\nPOUNCE from ledge to ledge (hold to charge a longer leap). Off a ledge you SLIDE — and the wobbly shelves tip if you linger. The perch waits at the top, and so does the view.'
+      + (G.climbBest ? '\n\n🏁 Best ascent: ' + G.climbBest.toFixed(1) + 's' : ''),
+      '🐾 Begin the ascent', '🚶 Respect gravity today', which => {
+        if (which === 'a') startFade(() => startClimb());
+      });
+    return;
+  }
+  if (p.type === 'privacy') {
+    if (G.mini || G.daily) return;
+    startFade(() => {
+      showCard('OFFICIAL SECRETS ACT (1989, FELINE SCHEDULE)', '[REDACTED]',
+        'What happens behind the hedge is protected by statute, convention, and one extremely level stare.\n\nThe record shows only that the Chief Mouser entered the shrubbery with dignity, conducted essential state business, and emerged with MORE dignity.\n\nNo further questions. The begonias saw nothing. The begonias ALWAYS see nothing.',
+        null, () => {
+          earnHonour('redacted');
+          toast('🌿 The matter is closed. The file is sealed. The hedge stands ready.');
+        });
+    });
     return;
   }
   if (p.type === 'gauntlet') {
@@ -5652,6 +5925,8 @@ function update(dt) {
   updateMoles(dt);
   updateGauntlet(dt);
   updateProtocol(dt);
+  updateGulls(dt);
+  updateClimb(dt);
   if (G.cardQueue.length && !G.mini && !SCENE) maybeShowCard(); // deferred dispatches surface once play is clear
   // removal boxes demand supervision
   if (!G.mischief.has('boxes')) {
@@ -5927,6 +6202,8 @@ function draw() {
   if (G.mini && G.mini.type === 'moles') drawMoles();
   if (G.mini && G.mini.type === 'gauntlet') drawGauntlet();
   if (G.mini && G.mini.type === 'dot') drawProtocol();
+  if (G.mini && G.mini.type === 'gulls') drawGulls();
+  if (G.mini && G.mini.type === 'climb') drawClimb();
   drawGameMarkers();
   for (const p of G.particles) {
     ctx.globalAlpha = Math.min(1, p.t * 2);
@@ -6345,6 +6622,7 @@ function startGame(fresh) {
     G.protocolOpen = !!s.protocolOpen;
     G.gauntletBest = s.gauntletBest || 0;
     G.protocolBest = s.protocolBest || 0;
+    G.climbBest = s.climbBest || 0;
     // saves from before the flatter XP curve can bank xp above the new,
     // lower thresholds — clamp so one catch doesn't fire a burst of level-ups
     G.xp = Math.min(G.xp, Math.max(0, xpNeed(G.level) - 1));
