@@ -1830,7 +1830,7 @@ const RACE_GATES = [
 ];
 function startRace() {
   G.mini = { type: 'race', t: 0, idx: 0 };
-  toast('💨 THE ZOOMIES — hit every paw-print gate! Pounce to dash. GO GO GO GO GO');
+  toast('💨 THE ZOOMIES — hit every paw-print gate! Pounce to dash. GO GO GO GO GO', 'now');
   tone(300, 900, 0.3, 'sawtooth', 0.07);
   addParticle(G.larry.x, G.larry.y + 4, '#e9c46a', 10, 44);
 }
@@ -1935,7 +1935,7 @@ function drawGameMarkers() {
 const GULL_PLATTERS = [[29, 5], [32, 5], [35, 5]];
 function startGulls() {
   G.mini = { type: 'gulls', total: 8, launched: 0, saved: 0, lost: 0, gull: null, next: 1.6, t: 0 };
-  toast('🥪 THE GULL AFFAIR — eight inbound. Watch the telegraph, be in the path, turn them back!');
+  toast('🥪 THE GULL AFFAIR — eight inbound. Watch the telegraph, be in the path, turn them back!', 'now');
   tone(1500, 900, 0.15, 'square', 0.06);
 }
 function updateGulls(dt) {
@@ -2053,7 +2053,7 @@ const CLIMB_LEDGES = [
 function startClimb() {
   switchMap('heights', 5.5 * TILE, 23.5 * TILE);
   G.mini = { type: 'climb', t: 0, stand: new Map(), gone: new Map() };
-  toast('📚 THE HEIGHTS — pounce ledge to ledge (hold to charge). Wobbly shelves tip. The perch is at the top.');
+  toast('📚 THE HEIGHTS — pounce ledge to ledge (hold to charge). Wobbly shelves tip. The perch is at the top.', 'now');
   tone(392, 523, 0.2, 'triangle', 0.06);
 }
 function climbLedgeAt(x, y) {
@@ -2154,7 +2154,7 @@ function startGauntlet() {
     for (let k = 0; k < 2; k++) rats.push({ row, x: (1 + (k * 5.5 + i * 2.3) % 10) * TILE, dir, spd, animT: Math.random() * 9 });
   });
   G.mini = { type: 'gauntlet', t: 0, rats, seized: 0 };
-  toast('🕳️ THE UNDER-ROAD — six lanes, one larder. Time the gaps. GO.');
+  toast('🕳️ THE UNDER-ROAD — six lanes, one larder. Time the gaps. GO.', 'now');
   tone(120, 70, 0.4, 'sawtooth', 0.07);
 }
 function updateGauntlet(dt) {
@@ -2230,7 +2230,7 @@ function drawGauntlet() {
 function startProtocol() {
   switchMap('dreamvoid', 7.5 * TILE, 5.5 * TILE);
   G.mini = { type: 'dot', t: 45, hits: 0, dx: 4.5 * TILE, dy: 3.5 * TILE, moveT: 1.6, pulse: 0 };
-  toast('🔴 PROTOCOL RUNNING — 45 seconds. POUNCE the dot (walk at it and it will simply not be there). Land the leap.');
+  toast('🔴 PROTOCOL RUNNING — 45 seconds. POUNCE the dot (walk at it and it will simply not be there). Land the leap.', 'now');
   tone(1200, 2400, 0.2, 'sawtooth', 0.05);
 }
 function protocolWarp(M) {
@@ -2312,7 +2312,7 @@ const AGM_C = { x: 40.5, y: 7.3 }; // the quorum, on the south bank
 const AGM_SEATS = [[0, 0], [14, -5], [-13, -3], [7, 9], [-9, 8]];
 function startAGM() {
   G.mini = { type: 'agm', t: 0, phase: 'peck', phT: 1.6 + Math.random() * 1.2, lx: G.larry.x, ly: G.larry.y };
-  toast('🐦 THE AGM IS IN SESSION — creep while they peck, FREEZE when they look. Reach the pond undetected.');
+  toast('🐦 THE AGM IS IN SESSION — creep while they peck, FREEZE when they look. Reach the pond undetected.', 'now');
   tone(400, 300, 0.12, 'sine', 0.05);
 }
 function agmScatter(win) {
@@ -2391,7 +2391,7 @@ function drawAGM() {
    for the dust, be at the right hole, answer every head. Firmly. */
 function startMoles() {
   G.mini = { type: 'moles', t: 0, total: 12, done: 0, bonks: 0, hole: -1, phase: 'wait', phT: 1.0 };
-  toast('🎯 TWELVE HEADS — watch for the dust at the hole, be there when the head pops. BONK accordingly.');
+  toast('🎯 TWELVE HEADS — watch for the dust at the hole, be there when the head pops. BONK accordingly.', 'now');
   tone(500, 700, 0.12, 'triangle', 0.06);
 }
 function molesHolePos(i) {
@@ -2474,7 +2474,7 @@ function startSupper() {
   G.mini = { type: 'supper', t: 0, next: 1.4, spawned: 0, total: 10, scraps: [], caught: 0 };
   // the PM takes the hob; the cast of one stays for the duration
   G.sceneNpcs.push({ spr: P_VISITOR, x: 21.5 * TILE, y: 2.6 * TILE, animT: Math.random() * 9, flip: false });
-  toast('🍝 KITCHEN SUPPER — scraps incoming! Be under each one before it lands. The floor is the enemy.');
+  toast('🍝 KITCHEN SUPPER — scraps incoming! Be under each one before it lands. The floor is the enemy.', 'now');
   tone(523, 659, 0.15, 'triangle', 0.06);
 }
 const SCRAP_KINDS = [ // sized to be seen falling from across the kitchen
@@ -2562,7 +2562,7 @@ function startPostWatch() {
     type: 'post', t: 0, next: 1.1, spawned: 0, total: 8,
     letters: [], hit: 0, lock: 0, endT: 0,
   };
-  toast('📮 POST WATCH — bat the letters as they come through! Tap or SPACE. Mind the decoy rattles.');
+  toast('📮 POST WATCH — bat the letters as they come through! Tap or SPACE. Mind the decoy rattles.', 'now');
   tone(200, 160, 0.06, 'square', 0.05); tone(200, 160, 0.06, 'square', 0.05, 0.1);
 }
 const POST_SLOT = { x: 22 * TILE, y: 34 * TILE + 2 }; // the brass flap in the black door
@@ -4271,7 +4271,7 @@ function updateNpc(n, dt) {
     n.quipCD = 12;
     // the first time you meet someone, they introduce themselves properly
     if (maybeMeet(n.sprite + '@' + G.mapId)) { n.quipCD = 16; return; }
-    toast(pick(n.quips));
+    toast(pick(n.quips), 'low');
   }
   if (n.pauseT > 0) { n.pauseT -= dt; return; }
   if (!n.tx || dist(n.x, n.y, n.tx, n.ty) < 4) {
@@ -4462,7 +4462,7 @@ function updateRival(c, dt) {
   if (c.quipCD <= 0 && dist(c.x, c.y, G.larry.x, G.larry.y) < 28) {
     c.quipCD = 14;
     if (maybeMeet('cat:' + c.name)) { c.quipCD = 18; if (!c.anim) c.anim = { name: 'meow', t: 0 }; return; }
-    toast(c.name + ': "' + pick(c.quips) + '"');
+    toast(c.name + ': "' + pick(c.quips) + '"', 'low');
     if (c.state === 'sit' && !c.anim) c.anim = { name: 'meow', t: 0 };
   }
   if (c.anim) {
@@ -5469,13 +5469,29 @@ function switchMap(id, x, y) {
 }
 function startFade(cb) { G.fadeDir = 1; G.fadeCb = cb; }
 
-let toastT = null;
-function toast(text) {
+/* Toasts queue and pace themselves — nothing stomps anything. Priorities:
+   'low'  = ambient flavor (quips, room names): speaks only into silence,
+            silently dropped if anything is showing or waiting
+   norm   = news (tasks, goals, honours, rewards): queues, max 3 deep
+   'now'  = time-critical (a mini game just started): clears the backlog
+            and takes the floor immediately */
+let toastT = null, toastQ = [];
+const regionSeen = {}; // room-name toasts repeat only after a long absence
+function toastNext() {
+  toastT = null;
   const el = document.getElementById('toast');
-  el.textContent = text;
+  const next = toastQ.shift();
+  if (next === undefined) { el.classList.add('hidden'); return; }
+  el.textContent = next;
   el.classList.remove('hidden');
-  if (toastT) clearTimeout(toastT);
-  toastT = setTimeout(() => el.classList.add('hidden'), Math.max(2600, text.length * 52));
+  toastT = setTimeout(toastNext, Math.min(6200, Math.max(2400, 1300 + next.length * 46)));
+}
+function toast(text, prio) {
+  if (prio === 'low' && (toastT || toastQ.length)) return; // flavor yields to news
+  if (prio === 'now') { toastQ.length = 0; if (toastT) { clearTimeout(toastT); toastT = null; } }
+  if (toastQ.length >= 3) toastQ.shift(); // the backlog stays readable
+  toastQ.push(text);
+  if (!toastT) toastNext();
 }
 function wakeUp() {
   G.napping = false;
@@ -5869,7 +5885,13 @@ function update(dt) {
     const tx = Math.floor(L.x / TILE), ty = Math.floor(L.y / TILE);
     for (const [x0, y0, x1, y1, name] of m.regions) {
       if (tx >= x0 && tx <= x1 && ty >= y0 && ty <= y1) {
-        if (G.region !== name) { G.region = name; toast(name); }
+        if (G.region !== name) {
+          G.region = name;
+          // room names are ambience: once per while, and never over news
+          const now = performance.now();
+          if (!regionSeen[name] || now - regionSeen[name] > 75000) toast(name, 'low');
+          regionSeen[name] = now;
+        }
         break;
       }
     }
@@ -6560,7 +6582,7 @@ function startDaily() {
   if (G.dailyMod.id === 'night') G.nv = true; // night sorties come with the monocle fitted
   bootWorld();
   toast('📅 TODAY\'S SORTIE — 120 seconds. Everyone in the world gets these exact mice today.'
-    + (G.dailyMod.name ? ' ' + G.dailyMod.name + ': ' + G.dailyMod.blurb : '') + ' GO!');
+    + (G.dailyMod.name ? ' ' + G.dailyMod.name + ': ' + G.dailyMod.blurb : '') + ' GO!', 'now');
   tone(523, 784, 0.25, 'triangle', 0.07);
 }
 function dailySeedStr(seed) {
