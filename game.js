@@ -1832,7 +1832,7 @@ const RACE_GATES = [
 ];
 function startRace() {
   G.mini = { type: 'race', t: 0, idx: 0 };
-  toast('💨 THE ZOOMIES — hit every paw-print gate! Pounce to dash. GO GO GO GO GO', 'now');
+  toast('💨 Hit every gate! Pounce to dash. GO GO GO', 'now');
   tone(300, 900, 0.3, 'sawtooth', 0.07);
   addParticle(G.larry.x, G.larry.y + 4, '#e9c46a', 10, 44);
 }
@@ -1937,7 +1937,7 @@ function drawGameMarkers() {
 const GULL_PLATTERS = [[29, 5], [32, 5], [35, 5]];
 function startGulls() {
   G.mini = { type: 'gulls', total: 8, launched: 0, saved: 0, lost: 0, gull: null, next: 1.6, t: 0 };
-  toast('🥪 THE GULL AFFAIR — eight inbound. Watch the telegraph, be in the path, turn them back!', 'now');
+  toast('🥪 Eight gulls inbound — be in their path!', 'now');
   tone(1500, 900, 0.15, 'square', 0.06);
 }
 function updateGulls(dt) {
@@ -2055,7 +2055,7 @@ const CLIMB_LEDGES = [
 function startClimb() {
   switchMap('heights', 5.5 * TILE, 23.5 * TILE);
   G.mini = { type: 'climb', t: 0, stand: new Map(), gone: new Map() };
-  toast('📚 THE HEIGHTS — pounce ledge to ledge (hold to charge). Wobbly shelves tip. The perch is at the top.', 'now');
+  toast('📚 Pounce ledge to ledge. Wobbly shelves tip. Reach the perch.', 'now');
   tone(392, 523, 0.2, 'triangle', 0.06);
 }
 function climbLedgeAt(x, y) {
@@ -2106,7 +2106,7 @@ function finishClimb() {
   const isBest = !G.climbBest || t < G.climbBest;
   if (isBest) G.climbBest = t;
   earnHonour('perch');
-  toast('👑 THE HIGHEST PERCH — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. From up here you can see everything. Everything is, on reflection, yours. +4 🐟 +12 XP');
+  toast('👑 THE HIGHEST PERCH — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Everything below is yours. +4 🐟 +12 XP');
   [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.11, 'triangle', 0.06, i * 0.09));
   addParticle(G.larry.x, G.larry.y - 8, '#ffd98a', 14, 50);
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -2156,7 +2156,7 @@ function startGauntlet() {
     for (let k = 0; k < 2; k++) rats.push({ row, x: (1 + (k * 5.5 + i * 2.3) % 10) * TILE, dir, spd, animT: Math.random() * 9 });
   });
   G.mini = { type: 'gauntlet', t: 0, rats, seized: 0 };
-  toast('🕳️ THE UNDER-ROAD — six lanes, one larder. Time the gaps. GO.', 'now');
+  toast('🕳️ Six lanes, one larder. Time the gaps. GO.', 'now');
   tone(120, 70, 0.4, 'sawtooth', 0.07);
 }
 function updateGauntlet(dt) {
@@ -2193,7 +2193,7 @@ function finishGauntlet(win) {
     if (isBest) G.gauntletBest = t;
     if (t <= 20) earnHonour('underroad');
     briefEvent('gauntlet');
-    toast('🧀 THE LARDER, RECLAIMED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Somewhere below, an heir apparent files a complaint. +4 🐟 +12 XP');
+    toast('🧀 LARDER RECLAIMED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. +4 🐟 +12 XP');
     [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
     if (!G.protocolOpen) { // the first run home earns MI-Paw's full attention
@@ -2240,7 +2240,7 @@ function drawGauntlet() {
 function startProtocol() {
   switchMap('dreamvoid', 7.5 * TILE, 5.5 * TILE);
   G.mini = { type: 'dot', t: 45, hits: 0, dx: 4.5 * TILE, dy: 3.5 * TILE, moveT: 1.6, pulse: 0 };
-  toast('🔴 PROTOCOL RUNNING — 45 seconds. POUNCE the dot (walk at it and it will simply not be there). Land the leap.', 'now');
+  toast('🔴 45 seconds. POUNCE the dot — walking never lands.', 'now');
   tone(1200, 2400, 0.2, 'sawtooth', 0.05);
 }
 function protocolWarp(M) {
@@ -2392,7 +2392,7 @@ const AGM_C = { x: 40.5, y: 7.3 }; // the quorum, on the south bank
 const AGM_SEATS = [[0, 0], [14, -5], [-13, -3], [7, 9], [-9, 8]];
 function startAGM() {
   G.mini = { type: 'agm', t: 0, phase: 'peck', phT: 1.6 + Math.random() * 1.2, lx: G.larry.x, ly: G.larry.y };
-  toast('🐦 THE AGM IS IN SESSION — creep while they peck, FREEZE when they look. Reach the pond undetected.', 'now');
+  toast('🐦 Creep while they peck. FREEZE when they look.', 'now');
   tone(400, 300, 0.12, 'sine', 0.05);
 }
 function agmScatter(win) {
@@ -2471,7 +2471,7 @@ function drawAGM() {
    for the dust, be at the right hole, answer every head. Firmly. */
 function startMoles() {
   G.mini = { type: 'moles', t: 0, total: 12, done: 0, bonks: 0, hole: -1, phase: 'wait', phT: 1.0 };
-  toast('🎯 TWELVE HEADS — watch for the dust at the hole, be there when the head pops. BONK accordingly.', 'now');
+  toast('🎯 12 heads. Watch the dust, be at the hole, BONK.', 'now');
   tone(500, 700, 0.12, 'triangle', 0.06);
 }
 function molesHolePos(i) {
@@ -2554,7 +2554,7 @@ function startSupper() {
   G.mini = { type: 'supper', t: 0, next: 1.4, spawned: 0, total: 10, scraps: [], caught: 0 };
   // the PM takes the hob; the cast of one stays for the duration
   G.sceneNpcs.push({ spr: P_VISITOR, x: 21.5 * TILE, y: 2.6 * TILE, animT: Math.random() * 9, flip: false });
-  toast('🍝 KITCHEN SUPPER — scraps incoming! Be under each one before it lands. The floor is the enemy.', 'now');
+  toast('🍝 Scraps incoming — be under each before it lands!', 'now');
   tone(523, 659, 0.15, 'triangle', 0.06);
 }
 const SCRAP_KINDS = [ // sized to be seen falling from across the kitchen
@@ -2642,7 +2642,7 @@ function startPostWatch() {
     type: 'post', t: 0, next: 1.1, spawned: 0, total: 8,
     letters: [], hit: 0, lock: 0, endT: 0,
   };
-  toast('📮 POST WATCH — bat the letters as they come through! Tap or SPACE. Mind the decoy rattles.', 'now');
+  toast('📮 Tap when a letter pops. Beware decoy rattles!', 'now');
   tone(200, 160, 0.06, 'square', 0.05); tone(200, 160, 0.06, 'square', 0.05, 0.1);
 }
 const POST_SLOT = { x: 22 * TILE, y: 34 * TILE + 2 }; // the brass flap in the black door
@@ -2724,7 +2724,7 @@ function finishPostWatch() {
   G.fish += fish;
   G.xp += h * 2; // interception is skilled work; the Box notices
   if (h >= 8) earnHonour('post8');
-  toast(h >= 8 ? '📮 EIGHT FOR EIGHT. Not one envelope reached the mat. The Royal Mail files a formal complaint; the nation files this under "hero". +' + fish + ' 🐟 +' + h * 2 + ' XP'
+  toast(h >= 8 ? '📮 EIGHT FOR EIGHT. The Royal Mail files a complaint. +' + fish + ' 🐟 +' + h * 2 + ' XP'
     : h >= 6 ? '📮 ' + h + '/8 batted down. The post has been thoroughly vetted. +' + fish + ' 🐟 +' + h * 2 + ' XP'
       : h >= 4 ? '📮 ' + h + '/8. A respectable interception rate. The letters will think twice. +' + fish + ' 🐟 +' + h * 2 + ' XP'
         : '📮 ' + h + '/8. The post won this round. It will not be so lucky at the next delivery. +' + fish + ' 🐟' + (h ? ' +' + h * 2 + ' XP' : ''));
@@ -2876,7 +2876,9 @@ function newBrief() {
       { who: 'LARRY', text: pick(LARRY_ACKS) },
     ], () => { toast('📕 TASK: ' + def.text); updateHUD(); });
   } else {
-    toast('📕 NEW RED BOX TASK — ' + (def.why || def.text));
+    // toasts are headlines: the objective only. The long briefings live in
+    // the milestone scenes, where the player sets the reading pace.
+    toast('📕 NEW TASK: ' + def.text);
     tone(500, 700, 0.15, 'triangle', 0.06);
   }
   syncTape(); // red-tape tasks lay their strips down the Corridor immediately
@@ -2898,7 +2900,7 @@ function briefEvent(kind, info = {}) {
     G.xp += 30;
     G.fish += 3;
     G.briefsDone++;
-    toast('📕 TASK COMPLETE — the Red Box approves. +30 XP · +3 🐟. The next task will arrive shortly.');
+    toast('📕 TASK COMPLETE — +30 XP · +3 🐟');
     goalEvent('brief');
     sLevel();
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -5622,22 +5624,25 @@ function startFade(cb) { G.fadeDir = 1; G.fadeCb = cb; }
    norm   = news (tasks, goals, honours, rewards): queues, max 3 deep
    'now'  = time-critical (a mini game just started): clears the backlog
             and takes the floor immediately */
-let toastT = null, toastQ = [];
+let toastT = null, toastQ = []; // entries: { text, now }
 const regionSeen = {}; // room-name toasts repeat only after a long absence
 function toastNext() {
   toastT = null;
   const el = document.getElementById('toast');
-  const next = toastQ.shift();
-  if (next === undefined) { el.classList.add('hidden'); return; }
-  el.textContent = next;
+  // during a mini game only its own 'now' messages take the screen —
+  // everything else holds until play is clear (the banner sits over the action)
+  const idx = G.mini ? toastQ.findIndex(t => t.now) : (toastQ.length ? 0 : -1);
+  if (idx === -1) { el.classList.add('hidden'); return; }
+  const next = toastQ.splice(idx, 1)[0];
+  el.textContent = next.text;
   el.classList.remove('hidden');
-  toastT = setTimeout(toastNext, Math.min(6200, Math.max(2400, 1300 + next.length * 46)));
+  toastT = setTimeout(toastNext, Math.min(6200, Math.max(2400, 1300 + next.text.length * 46)));
 }
 function toast(text, prio) {
-  if (prio === 'low' && (toastT || toastQ.length)) return; // flavor yields to news
+  if (prio === 'low' && (toastT || toastQ.length || G.mini)) return; // flavor yields to news and to play
   if (prio === 'now') { toastQ.length = 0; if (toastT) { clearTimeout(toastT); toastT = null; } }
   if (toastQ.length >= 3) toastQ.shift(); // the backlog stays readable
-  toastQ.push(text);
+  toastQ.push({ text, now: prio === 'now' });
   if (!toastT) toastNext();
 }
 function wakeUp() {
@@ -6098,6 +6103,7 @@ function update(dt) {
   updateClimb(dt);
   updateSummit(dt);
   if (G.cardQueue.length && !G.mini && !SCENE) maybeShowCard(); // deferred dispatches surface once play is clear
+  if (!toastT && toastQ.length && (!G.mini || toastQ.some(t => t.now))) toastNext(); // held toasts drain when the board is free
   // removal boxes demand supervision
   if (!G.mischief.has('boxes')) {
     for (const b of G.boxes) if (dist(b.x, b.y, L.x, L.y) < 18) { earnMischief('boxes'); break; }
