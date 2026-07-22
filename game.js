@@ -1683,6 +1683,8 @@ const HONOURS = [
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'perch', name: 'The Highest Authority', hint: 'Reach the perch atop the tallest bookcase in government.' },
   { id: 'redacted', name: '[REDACTED]', hint: '[REDACTED]' },
+  { id: 'treaty', name: 'The Peace of the Under-Road', hint: 'End the war the civilised way: in a room, with terms.' },
+  { id: 'detente', name: 'Entente Cordiale', hint: 'Sit with an old rival at the pond, after the Garter.' },
 ];
 function earnHonour(id) {
   if (G.daily) return; // sorties run on a scratch profile; honours only count in the career
@@ -1806,7 +1808,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -2186,6 +2188,7 @@ function finishGauntlet(win) {
   if (win) {
     const t = M.t;
     G.fish += 4; G.xp += 12;
+    G.underroadWins = (G.underroadWins || 0) + 1;
     const isBest = !G.gauntletBest || t < G.gauntletBest;
     if (isBest) G.gauntletBest = t;
     if (t <= 20) earnHonour('underroad');
@@ -2201,6 +2204,13 @@ function finishGauntlet(win) {
       });
     }
     save();
+    if (G.underroadWins >= 3 && !G.coronation && !G.treaty) { // three burglaries end a regency
+      G.coronation = true;
+      save();
+      startFade(() => { switchMap('basement', 26 * TILE, 16 * TILE); coronationScene(); });
+      updateHUD();
+      return;
+    }
   } else {
     toast('🕳️ Five seizures. The tunnel spits you out, and the patrols add a commemorative plaque. The cheese remains — for now — theirs.');
     tone(220, 120, 0.3, 'square', 0.06);
@@ -2302,6 +2312,76 @@ function drawProtocol() {
   ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 26, L.y - 32, 52, 11);
   ctx.fillStyle = M.t < 10 ? '#ff8080' : '#ffe8b8';
   ctx.fillText(Math.ceil(M.t) + 's · 🔴' + M.hits, L.x, L.y - 23);
+}
+
+/* ---------- ACT THREE: the Coronation, the Summit, and the Treaty ----------
+   Three burglaries end a regency: the Under-Parliament crowns a QUEEN — and
+   she has read your file. The patrols stand aside; the war ends in a room,
+   the way wars actually end. */
+function coronationScene() {
+  playScene([
+    { who: 'THE CELLAR', text: '(Every hole at once begins to SING — not taunting, this time. An anthem. Formal. Rehearsed. Somewhere below, something is being placed upon someone.)', do: () => { tone(220, 220, 0.4, 'triangle', 0.05); tone(277, 277, 0.4, 'triangle', 0.04, 0.1); } },
+    { who: 'THE HERALD MOUSE', text: 'By unanimous acclaim of the Under-Parliament — there was one abstention; he has been dealt with — the Crown Below passes. HER ENORMITY: THE QUEEN.' },
+    { who: 'THE HERALD MOUSE', text: 'She has read your file, Chief Mouser. All of it. The margins of it. She proposes, and I quote precisely, "a conversation between professionals." The Under-Road stands open. The patrols will stand aside.' },
+    { who: 'MI-PAW', text: 'A monarch who READS is a different proposition entirely. Go when you are ready — and Chief Mouser: consider listening. Wars end in rooms.' },
+  ], () => toast('👑 ACT THREE — the crack awaits. The patrols will stand aside. She is expecting you.'));
+}
+function startSummit() {
+  switchMap('underroad', 6.5 * TILE, 22 * TILE);
+  const rats = [];
+  GAUNTLET_LANES.forEach((row, i) => { // the honor guard: flanking the way, going nowhere
+    rats.push({ row, x: 2.5 * TILE, dir: 1, animT: i * 0.7 });
+    rats.push({ row, x: 9.5 * TILE, dir: -1, animT: i * 0.9 });
+  });
+  G.mini = { type: 'summit', t: 0, rats };
+  toast('🕳️ THE SUMMIT — the lanes are silent. Walk up. You are expected.', 'now');
+  tone(220, 330, 0.4, 'triangle', 0.05);
+}
+function updateSummit(dt) {
+  const M = G.mini;
+  if (!M || M.type !== 'summit') return;
+  M.t += dt;
+  for (const r of M.rats) r.animT += dt;
+  if (G.larry.y < 3.5 * TILE && !M.met) { M.met = true; treatyScene(); }
+}
+function drawSummit() {
+  const M = G.mini;
+  const cx = 6.5 * TILE, cy = 2 * TILE; // the cheese, now a table setting
+  ctx.fillStyle = '#e9c46a'; ctx.beginPath(); ctx.moveTo(cx - 7, cy + 5); ctx.lineTo(cx + 7, cy + 5); ctx.lineTo(cx + 5, cy - 4); ctx.closePath(); ctx.fill();
+  for (const r of M.rats) drawMouse({ x: r.x, y: (r.row + 0.5) * TILE, type: 'rat', dir: r.dir, scale: 1, animT: 0, state: 'charmed', busy: 0 });
+}
+function treatyScene() {
+  const tx = Math.floor(G.larry.x / TILE), ty = Math.floor(G.larry.y / TILE);
+  G.sceneNpcs = [];
+  sceneGuest('ratking', tx, ty - 2, false, true); // Her Enormity, at the head of the table
+  playScene([
+    { who: 'THE QUEEN BELOW', text: 'So. The cat who deposed a king and then burgled his heirs three times, on principle. Sit. The cheese is real; the courtesy is calculated. Both are yours.' },
+    { who: 'LARRY', text: '(You sit. Professionals.)' },
+    { who: 'THE QUEEN BELOW', text: 'Terms. The war ends. Below stairs keeps a ration — the CRUMB SETTLEMENT, indexed to state dinners. Above stairs is yours, the kitchen included. Raiders lose crown protection the moment they cross the skirting.' },
+    { who: 'THE QUEEN BELOW', text: 'The chase itself continues — my subjects require the exercise and, if the file is accurate, so do you. But nobody starves, and nobody else is escorted anywhere by PIGEONS.' },
+    {
+      who: 'LARRY', text: 'A treaty, mouse-sized but genuine, waits for a paw print.', choice: [
+        ['🐾 Sign. Statesman to stateswoman.', () => {
+          sceneSplice([{ who: 'THE QUEEN BELOW', text: 'Done. Both of Her Majesty\'s governments — the one upstairs and mine — stand adjourned.' }]);
+        }],
+        ['😾 Sign — with one clause: the radiator is sovereign territory.', () => {
+          sceneSplice([{ who: 'THE QUEEN BELOW', text: 'Granted. No rat has ever wanted your radiator. But I understand entirely why you need it in writing.' }]);
+        }],
+      ],
+    },
+    { who: 'MI-PAW', text: 'THE TREATY OF THE UNDER-ROAD is filed. War: concluded. The file closes with the rarest commendation we issue, Chief Mouser — the one for a war that ENDED.' },
+    { who: 'LARRY', text: '(You walk back up to a house that is yours, through a tunnel that is theirs, under a peace that is everyone\'s. The radiator — in writing — is waiting.)' },
+  ], () => {
+    G.mini = null;
+    G.treaty = true;
+    G.fish += 10; G.xp += 30;
+    earnHonour('treaty');
+    save();
+    startFade(() => switchMap('basement', 26 * TILE, 16 * TILE));
+    toast('📜 THE TREATY OF THE UNDER-ROAD — the war is over. The chase, by mutual agreement, is not. +10 🐟 +30 XP');
+    while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+    updateHUD();
+  });
 }
 
 /* ---------- THE PIGEON AGM: grandmother's footsteps, feline rules ----------
@@ -2757,7 +2837,7 @@ function briefPossible(d) {
   if (d.type === 'swift' && G.level < 3) return false;
   if (d.type === 'trick' && G.level < 5) return false;
   if (d.type === 'still' && G.level < 7) return false;
-  if (d.kind === 'gauntlet' && !G.gauntletOpen) return false; // the crack hasn't opened yet
+  if (d.kind === 'gauntlet' && (!G.gauntletOpen || (G.coronation && !G.treaty))) return false; // no sport during a summit
   if (d.kind === 'dot' && !G.protocolOpen) return false;      // the terminal hasn't chosen you yet
   return true;
 }
@@ -3067,6 +3147,7 @@ function beatFor(level) {
       // needs air between tellings — and the real story down here is the war.
       if (level % 4 === 1) return { title: 'The Van. Again.', body: '{OLD} {EXIT} Incoming: {NEW}. The staircase is running out of wall for the portraits. You have been replaced zero times.', pmChange: true };
       if (level % 2 === 0) return { title: 'Meanwhile, at No. 10…', body: FLAVOUR[(level / 2 | 0) % FLAVOUR.length] + ' The mice grow bolder. So do you.' };
+      if (G.treaty) return { title: 'Dispatches from Below', body: 'The Treaty holds. Border incidents are down to sporting levels; crumb futures are stable; the joint patrols report the Chief Mouser "regrettably still faster than us". Peace, it turns out, also requires management. You manage it from the radiator.' };
       return { title: 'Dispatches from Below', body: 'MI-Paw\'s file on the Under-Cellar thickens. Tunnels re-dug. Larders raided. A crown, they say, being re-fitted. The war does not end; it changes management — much like everything else in this building.' };
     }
   }
@@ -3082,6 +3163,7 @@ const G = {
   sceneNpcs: [], met: new Set(),
   mini: null, postCD: 0, supperCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
+  underroadWins: 0, coronation: false, treaty: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
@@ -3167,6 +3249,7 @@ function save() {
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
       donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0, raceBest: G.raceBest || 0,
       gauntletOpen: !!G.gauntletOpen, protocolOpen: !!G.protocolOpen, gauntletBest: G.gauntletBest || 0, protocolBest: G.protocolBest || 0, climbBest: G.climbBest || 0,
+      underroadWins: G.underroadWins || 0, coronation: !!G.coronation, treaty: !!G.treaty,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -3642,9 +3725,19 @@ function interactPoi(p) {
     if (G.mini) return;
     if (!G.gauntletOpen) { toast('🕳️ A hairline crack in the Cellar wall. Cold air behind it. Something, far below, is COUNTING. (Depose what rules down there, and the way opens.)'); sClick(); return; }
     if (G.daily) { toast('🕳️ The Under-Road can wait. You are on the clock.'); sClick(); return; }
+    if (G.coronation && !G.treaty) { // the summit takes precedence over sport
+      showChoice('THE CRACK IN THE CELLAR WALL', 'The Summit',
+        'The tunnel is silent. The patrols stand at the walls, eyes front, going nowhere. At the far end, at the head of the larder, HER ENORMITY waits with terms.\n\nMI-Paw\'s note, clipped to the file: "Wars end in rooms. Go and sit in one."',
+        '🐾 Walk up. Alone.', '🚶 Keep her waiting (bold)', which => {
+          if (which === 'a') startFade(() => startSummit());
+        });
+      return;
+    }
     if ((G.gauntletCD || 0) > 0) { toast('🕳️ The tunnel patrols have doubled since your last visit. Give them a moment to get complacent again.'); sClick(); return; }
-    showChoice('THE CRACK IN THE CELLAR WALL', 'The Under-Road',
-      'The heirs of the deposed King dug it: a smuggling tunnel under the Cellar, and the STOLEN LARDER sits at the far end of it. Six patrol lanes between you and the cheese.\n\nCross the lanes. Time the gaps. Get seized and you start again — five seizures and the tunnel spits you out. Speed is glory.'
+    showChoice('THE CRACK IN THE CELLAR WALL', G.treaty ? 'The Under-Road (Joint Exercises)' : 'The Under-Road',
+      (G.treaty
+        ? 'Treaty Article 4: the lanes stay open and the chase stays sharp — a joint exercise, by mutual agreement. The patrols will pursue with enthusiasm and absolutely no malice. The cheese remains the trophy.'
+        : 'The heirs of the deposed King dug it: a smuggling tunnel under the Cellar, and the STOLEN LARDER sits at the far end of it. Six patrol lanes between you and the cheese.\n\nCross the lanes. Time the gaps. Get seized and you start again — five seizures and the tunnel spits you out. Speed is glory.')
       + (G.gauntletBest ? '\n\n🏁 Best run: ' + G.gauntletBest.toFixed(1) + 's' : ''),
       '🐾 Go under', '🚶 The cheese can keep', which => {
         if (which === 'a') startFade(() => startGauntlet());
@@ -4271,6 +4364,8 @@ function updateNpc(n, dt) {
     n.quipCD = 12;
     // the first time you meet someone, they introduce themselves properly
     if (maybeMeet(n.sprite + '@' + G.mapId)) { n.quipCD = 16; return; }
+    // …and at the career's turning points, a few of them notice
+    if (maybeSecondScene(n)) { n.quipCD = 16; return; }
     toast(pick(n.quips), 'low');
   }
   if (n.pauseT > 0) { n.pauseT -= dt; return; }
@@ -4462,6 +4557,29 @@ function updateRival(c, dt) {
   if (c.quipCD <= 0 && dist(c.x, c.y, G.larry.x, G.larry.y) < 28) {
     c.quipCD = 14;
     if (maybeMeet('cat:' + c.name)) { c.quipCD = 18; if (!c.anim) c.anim = { name: 'meow', t: 0 }; return; }
+    // Gladstone closes the books on the war
+    if (c.name === 'Gladstone' && G.treaty && !G.met.has('event:glad2') && !G.daily && !SCENE && !G.mini) {
+      G.met.add('event:glad2');
+      c.quipCD = 20;
+      playScene([
+        { who: 'GLADSTONE', text: 'The Treasury has scored your war. Total cost: some forty tins of kippers and one commemorative plaque. Total return: a functioning government and a legally binding radiator.' },
+        { who: 'GLADSTONE', text: 'I have marked the file — reluctantly, and in pencil — VALUE FOR MONEY. Do not let it go to your head. It went to the last cat\'s head.' },
+        { who: 'LARRY', text: '(There was no last cat. You are the first of your name. You let him have this one; audit is a lonely business.)' },
+      ], () => save());
+      return;
+    }
+    // Palmerston's last beat: after the Garter, the rivalry has nothing left to prove
+    if (c.name === 'Palmerston' && G.honours.has('garter') && !G.met.has('event:palmpeace') && !G.daily && !SCENE && !G.mini) {
+      G.met.add('event:palmpeace');
+      c.quipCD = 20;
+      playScene([
+        { who: 'PALMERSTON', text: 'You wear it well. The Garter. I had opinions about that appointment, historically. I find I have… fewer.' },
+        { who: 'LARRY', text: '(You sit down beside him at the pond. Two professionals, off the clock. The pigeons, wisely, adjourn.)' },
+        { who: 'PALMERSTON', text: '…' },
+        { who: 'LARRY', text: '(Nothing is said. Everything is settled.)' },
+      ], () => { earnHonour('detente'); save(); });
+      return;
+    }
     toast(c.name + ': "' + pick(c.quips) + '"', 'low');
     if (c.state === 'sit' && !c.anim) c.anim = { name: 'meow', t: 0 };
   }
@@ -5232,6 +5350,35 @@ const MEETINGS = {
     { who: 'LARRY', text: '(You will not be keeping the receipts.)' },
   ],
 };
+/* Second acts, kept small: three characters notice your career at its
+   turning points. One scene each, gated on the milestone, then done. */
+const SECOND_SCENES = [
+  {
+    sprite: 'chef', map: 'basement', key: 'event:chef2', gate: () => G.kingDeposed,
+    steps: () => [
+      { who: 'THE CHEF', text: 'They\'re saying you had him ESCORTED OUT. The King. By pigeons. In this kitchen we call that plating up.' },
+      { who: 'THE CHEF', text: 'The saucer of milk is a standing order now. Don\'t tell the vet. Don\'t tell ANYONE — you know how this house leaks.' },
+      { who: 'LARRY', text: '(You accept the promotion with the dignity of a cat who was always going to drink it anyway.)' },
+    ],
+  },
+  {
+    sprite: 'butler', map: 'flat', key: 'event:hk2', gate: () => G.homecoming,
+    steps: () => [
+      { who: 'THE HOUSEKEEPER', text: 'You went back, then. To Battersea. …Good. The ones who never look back get strange about it.' },
+      { who: 'THE HOUSEKEEPER', text: 'Cocoa\'s on. The sofa has learned your shape by now — I\'ve given up correcting it.' },
+      { who: 'LARRY', text: '(Home is apparently several places at once. You file this under: acceptable.)' },
+    ],
+  },
+];
+function maybeSecondScene(n) {
+  if (G.daily || G.intro.phase !== 'done' || SCENE || G.paused || G.mini) return false;
+  const s = SECOND_SCENES.find(x => x.sprite === n.sprite && x.map === G.mapId && !G.met.has(x.key) && x.gate());
+  if (!s) return false;
+  G.met.add(s.key);
+  playScene(s.steps());
+  save();
+  return true;
+}
 // a first meeting fires instead of the usual quip — once per career
 function maybeMeet(key) {
   if (G.daily || G.intro.phase !== 'done' || SCENE || G.paused || G.mini) return false;
@@ -5949,6 +6096,7 @@ function update(dt) {
   updateProtocol(dt);
   updateGulls(dt);
   updateClimb(dt);
+  updateSummit(dt);
   if (G.cardQueue.length && !G.mini && !SCENE) maybeShowCard(); // deferred dispatches surface once play is clear
   // removal boxes demand supervision
   if (!G.mischief.has('boxes')) {
@@ -6226,6 +6374,7 @@ function draw() {
   if (G.mini && G.mini.type === 'dot') drawProtocol();
   if (G.mini && G.mini.type === 'gulls') drawGulls();
   if (G.mini && G.mini.type === 'climb') drawClimb();
+  if (G.mini && G.mini.type === 'summit') drawSummit();
   drawGameMarkers();
   for (const p of G.particles) {
     ctx.globalAlpha = Math.min(1, p.t * 2);
@@ -6645,6 +6794,9 @@ function startGame(fresh) {
     G.gauntletBest = s.gauntletBest || 0;
     G.protocolBest = s.protocolBest || 0;
     G.climbBest = s.climbBest || 0;
+    G.underroadWins = s.underroadWins || 0;
+    G.coronation = !!s.coronation;
+    G.treaty = !!s.treaty;
     // saves from before the flatter XP curve can bank xp above the new,
     // lower thresholds — clamp so one catch doesn't fire a burst of level-ups
     G.xp = Math.min(G.xp, Math.max(0, xpNeed(G.level) - 1));
