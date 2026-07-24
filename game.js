@@ -422,6 +422,22 @@ function buildGull() {
   return sCanvas(s);
 }
 const GULL_SPRITE = buildGull();
+function buildFox() {
+  // long, low, amber, and on no guest list whatsoever
+  const s = mkS(20, 12);
+  sell(s, 8, 6.5, 5.6, 2.9, '#c9662a');                  // body
+  sell(s, 14.5, 4.5, 2.6, 2.2, '#c9662a');               // head
+  sell(s, 16.5, 5.8, 1.6, 1.2, '#f0ece2');               // white muzzle
+  sp(s, 15.6, 3.6, '#2a2522');                            // the appraising eye
+  sp(s, 13.4, 2.2, '#2a2522'); sp(s, 15.8, 2.0, '#2a2522'); // black ear tips
+  sell(s, 13.4, 2.8, 0.9, 1.1, '#c9662a'); sell(s, 15.8, 2.6, 0.9, 1.1, '#c9662a'); // ears
+  sell(s, 3, 5.5, 3.2, 1.8, '#c9662a');                  // the brush
+  sell(s, 1.6, 5.2, 1.4, 1.2, '#f0ece2');                // white tail tip
+  srect(s, 5, 9.4, 1.4, 2.2, '#2a2522'); srect(s, 11, 9.4, 1.4, 2.2, '#2a2522'); // black legs
+  soutline(s, '#2a2522'); sshade(s, '#2a2522', { '#c9662a': '#9c4a1e' });
+  return sCanvas(s);
+}
+const FOX_SPRITE = buildFox();
 function buildRat() {
   const s = mkS(19, 13);
   sell(s, 8, 8, 6.4, 4.0, '#8a7f74');
@@ -1086,6 +1102,8 @@ const PALM_VISIT = mulberry32(DATE_SEED ^ 0xCA7)() < 0.4;
 // and now and then — never on a Palmerston day; the garden could not take both —
 // the PM's DOG gets garden access. Composure will be tested.
 const DOG_VISIT = !PALM_VISIT && mulberry32(DATE_SEED ^ 0xD06)() < 0.25;
+// and some nights — after the first Incident — the fox comes back
+const FOX_NIGHT = mulberry32(DATE_SEED ^ 0xF08)() < 0.18;
 
 const TXT_XMASTREE = [
   'The official No. 10 tree. You have completed your assessment: climbable. You are CHOOSING not to. Today.',
@@ -1682,6 +1700,7 @@ const HONOURS = [
   { id: 'underroad', name: 'Keeper of the Under-Road', hint: 'Reclaim the larder from the tunnel in under 20 seconds.' },
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
+  { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
   { id: 'perch', name: 'The Highest Authority', hint: 'Reach the perch atop the tallest bookcase in government.' },
   { id: 'redacted', name: '[REDACTED]', hint: '[REDACTED]' },
   { id: 'treaty', name: 'The Peace of the Under-Road', hint: 'End the war the civilised way: in a room, with terms.' },
@@ -1809,7 +1828,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -2038,6 +2057,120 @@ function drawGulls() {
   ctx.font = '8px monospace'; ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 26, L.y - 32, 52, 11);
   ctx.fillStyle = '#ffe8b8'; ctx.fillText('🕊' + M.saved + ' 🥪-' + M.lost, L.x, L.y - 23);
+}
+
+/* ---------- THE FOX INCIDENT: the real story, more or less ----------
+   Past midnight on the Street, something long, low, and amber. The stealth
+   games taught you to freeze when watched; the fox teaches the opposite
+   lesson — advance while it paces, and when it lunges, DO NOT MOVE. Hold
+   three stands and it blinks first. The officer sees everything. */
+const FOX_Y = 7 * TILE, FOX_START = 6 * TILE, FOX_STEP = 1.5 * TILE;
+function maybeFox() {
+  if (G.mapId !== 'street' || G.mini || SCENE || G.paused || G.daily || G.foxTonight || G.intro.phase !== 'done') return;
+  const task = G.brief && G.brief.def.kind === 'fox';
+  const revisit = G.met.has('event:fox') && FOX_NIGHT;
+  if (!task && !revisit) return;
+  if (!G.isNight) {
+    if (task && !G.foxDayHint) { G.foxDayHint = true; toast('🦊 Foxes keep late hours. Wait for nightfall.'); }
+    return;
+  }
+  startFox();
+}
+function startFox() {
+  G.mini = { type: 'fox', t: 0, fx: FOX_START, stands: 0, phase: 'pace', phT: 0, lx: G.larry.x, ly: G.larry.y, lungeFrom: 0 };
+  tone(300, 180, 0.2, 'sawtooth', 0.04); // something low, at the edge of hearing
+  if (!G.met.has('event:fox')) {
+    G.met.add('event:fox'); save();
+    playScene([
+      { who: 'THE STREET', text: '(Past midnight. The cameras are off. At the west end: something long, low, and amber. It is on no guest list.)' },
+      { who: 'THE FOX', text: '(It looks at you the way you look at mice.)' },
+      { who: 'LARRY', text: '(One cat between the fox and the door. It is enough. It will have to be.)' },
+    ], () => toast('🦊 Advance while it paces. When it lunges — DO NOT MOVE.', 'now'));
+  } else {
+    toast('🦊 The fox is back. It remembers. So do you.', 'now');
+  }
+}
+function updateFox(dt) {
+  const M = G.mini;
+  if (!M || M.type !== 'fox') return;
+  M.t += dt;
+  const L = G.larry;
+  const moved = dist(L.x, L.y, M.lx, M.ly) / Math.max(dt, 0.001); // px/s this frame
+  M.lx = L.x; M.ly = L.y;
+  M.phT -= dt;
+  if (M.phase === 'pace') {
+    if (dist(L.x, L.y, M.fx, FOX_Y) < 44) {
+      M.phase = 'tell'; M.phT = 0.5; M.lungeFrom = M.fx;
+      addFloat(M.fx, FOX_Y - 14, '!', '#ffb060');
+      tone(260, 160, 0.1, 'sawtooth', 0.05); // the growl drops
+    }
+  } else if (M.phase === 'tell' && M.phT <= 0) {
+    M.phase = 'lunge'; M.phT = 0.6;
+    tone(500, 200, 0.12, 'sawtooth', 0.06);
+  } else if (M.phase === 'lunge') {
+    if (moved > 10 || L.pounceT > 0) { // flinched — ground is lost
+      M.phase = 'pace'; M.phT = 0;
+      M.stands = Math.max(0, M.stands - 1);
+      M.fx = Math.min(FOX_START, M.fx + FOX_STEP);
+      L.x = Math.min(L.x + 42, 20 * TILE);
+      addFloat(L.x, L.y - 14, 'FLINCHED', '#ff8080');
+      addParticle(L.x, L.y, '#b3aa99', 5, 30);
+      tone(340, 170, 0.14, 'square', 0.06);
+    } else if (M.phT <= 0) { // held. It blinks first.
+      M.stands++;
+      addFloat(M.fx, FOX_Y - 14, M.stands >= 3 ? 'IT BREAKS' : 'it blinks first · ' + M.stands + '/3', '#ffe8b8');
+      tone(700, 950, 0.1, 'triangle', 0.07);
+      if (M.stands >= 3) { M.phase = 'flee'; M.phT = 2.2; }
+      else { M.phase = 'pace'; M.phT = 0; M.fx -= FOX_STEP; }
+    }
+  } else if (M.phase === 'flee') {
+    M.fx -= 190 * dt; // gone, over the horizon, tail level with the ground
+    if (Math.random() < dt * 20) addParticle(M.fx + 12, FOX_Y + 4, '#8a8578', 2, 18);
+    if (M.fx < -2 * TILE || M.phT <= 0) finishFox();
+  }
+}
+function finishFox() {
+  G.mini = null;
+  G.foxTonight = true; // one Incident per night is plenty
+  G.fish += 4; G.xp += 14;
+  earnHonour('fox');
+  briefEvent('fox');
+  toast('📰 "LARRY SEES OFF FOX" — tomorrow\'s front page. The officer saw everything. +4 🐟 +14 XP');
+  [523, 659, 880].forEach((f, i) => tone(f, f, 0.12, 'triangle', 0.06, i * 0.09));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  updateHUD();
+}
+function drawFox() {
+  const M = G.mini;
+  const L = G.larry;
+  // where the fox actually is this frame: mid-lunge it darts toward you and back
+  let x = M.fx, y = FOX_Y;
+  if (M.phase === 'lunge') {
+    const p = 1 - Math.max(0, M.phT) / 0.6, arc = Math.sin(Math.min(1, p * 1.25) * Math.PI); // out and back
+    x = M.lungeFrom + (L.x - M.lungeFrom) * arc * 0.4;
+    y = FOX_Y + (L.y - FOX_Y) * arc * 0.4;
+  } else if (M.phase === 'pace') {
+    x = M.fx + Math.sin(M.t * 1.7) * 10;
+  }
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(x, y + 6, 8, 2, 0, 0, 7); ctx.fill();
+  ctx.translate(x, y + (M.phase === 'flee' ? Math.sin(M.t * 16) * 1.5 : 0));
+  if (M.phase === 'flee' || (M.phase === 'pace' && Math.cos(M.t * 1.7) < 0)) ctx.scale(-1, 1); // faces where it goes
+  ctx.drawImage(FOX_SPRITE, -10, -8);
+  ctx.restore();
+  if (M.phase === 'flee') return;
+  // the traffic light rides with you, same grammar as the pigeon stalk — inverted
+  const lunging = M.phase === 'lunge', telling = M.phase === 'tell';
+  ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  const w = lunging ? 56 : 46;
+  ctx.fillStyle = lunging ? 'rgba(60,10,14,0.8)' : telling ? 'rgba(60,45,10,0.8)' : 'rgba(12,10,20,0.65)';
+  ctx.fillRect(L.x - w / 2, L.y - 32, w, 11);
+  ctx.fillStyle = lunging ? '#ff8080' : telling ? '#ffd98a' : '#9fe8a0';
+  ctx.fillText(lunging ? '🦊 HOLD' : telling ? '!' : '👣 advance', L.x, L.y - 23);
+  ctx.fillStyle = 'rgba(12,10,20,0.65)'; ctx.fillRect(L.x - 14, L.y - 44, 28, 10);
+  ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.stands + '/3', L.x, L.y - 36);
 }
 
 /* ---------- THE HEIGHTS: pounce by pounce to the highest perch ----------
@@ -2800,6 +2933,8 @@ const CAMPAIGN = [
     why: 'Emboldened, the mice open a second front: fresh burrows out by the pond. This is coordination now, not chance. Do not let them dig in — catch two.' },
   { text: 'Catch a mouse after dark', kind: 'catch', night: true, n: 1,
     why: 'They have studied your habits. The raids now come after lights-out, when they are certain you are asleep. Catch one after dark and disabuse them of the notion.' },
+  { text: 'See off the fox (the Street, after dark)', kind: 'fox', n: 1,
+    why: 'A FOX has been seen on the Street at night — long, low, amber, unimpressed by government. The real test of a Chief Mouser was never mice. Settle the fox question.' },
   { text: 'Catch a trickster mouse', kind: 'catch', type: 'trick', n: 1,
     why: 'This is no longer a rabble. A trickster appears — it reads your pounce and sidesteps it. Something below is TRAINING them. Catch it: a quick tap beats a wind-up.' },
   { text: 'Take one strategic nap', kind: 'nap', n: 1,
@@ -2832,7 +2967,7 @@ const CAMPAIGN = [
   { text: 'Hold the Garden (2 mice)', kind: 'catch', region: 'The Garden', n: 2,
     why: 'The siege spills outdoors; every wall of the house is being tested at once. Hold the Garden — catch two — and hold the line. They will not find it undefended while you draw breath.' },
 ];
-const BRIEF_LOOP_FROM = 10; // once the campaign is done, cycle the "siege" tail forever
+const BRIEF_LOOP_FROM = 11; // once the campaign is done, cycle the "siege" tail forever
 const HOLDING_BRIEF = { holding: true, text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2,
   why: 'The picture below is still forming. Keep the pressure on while it clears — catch two more on your rounds.' };
 // swift mice spawn from lv3, tricksters lv5, Very Still Mice lv7
@@ -2849,9 +2984,10 @@ function briefPossible(d) {
 // as Red Box toasts — an aide sprinting in for every errand would wear thin.
 const BRIEF_SCENES = {
   0: 'There you are. Your first Red Box, Chief Mouser — yes, the cat gets one now. No, I don\'t make the rules. Increasingly I suspect YOU make the rules.',
-  8: 'Upstairs. UPSTAIRS. They\'ve crossed onto the State Floor — where the ambassadors— where the CHANDELIERS— just. Please. Quickly.',
-  10: 'The Kitchen has fallen AGAIN. They came back in formation, Chief Mouser. In FORMATION. The chef is beside himself. Both of him are furious.',
-  11: 'They\'re in the flat. The FLAT. Downstairs was politics but this is your HOME— I need to sit down. After you catch them. Please.',
+  6: 'There is a FOX. On the STREET. At NIGHT. The officer won\'t say he\'s frightened, but he has texted his mum. Please.',
+  9: 'Upstairs. UPSTAIRS. They\'ve crossed onto the State Floor — where the ambassadors— where the CHANDELIERS— just. Please. Quickly.',
+  11: 'The Kitchen has fallen AGAIN. They came back in formation, Chief Mouser. In FORMATION. The chef is beside himself. Both of him are furious.',
+  12: 'They\'re in the flat. The FLAT. Downstairs was politics but this is your HOME— I need to sit down. After you catch them. Please.',
 };
 const LARRY_ACKS = [
   '(You stretch, once, with intent. The stretch says: consider it handled.)',
@@ -6110,6 +6246,8 @@ function update(dt) {
   updateGulls(dt);
   updateClimb(dt);
   updateSummit(dt);
+  maybeFox();
+  updateFox(dt);
   if (G.cardQueue.length && !G.mini && !SCENE) maybeShowCard(); // deferred dispatches surface once play is clear
   if (!toastT && toastQ.length && (!G.mini || toastQ.some(t => t.now))) toastNext(); // held toasts drain when the board is free
   // removal boxes demand supervision
@@ -6389,6 +6527,7 @@ function draw() {
   if (G.mini && G.mini.type === 'gulls') drawGulls();
   if (G.mini && G.mini.type === 'climb') drawClimb();
   if (G.mini && G.mini.type === 'summit') drawSummit();
+  if (G.mini && G.mini.type === 'fox') drawFox();
   drawGameMarkers();
   for (const p of G.particles) {
     ctx.globalAlpha = Math.min(1, p.t * 2);

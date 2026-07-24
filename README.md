@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Ten mini games, one per cat instinct
+## Eleven mini games, one per cat instinct
 
 - **Post Watch** — the eleven o'clock delivery shoots through the letterbox;
   bat the letters out of the air, and mind the decoy rattles
@@ -60,6 +60,9 @@ the front door having no outside handle:
   floor at ludicrous speed; gold pace earns The 3 A.M. Protocol
 - **The Pigeon AGM** — grandmother's footsteps at the pond: creep while
   they peck, FREEZE when they look
+- **The Fox Incident** — the real story: past midnight on the Street,
+  something long, low, and amber. Advance while it paces; when it lunges,
+  DO NOT MOVE. Hold three stands and it blinks first
 - **Whack-a-Mouse** — the basement holes are singing; answer every head
 - **The Under-Road** — Act Two of the war: a smuggling tunnel below the
   Cellar, six lanes of rat patrol, one stolen larder (unlocked by deposing
