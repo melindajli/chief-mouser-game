@@ -36,6 +36,11 @@ const TILE = 16;
 // one full day/night cycle, in seconds. The "Day N in office" counter is now
 // tied to this (a real dawn = a new day) instead of ticking every few seconds.
 const DAYLEN = 200;
+// ---------- The photographer ----------
+// The street photographer ships unnamed. If he ever introduces himself
+// properly, set live: true and fill in his details.
+const PARTNER = { live: false, name: '', kofi: '' };
+const PHOTOG_NAME = () => PARTNER.live && PARTNER.name ? PARTNER.name : 'THE PHOTOGRAPHER';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 // pick a random entry, never the same one twice in a row — repeated lines
@@ -482,6 +487,12 @@ function buildPerson(suit, hat) {
   sell(s, 8, 5.5, 3.6, 4.0, skin);                                         // head
   if (hat === 'chef') { srect(s, 5, 0, 7, 3, '#f4f1ea'); srect(s, 4, 3, 9, 1, '#e2ded2'); }
   else if (hat === 'police') { sell(s, 8, 2.4, 3.4, 2.6, '#22252e'); srect(s, 7, 3, 3, 1, '#c9a227'); }
+  else if (hat === 'photog') {
+    sell(s, 8, 3.2, 3.9, 2.4, hair);
+    srect(s, 5.5, 2, 5, 1.3, '#f2efe8');                                   // sunglasses, parked on the head
+    srect(s, 6, 11, 4, 3, '#1b1d24'); sp(s, 8, 12, '#7ab6d8');             // the camera, always up
+    srect(s, 6, 9, 1, 2, '#2a2d36'); srect(s, 9, 9, 1, 2, '#2a2d36');      // its strap
+  }
   else sell(s, 8, 3.2, 3.9, 2.4, hair);
   srect(s, 5, 18, 3, 4, suit); srect(s, 9, 18, 3, 4, suit);                // legs
   srect(s, 5, 22, 3, 1, '#1b1d24'); srect(s, 9, 22, 3, 1, '#1b1d24');      // shoes
@@ -492,7 +503,8 @@ function buildPerson(suit, hat) {
 const P_VISITOR = buildPerson('#5a5f6b'), P_GUARD = buildPerson('#2b2f3a', 'police'),
   P_AIDE = buildPerson('#4a5568'), P_CHEF = buildPerson('#c9c5ba', 'chef'),
   P_BUTLER = buildPerson('#23242a'), P_GARDENER = buildPerson('#4e6b3c'),
-  P_WORKER = buildPerson('#5c86a0'), P_PRESS = buildPerson('#8a7a5c');
+  P_WORKER = buildPerson('#5c86a0'), P_PRESS = buildPerson('#8a7a5c'),
+  P_PHOTOG = buildPerson('#3a4a58', 'photog');
 // the Cabinet, for when it is in session: an assortment of serious suits
 const P_MIN1 = buildPerson('#3d4a63'), P_MIN2 = buildPerson('#54443c'), P_MIN3 = buildPerson('#425562');
 // seats round the boat table (ground map): four up the far side, three near
@@ -1645,6 +1657,12 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
     { x: 11, y: 4, to: 'ground', tx: 22, ty: 32 },
   ];
   m.npcs = [
+    { x: 7, y: 6, sprite: 'photog', rect: [4, 5, 9, 7], quips: [
+      'Everyone photographs the door. The story was always the cat.',
+      'Hold that. HOLD that. …Perfect.',
+      'Four hundred frames of you today. Not one bad one. It\'s almost unfair.',
+      'The politicians wave. You blink. Guess which one sells the calendar.',
+    ] },
     { x: 13, y: 5, sprite: 'officer', rect: [12, 5, 15, 6], quips: [
       'Morning. Mind the step.',
       'Quiet shift. Just you, me, and forty photographers.',
@@ -1666,7 +1684,7 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
   m.mouseCap = () => 3;
 });
 
-const NPC_SPRITES = { worker: P_WORKER, guard: P_GUARD, aide: P_AIDE, chef: P_CHEF, butler: P_BUTLER, gardener: P_GARDENER, press: P_PRESS, officer: P_GUARD };
+const NPC_SPRITES = { worker: P_WORKER, guard: P_GUARD, aide: P_AIDE, chef: P_CHEF, butler: P_BUTLER, gardener: P_GARDENER, press: P_PRESS, officer: P_GUARD, photog: P_PHOTOG };
 const SECRET_TOTAL = Object.values(MAPS).reduce((n, m) => n + m.pois.filter(p => p.type === 'secret').length, 0);
 
 // ---------- The Honours List ----------
@@ -1701,6 +1719,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
+  { id: 'presspass', name: 'Patron of the Press', hint: PARTNER.live ? 'Redeem a code from the photographer\'s shop.' : '[AWAITING ACCREDITATION]' },
   { id: 'perch', name: 'The Highest Authority', hint: 'Reach the perch atop the tallest bookcase in government.' },
   { id: 'redacted', name: '[REDACTED]', hint: '[REDACTED]' },
   { id: 'treaty', name: 'The Peace of the Under-Road', hint: 'End the war the civilised way: in a room, with terms.' },
@@ -5447,6 +5466,12 @@ function garterScene(onDone) {
    Keyed by npc sprite + map (or cat name); each plays once per career and
    frames that character's side of the house — their quest hook, in dialogue. */
 const MEETINGS = {
+  'photog@street': () => [
+    { who: PHOTOG_NAME(), text: 'Don\'t mind me. Fifteen years on this pavement — the door and I are past small talk.' },
+    { who: PHOTOG_NAME(), text: 'Prime Ministers give speeches. You give one look, and it leads every front page. I just point the camera at the constant.' },
+    { who: 'LARRY', text: '(You sit. You settle. You permit the shot. Somewhere, an editor clears space above the fold.)' },
+    { who: PHOTOG_NAME(), text: 'Perfect. Same time tomorrow. Neither of us is going anywhere.' },
+  ],
   'guard@ground': () => [
     { who: 'THE GUARD', text: 'Chief Mouser. Heard you\'d been appointed. The door is mine; the house is yours. That\'s the arrangement.' },
     { who: 'THE GUARD', text: 'Quick tour: radiator under the window, letterbox at eleven. The tourists are here for you, not the door.' },
@@ -7222,9 +7247,26 @@ function exportCode() {
   const raw = localStorage.getItem(SAVE_KEY);
   return raw ? 'LARRY1.' + btoa(raw) : '';
 }
+// perk codes ship with the photographer's merch — stored as a hash so the
+// public repo doesn't spoil the surprise
+function perkHash(s) { let h = 5381; for (const ch of s.toUpperCase()) h = (h * 33 + ch.charCodeAt(0)) >>> 0; return h; }
+function perkCheck(c) {
+  if (perkHash(c) !== 2295037904) return false;
+  document.getElementById('saveWrap').classList.add('hidden');
+  G.paused = false;
+  if (G.honours.has('presspass')) {
+    toast('🎖️ Already redeemed — the press pass is yours for life.');
+  } else {
+    earnHonour('presspass');
+    G.fish += 5; save(); updateHUD();
+    toast('📷 Code accepted. The photographer tips his sunglasses. +5 🐟');
+  }
+  return true;
+}
 function importCode(code) {
   try {
     const c = (code || '').trim();
+    if (perkCheck(c)) return;
     if (!c.startsWith('LARRY1.')) throw new Error('prefix');
     const json = atob(c.slice(7));
     const s = JSON.parse(json);
@@ -7246,6 +7288,12 @@ function openSaveBox() {
   sClick();
 }
 bindBtn(document.getElementById('menuSave'), openSaveBox);
+// the support button appears only once the partnership is live
+if (PARTNER.live) {
+  const mb = document.getElementById('menuSupport');
+  mb.classList.remove('hidden');
+  mb.addEventListener('click', () => { window.open(PARTNER.kofi, '_blank', 'noopener'); sClick(); });
+}
 // plain click for clipboard access (needs real user activation on mobile)
 document.getElementById('saveCopy').addEventListener('click', () => {
   const code = document.getElementById('saveCode').value;
