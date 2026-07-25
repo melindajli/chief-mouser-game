@@ -6819,6 +6819,13 @@ function loop(now) {
   pollPad();
   musicTick();
   if (SCENE) sceneTick(dt); // dialogue types on; guests breathe; flashes fall
+  // a story beat can pause the game mid transition-fade — reveal the world
+  // anyway (fade-IN only: the fade-out callback switches maps and must not
+  // fire underneath a scene)
+  if (G.paused && G.fadeDir === -1) {
+    G.fade = Math.max(0, G.fade - dt * 2.2);
+    if (G.fade <= 0) G.fadeDir = 0;
+  }
 
   G.flash = Math.max(0, G.flash - dt);
   if (G.hitstop > 0) G.hitstop -= dt;
