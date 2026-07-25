@@ -2266,7 +2266,7 @@ function finishClimb() {
   addParticle(G.larry.x, G.larry.y - 8, '#ffd98a', 14, 50);
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   save();
-  startFade(() => switchMap('ground', 5 * TILE, 20 * TILE));
+  startFade(() => switchMap('ground', 5.5 * TILE, 19.5 * TILE)); // beside the bookcase, not inside the armchair
   updateHUD();
 }
 function drawClimb() {
@@ -4553,6 +4553,21 @@ function isSolidOn(m, px, py) {
 function circleFreeOn(m, px, py, r) {
   return !isSolidOn(m, px - r, py - r) && !isSolidOn(m, px + r, py - r) && !isSolidOn(m, px - r, py + r) && !isSolidOn(m, px + r, py + r);
 }
+// if Larry ever materialises inside the furniture (a bad return point, a
+// stale save), search outward ring by ring until the floor accepts him
+function unstickLarry() {
+  const m = curMap(), L = G.larry;
+  if (circleFreeOn(m, L.x, L.y, 5)) return;
+  const tx = Math.floor(L.x / TILE), ty = Math.floor(L.y / TILE);
+  for (let r = 1; r <= 8; r++) {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      const x = (tx + dx + 0.5) * TILE, y = (ty + dy + 0.5) * TILE;
+      if (x < TILE || y < TILE || x >= (m.w - 1) * TILE || y >= (m.h - 1) * TILE) continue;
+      if (circleFreeOn(m, x, y, 5)) { L.x = x; L.y = y; return; }
+    }
+  }
+}
 
 /* ---------- RED TAPE: the bureaucracy, made cuttable ----------
    When a "cut the red tape" task is live, a trail of actual red tape strips
@@ -5758,6 +5773,7 @@ function visitorReaches() {
 function switchMap(id, x, y) {
   G.mapId = id;
   G.larry.x = x; G.larry.y = y;
+  unstickLarry();
   G.mice = []; G.laser = null; G.boxes = []; tapTarget = null; G.napping = false; G.napPos = null;
   if (G.mini && G.mini.type === 'photo') { G.summons = null; G.summonsCD = 90; } // walking out mid-shoot ends the op
   G.mini = null; // an abandoned mini game forfeits the round
@@ -6958,6 +6974,7 @@ function startGame(fresh) {
     G.intro.phase = 'done';
     G.mapId = MAPS[s.mapId] ? s.mapId : 'ground';
     G.larry.x = s.x || 21.5 * TILE; G.larry.y = s.y || 31 * TILE;
+    unstickLarry();
     G.secretsFound = new Set(s.secrets || []);
     G.honours = new Set(s.honours || []);
     G.nightCatches = s.nightCatches || 0;
