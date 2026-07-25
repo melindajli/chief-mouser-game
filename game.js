@@ -2362,7 +2362,7 @@ function finishGauntlet(win) {
     if (G.underroadWins >= 3 && !G.coronation && !G.treaty) { // three burglaries end a regency
       G.coronation = true;
       save();
-      startFade(() => { switchMap('basement', 26 * TILE, 16 * TILE); coronationScene(); });
+      startFade(() => { switchMap('basement', 26.5 * TILE, 16.5 * TILE); coronationScene(); });
       updateHUD();
       return;
     }
@@ -2370,7 +2370,7 @@ function finishGauntlet(win) {
     toast('🕳️ Five seizures. The tunnel spits you out, and the patrols add a commemorative plaque. The cheese remains — for now — theirs.');
     tone(220, 120, 0.3, 'square', 0.06);
   }
-  startFade(() => switchMap('basement', 26 * TILE, 16 * TILE));
+  startFade(() => switchMap('basement', 26.5 * TILE, 16.5 * TILE));
   updateHUD();
 }
 function drawGauntlet() {
@@ -2532,7 +2532,7 @@ function treatyScene() {
     G.fish += 10; G.xp += 30;
     earnHonour('treaty');
     save();
-    startFade(() => switchMap('basement', 26 * TILE, 16 * TILE));
+    startFade(() => switchMap('basement', 26.5 * TILE, 16.5 * TILE));
     toast('📜 THE TREATY OF THE UNDER-ROAD — the war is over. The chase, by mutual agreement, is not. +10 🐟 +30 XP');
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
     updateHUD();
