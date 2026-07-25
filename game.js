@@ -2940,54 +2940,54 @@ function updateSummonsHUD() {
 // resistance, to an all-out siege directed from beneath the Cellar. Tasks are
 // issued in order (G.briefStage); the escalating `why` texts continue the plot.
 const CAMPAIGN = [
-  { text: 'Catch 2 mice — first day in post', kind: 'catch', n: 2,
+  { text: 'Catch 2 mice — first day in post', kind: 'catch', n: 2, where: 'anywhere in the house',
     why: 'Your first morning as Chief Mouser. The Cabinet Office would like proof you can, in fact, catch mice. Catch two, anywhere. Set the tone for the reign.' },
-  { text: 'Clear 3 mice from the Kitchen', kind: 'catch', map: 'basement', n: 3,
+  { text: 'Clear 3 mice from the Kitchen', kind: 'catch', map: 'basement', n: 3, where: 'the Kitchen, downstairs',
     why: 'Word has gone round the skirting boards that the new cat is untested. The mice strike the Kitchen first, to see what you do. Clear three (downstairs, down the Grand Staircase).' },
-  { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8,
+  { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8, where: 'the ground-floor Corridor',
     why: 'Your first true adversary at No. 10 is not a mouse. A spool of ministerial red tape has come loose and unrolled the LENGTH of the Corridor — and the mice are watching to see whether bureaucracy defeats you as it defeats everyone else. Cut through it: every strip, claws out.' },
-  { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1,
+  { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1, where: 'anywhere in the house',
     why: 'They send a fast one — a scout, testing your speed while the rest watch from the dark. Catch the swift brown mouse and end the experiment before they draw conclusions.' },
-  { text: 'Catch 2 mice in the Garden', kind: 'catch', region: 'The Garden', n: 2,
+  { text: 'Catch 2 mice in the Garden', kind: 'catch', region: 'The Garden', n: 2, where: 'the Garden',
     why: 'Emboldened, the mice open a second front: fresh burrows out by the pond. This is coordination now, not chance. Do not let them dig in — catch two.' },
-  { text: 'Catch a mouse after dark', kind: 'catch', night: true, n: 1,
+  { text: 'Catch a mouse after dark', kind: 'catch', night: true, n: 1, where: 'anywhere, after dark',
     why: 'They have studied your habits. The raids now come after lights-out, when they are certain you are asleep. Catch one after dark and disabuse them of the notion.' },
-  { text: 'See off the fox (the Street, after dark)', kind: 'fox', n: 1,
+  { text: 'See off the fox', kind: 'fox', n: 1, where: 'the Street, after dark',
     why: 'A FOX has been seen on the Street at night — long, low, amber, unimpressed by government. The real test of a Chief Mouser was never mice. Settle the fox question.' },
-  { text: 'Catch a trickster mouse', kind: 'catch', type: 'trick', n: 1,
+  { text: 'Catch a trickster mouse', kind: 'catch', type: 'trick', n: 1, where: 'anywhere in the house',
     why: 'This is no longer a rabble. A trickster appears — it reads your pounce and sidesteps it. Something below is TRAINING them. Catch it: a quick tap beats a wind-up.' },
-  { text: 'Take one strategic nap', kind: 'nap', n: 1,
+  { text: 'Take one strategic nap', kind: 'nap', n: 1, where: 'any bed, sofa or sunny sill',
     why: 'Intelligence suggests the mice mean to exhaust you — to keep you chasing shadows until you drop. Deny them. Take one dignified, strategic nap, and let them wonder what you know that they do not.' },
-  { text: 'Catch a mouse on the First Floor', kind: 'catch', map: 'first', n: 1,
+  { text: 'Catch a mouse on the First Floor', kind: 'catch', map: 'first', n: 1, where: 'the First Floor, up the stairs',
     why: 'They have breached the First Floor, where ambassadors dine and states are received. This cannot be borne. Catch one upstairs (up the Grand Staircase) and make the point in the room where points are made.' },
-  { text: 'Catch a Very Still Mouse', kind: 'catch', type: 'still', n: 1,
+  { text: 'Catch a Very Still Mouse', kind: 'catch', type: 'still', n: 1, where: 'anywhere in the house',
     why: 'One mouse has sat motionless for days, memorising your routes — a saboteur, a spy for whatever now rules below the Cellar. Find the Very Still Mouse before it reports back.' },
   // ---- the siege proper: from here the campaign loops, escalating ----
-  { text: 'Retake the Kitchen (3 mice)', kind: 'catch', map: 'basement', n: 3,
+  { text: 'Retake the Kitchen (3 mice)', kind: 'catch', map: 'basement', n: 3, where: 'the Kitchen, downstairs',
     why: 'The Kitchen has fallen a SECOND time — and this time they came in numbers, brazen and drilled. Retake it. Clear three. They must learn there is no second chance with you.' },
-  { text: 'Defend the flat (2 mice)', kind: 'catch', map: 'flat', n: 2,
+  { text: 'Defend the flat (2 mice)', kind: 'catch', map: 'flat', n: 2, where: 'the flat, above No. 11',
     why: 'They are in the FLAT. Past the green door at the end of the First Floor landing, up where you SLEEP, where the good sofa is. This stopped being politics the moment they crossed the residence line. Catch two, and let the whole skirting-board world hear about it.' },
-  { text: 'Intercept the post (bat 4 letters)', kind: 'post', n: 4,
+  { text: 'Intercept the post (bat 4 letters)', kind: 'post', n: 4, where: 'the Entrance Hall letterbox',
     why: 'MI-Paw intercepts chatter from below: the mice are riding the eleven o\'clock post in padded envelopes. Take up position at the Entrance Hall letterbox and bat down four before they clear the doormat.' },
-  { text: 'Attend a Kitchen Supper (catch 4 scraps)', kind: 'scrap', n: 4,
+  { text: 'Attend a Kitchen Supper (catch 4 scraps)', kind: 'scrap', n: 4, where: 'the flat kitchen, above No. 11',
     why: 'The mice have been feasting on what the Prime Minister drops at supper — morale-critical crumbs, straight to the enemy. Up to the flat with you: sit under the little table and intercept four scraps before the floor does.' },
-  { text: 'Disperse the Pigeon AGM', kind: 'agm', n: 1,
+  { text: 'Disperse the Pigeon AGM', kind: 'agm', n: 1, where: 'the garden pond',
     why: 'MI-Paw believes the pond pigeons have been passing intelligence to the mice — minutes of their AGM were found behind the skirting board, annotated. Attend their next session at the garden pond. Uninvited. Undetected.' },
-  { text: 'Answer the singing holes (8 bonks)', kind: 'bonk', n: 8,
+  { text: 'Answer the singing holes (8 bonks)', kind: 'bonk', n: 8, where: 'the Cellar, downstairs',
     why: 'The basement holes have begun SINGING at night — coordinated taunting, straight from the Rat King\'s songbook. Take up the drum at the Cellar and answer eight heads personally. Morale is watching.' },
-  { text: 'Run the Under-Road', kind: 'gauntlet', n: 1,
+  { text: 'Run the Under-Road', kind: 'gauntlet', n: 1, where: 'the crack in the Cellar wall',
     why: 'The heirs move the stolen larder through their tunnel tonight. Go under — the crack in the Cellar wall — cross the patrol lanes, and take the cheese back where they sleep. Nothing says DEPOSED like a burglary.' },
-  { text: 'Complete a Red Dot Protocol (8 catches)', kind: 'dot', n: 8,
+  { text: 'Complete a Red Dot Protocol (8 catches)', kind: 'dot', n: 8, where: 'the Study terminal',
     why: 'MI-Paw requires evidence the reflexes are being MAINTAINED. Report to the Study terminal, enter the construct, and log eight catches on the dot. It has been patched since your last session. It is faster. It is smug about it.' },
-  { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8,
+  { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8, where: 'the ground-floor Corridor',
     why: 'The mice have discovered PAPERWORK. Red tape spools down the Corridor again, nearly to the Cabinet Room door. Slash every strip before the government notices the mice run it better than they do.' },
-  { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1,
+  { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1, where: 'anywhere, after dark',
     why: 'A coordinated night assault, floor to floor, directed by something large beneath the Cellar. Catch one after dark and send the message back up the chain: the night is still, and will remain, yours.' },
-  { text: 'Hold the Garden (2 mice)', kind: 'catch', region: 'The Garden', n: 2,
+  { text: 'Hold the Garden (2 mice)', kind: 'catch', region: 'The Garden', n: 2, where: 'the Garden',
     why: 'The siege spills outdoors; every wall of the house is being tested at once. Hold the Garden — catch two — and hold the line. They will not find it undefended while you draw breath.' },
 ];
 const BRIEF_LOOP_FROM = 11; // once the campaign is done, cycle the "siege" tail forever
-const HOLDING_BRIEF = { holding: true, text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2,
+const HOLDING_BRIEF = { holding: true, text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2, where: 'anywhere in the house',
   why: 'The picture below is still forming. Keep the pressure on while it clears — catch two more on your rounds.' };
 // swift mice spawn from lv3, tricksters lv5, Very Still Mice lv7
 function briefPossible(d) {
@@ -3013,6 +3013,9 @@ const LARRY_ACKS = [
   '(You are already walking. Somewhere behind you, the aide exhales.)',
   '(One ear rotates toward the problem. The problem has been assessed. The problem should be worried.)',
 ];
+// the headline names the room too — "anywhere" tasks say so rather than
+// leaving the player to wonder whether they've missed a location
+function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 function newBrief() {
   const len = CAMPAIGN.length;
   const idx = G.briefStage < len ? G.briefStage
@@ -3032,11 +3035,11 @@ function newBrief() {
       { who: 'THE AIDE', text: BRIEF_SCENES[idx], do: () => tone(500, 700, 0.15, 'triangle', 0.06) },
       { who: 'THE AIDE', text: def.why },
       { who: 'LARRY', text: pick(LARRY_ACKS) },
-    ], () => { toast('📕 TASK: ' + def.text); updateHUD(); });
+    ], () => { toast('📕 TASK: ' + def.text + briefWhere(def)); updateHUD(); });
   } else {
     // toasts are headlines: the objective only. The long briefings live in
     // the milestone scenes, where the player sets the reading pace.
-    toast('📕 NEW TASK: ' + def.text);
+    toast('📕 NEW TASK: ' + def.text + briefWhere(def));
     tone(500, 700, 0.15, 'triangle', 0.06);
   }
   syncTape(); // red-tape tasks lay their strips down the Corridor immediately
@@ -5862,7 +5865,8 @@ function updateHUD() {
   if (G.brief) {
     const d = G.brief.def;
     // a persistent, labelled objective in the corner: finish it to get the next
-    bEl.textContent = '📕 TASK: ' + d.text + (d.n > 1 ? ' (' + G.brief.prog + '/' + d.n + ')' : '');
+    bEl.textContent = '📕 TASK: ' + d.text + (d.n > 1 ? ' (' + G.brief.prog + '/' + d.n + ')' : '')
+      + (d.where ? '\n📍 ' + d.where : '');   // never make the player hunt for the room
     bEl.classList.remove('hidden');
   } else bEl.classList.add('hidden');
 }

@@ -19,7 +19,7 @@ canvas#game { position:fixed; inset:0; width:100vw; height:100vh; image-renderin
 .hudrow { display:flex; gap:14px; justify-content:space-between; align-items:center; font-size:10px; }
 .hudrow.small { font-size:8px; margin-top:6px; opacity:.85; }
 #xpbar { margin-top:7px; width:130px; height:8px; background:rgba(255,255,255,.12); border-radius:4px; overflow:hidden; }
-#brief { margin-top:7px; font-size:7px; line-height:1.7; color:#e8c9a0; max-width:150px; }
+#brief { margin-top:7px; font-size:7px; line-height:1.7; color:#e8c9a0; max-width:150px; white-space:pre-line; }
 #xpfill { height:100%; width:0%; background:linear-gradient(90deg,#e9c46a,#f4a261); border-radius:4px; transition:width .25s; }
 #stbar { margin-top:4px; width:130px; height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
 #stfill { height:100%; width:100%; background:linear-gradient(90deg,#7fd4a0,#4aa877); border-radius:3px; }
