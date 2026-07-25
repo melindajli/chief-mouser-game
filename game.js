@@ -1904,6 +1904,7 @@ function finishRace() {
   const isBest = !G.raceBest || t < G.raceBest;
   if (isBest) G.raceBest = t;
   if (medal === 'gold') earnHonour('zoomgold');
+  briefEvent('race');
   toast((medal === 'gold' ? '🥇 ' + t.toFixed(1) + 's — FULL ZOOMIES. The portraits are still rattling.'
     : medal === 'silver' ? '🥈 ' + t.toFixed(1) + 's — a highly professional tear around the premises.'
       : '🏁 ' + t.toFixed(1) + 's — the zoomies subside, dignity intact. Mostly.')
@@ -1959,13 +1960,19 @@ function drawGameMarkers() {
     if (p.type === 'protocol' && !G.protocolOpen) continue;   // still just a dark box
     if (p.type === 'gulls' && !G.gullsReady) continue;        // no platters, no raid
     if (G.nearPoi === p) continue;                            // the close-up indicator takes over
+    const wanted = G.brief && BRIEF_POI[G.brief.def.kind] === p.type; // the Red Box sent you here
     const mx = (p.x + 0.5) * TILE, my = (p.y - 0.2) * TILE + Math.sin(t * 2.2 + p.x) * 1.8;
     ctx.save();
     ctx.globalAlpha = 0.8 + Math.sin(t * 2.2 + p.x) * 0.2;
     ctx.fillStyle = 'rgba(12,10,20,0.55)';
     ctx.beginPath(); ctx.arc(mx, my - 4, 8, 0, 7); ctx.fill();
+    if (wanted) { // a red-box ring, so the objective reads at a glance
+      ctx.strokeStyle = '#e8c86a'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(mx, my - 4, 9.5 + Math.sin(t * 4) * 0.8, 0, 7); ctx.stroke();
+    }
     ctx.font = '11px serif'; ctx.textAlign = 'center';
     ctx.fillText(em, mx, my);
+    if (wanted) { ctx.font = '7px serif'; ctx.fillText('📕', mx + 8, my - 8); }
     ctx.restore();
   }
 }
@@ -2040,6 +2047,9 @@ function finishGulls() {
   const fish = s >= 8 ? 5 : s >= 6 ? 4 : s >= 4 ? 3 : s >= 2 ? 2 : 1;
   G.fish += fish; G.xp += s * 2;
   if (s >= 8) earnHonour('airspace');
+  if (s >= 4) briefEvent('gulls'); // the terrace counts as held if most of it survives
+  // a failed raid must not strip the platters the task needs — catering re-lays
+  if (G.brief && G.brief.def.kind === 'gulls') { G.gullsReady = true; save(); }
   toast(s >= 8 ? '🥪 EIGHT INTERCEPTIONS. The airspace is closed; catering weeps with gratitude. +' + fish + ' 🐟 +' + s * 2 + ' XP'
     : s >= 5 ? '🥪 ' + s + '/8 turned back. The reception is saved. Mostly. +' + fish + ' 🐟 +' + s * 2 + ' XP'
       : '🥪 ' + s + '/8. The gulls dine well tonight, and without remorse. +' + fish + ' 🐟' + (s ? ' +' + s * 2 + ' XP' : ''));
@@ -2261,6 +2271,7 @@ function finishClimb() {
   const isBest = !G.climbBest || t < G.climbBest;
   if (isBest) G.climbBest = t;
   earnHonour('perch');
+  briefEvent('climb');
   toast('👑 THE HIGHEST PERCH — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Everything below is yours. +4 🐟 +12 XP');
   [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.11, 'triangle', 0.06, i * 0.09));
   addParticle(G.larry.x, G.larry.y - 8, '#ffd98a', 14, 50);
@@ -2977,6 +2988,12 @@ const CAMPAIGN = [
     why: 'The basement holes have begun SINGING at night — coordinated taunting, straight from the Rat King\'s songbook. Take up the drum at the Cellar and answer eight heads personally. Morale is watching.' },
   { text: 'Run the Under-Road', kind: 'gauntlet', n: 1, where: 'the crack in the Cellar wall',
     why: 'The heirs move the stolen larder through their tunnel tonight. Go under — the crack in the Cellar wall — cross the patrol lanes, and take the cheese back where they sleep. Nothing says DEPOSED like a burglary.' },
+  { text: 'Run the perimeter at speed', kind: 'race', n: 1, where: 'the ground floor, all of it',
+    why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
+  { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
+    why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
+  { text: 'Take the high ground (the bookcase)', kind: 'climb', n: 1, where: 'the Study bookcase',
+    why: 'You cannot hold a house you cannot see. Get to the highest perch in government — up the Study bookcase, ledge by ledge — and take the measure of the whole floor from above. The wobbly shelves are not your friends.' },
   { text: 'Complete a Red Dot Protocol (8 catches)', kind: 'dot', n: 8, where: 'the Study terminal',
     why: 'MI-Paw requires evidence the reflexes are being MAINTAINED. Report to the Study terminal, enter the construct, and log eight catches on the dot. It has been patched since your last session. It is faster. It is smug about it.' },
   { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8, where: 'the ground-floor Corridor',
@@ -3016,6 +3033,19 @@ const LARRY_ACKS = [
 // the headline names the room too — "anywhere" tasks say so rather than
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
+// which world marker a task sends you to — used to flag it on screen
+const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb' };
+// a task that names a mini game clears its cooldown and lays on whatever the
+// game needs. The Red Box does not queue behind the routine.
+const BRIEF_ARM = {
+  race: () => { G.raceCD = 0; },
+  climb: () => { G.climbCD = 0; },
+  scrap: () => { G.supperCD = 0; },
+  post: () => { G.postCD = 0; },
+  agm: () => { G.agmCD = 0; },
+  bonk: () => { G.molesCD = 0; },
+  gulls: () => { G.gullsCD = 0; G.gullsReady = true; }, // the reception is laid on for you
+};
 function newBrief() {
   const len = CAMPAIGN.length;
   const idx = G.briefStage < len ? G.briefStage
@@ -3027,6 +3057,7 @@ function newBrief() {
   if (!briefPossible(def)) def = HOLDING_BRIEF;
   else { firstPass = G.briefStage === idx; G.briefStage++; }
   G.brief = { def, prog: 0 };
+  if (BRIEF_ARM[def.kind]) BRIEF_ARM[def.kind]();
   if (firstPass && BRIEF_SCENES[idx] !== undefined && !G.daily && G.intro.phase === 'done' && !SCENE && !G.mini && !G.paused) {
     const tx = Math.floor(G.larry.x / TILE), ty = Math.floor(G.larry.y / TILE);
     G.sceneNpcs = [];

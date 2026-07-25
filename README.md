@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Eleven mini games, one per cat instinct
+## Eleven mini games — and the Red Box asks for every one
 
 - **Post Watch** — the eleven o'clock delivery shoots through the letterbox;
   bat the letters out of the air, and mind the decoy rattles
