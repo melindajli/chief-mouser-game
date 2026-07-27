@@ -108,7 +108,7 @@ statute. No further questions.)
   *condition of the day* (Night Shift, Swift Day, Rush Hour)
 - **The Morning Red Box & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
-- 42 honours on a proper honours board, a List of Mischief, hidden secrets,
+- 41 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won
