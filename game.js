@@ -1434,6 +1434,7 @@ MAPS.basement = makeMap('basement', 30, 20, (m, set, rect) => {
   // the chef's counter: slip him kippers, he opens the pantry door a crack
   m.pois = [{ x: 7, y: 1, emoji: '🤝', type: 'chefdeal' }];
   m.pois.push({ x: 24, y: 14, emoji: '🎯', type: 'moles' }); // the holes, singing
+  m.pois.push({ x: 12, y: 7, emoji: '🥂', type: 'canape' }); // the reception, being plated without supervision
   m.pois.push({ x: 27, y: 17, emoji: '🕳️', type: 'gauntlet' }); // the crack in the Cellar wall — the Under-Road
   m.regions = [
     [1, 1, 18, 17, 'The Kitchen'],
@@ -1731,6 +1732,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
+  { id: 'quality', name: 'Quality Control', hint: 'A perfect Canapé Line: every cucumber stopped, every salmon spared.' },
   { id: 'sledder', name: 'The Descent', hint: 'Ride your cushion down the Grand Staircase without touching a soul.' },
   { id: 'presspass', name: 'Patron of the Press', hint: PARTNER.live ? 'Redeem a code from the photographer\'s shop.' : '[AWAITING ACCREDITATION]' },
   { id: 'perch', name: 'The Highest Authority', hint: 'Reach the perch atop the tallest bookcase in government.' },
@@ -1860,7 +1862,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -1961,7 +1963,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -2560,6 +2562,116 @@ function drawSled() {
     ctx.fillRect(W / 2 - mw / 2, H * 0.70 - 10, mw, 14);
     ctx.fillStyle = M.msg.c;
     ctx.fillText(M.msg.text, W / 2, H * 0.70);
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ---------- THE CANAPÉ LINE: quality control, uninvited ----------
+   A state reception is being plated along the kitchen counter. Nobody asked
+   you to inspect it. You are inspecting it. Salmon, prawn and cheese go
+   through to the Pillared Room; cucumber, onion and grapes do not leave this
+   kitchen alive. Be under the offending item and POUNCE it off the counter. */
+const CANAPE_Y = 6.4, CANAPE_X0 = 2.2, CANAPE_X1 = 17.2;
+const CANAPE_GOOD = [['🍣', 'the salmon'], ['🍤', 'the prawn'], ['🧀', 'the cheese']];
+const CANAPE_BAD = [['🥒', 'cucumber'], ['🧅', 'onion'], ['🍇', 'grapes']];
+function startCanape() {
+  G.mini = { type: 'canape', t: 0, next: 0.7, spawned: 0, total: 14, items: [], right: 0, wrong: 0, msg: null, endT: 0 };
+  toast('🥂 Pounce the cucumber. Let the salmon through.', 'now');
+  tone(700, 900, 0.12, 'triangle', 0.06);
+}
+function canapeSay(text, c, M) { M.msg = { text, c, t: 0.9 }; }
+function updateCanape(dt) {
+  if (G.canapeCD > 0) G.canapeCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'canape') return;
+  const L = G.larry;
+  M.t += dt;
+  if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
+  if (M.spawned < M.total) {
+    M.next -= dt;
+    if (M.next <= 0) {
+      M.spawned++;
+      const bad = Math.random() < 0.5;
+      const [em, name] = pick(bad ? CANAPE_BAD : CANAPE_GOOD);
+      M.items.push({ x: CANAPE_X0 * TILE, em, name, bad, gone: false, spd: 26 + M.spawned * 2.4, bob: Math.random() * 9 });
+      M.next = 1.25 + Math.random() * 0.5;
+      tone(520, 620, 0.05, 'sine', 0.03);   // the tray goes down
+    }
+  }
+  for (const it of M.items) {
+    if (it.gone) continue;
+    it.x += it.spd * dt;
+    // a pounce under the counter takes the item off it
+    if (L.pounceT > 0 && Math.abs(it.x - L.x) < 13 && Math.abs(CANAPE_Y * TILE - L.y) < 26) {
+      it.gone = true; it.batted = true;
+      addParticle(it.x, CANAPE_Y * TILE + 4, it.bad ? '#8fbf6a' : '#e8c86a', 6, 30);
+      if (it.bad) {
+        M.right++;
+        canapeSay('NOT THE ' + it.name.toUpperCase(), '#9fe8a0', M);
+        tone(900, 1300, 0.07, 'triangle', 0.07);
+      } else {
+        M.wrong++;
+        canapeSay('that was ' + it.name + '…', '#ff8080', M);
+        tone(280, 180, 0.12, 'square', 0.06);
+      }
+      continue;
+    }
+    if (it.x > CANAPE_X1 * TILE) {   // it has left for the Pillared Room, for better or worse
+      it.gone = true;
+      if (it.bad) { M.wrong++; canapeSay(it.name + ' got through', '#ff8080', M); tone(300, 200, 0.1, 'square', 0.05); }
+      else { M.right++; tone(760, 880, 0.05, 'sine', 0.04); }
+    }
+  }
+  if (M.spawned >= M.total && M.items.every(it => it.gone)) {
+    M.endT += dt;
+    if (M.endT > 0.8) finishCanape();
+  }
+}
+function finishCanape() {
+  const M = G.mini;
+  G.mini = null;
+  G.canapeCD = 110 + Math.random() * 50;
+  const r = M.right;
+  const fish = r >= 14 ? 5 : r >= 11 ? 4 : r >= 8 ? 3 : r >= 5 ? 2 : 1;
+  G.fish += fish; G.xp += r * 2;
+  if (r >= 14) earnHonour('quality');
+  briefEvent('canape');
+  toast(r >= 14 ? '🥂 FOURTEEN FOR FOURTEEN. Not one cucumber reached the Pillared Room. +' + fish + ' 🐟 +' + r * 2 + ' XP'
+    : r >= 10 ? '🥂 ' + r + '/14 vetted. The reception is broadly safe. +' + fish + ' 🐟 +' + r * 2 + ' XP'
+      : '🥂 ' + r + '/14. Somewhere upstairs, a diplomat is eating cucumber. +' + fish + ' 🐟' + (r ? ' +' + r * 2 + ' XP' : ''));
+  [659, 784, r >= 11 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  updateHUD();
+}
+function drawCanape() {
+  const M = G.mini, L = G.larry;
+  // the counter run, and where it goes
+  const bx = CANAPE_X0 * TILE, bw = (CANAPE_X1 - CANAPE_X0) * TILE;
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fillRect(bx, CANAPE_Y * TILE + 5, bw, 3);
+  ctx.fillStyle = '#b9b2a2'; ctx.fillRect(bx, CANAPE_Y * TILE - 6, bw, 12);   // the trolley run
+  ctx.fillStyle = '#cfc8b8'; ctx.fillRect(bx, CANAPE_Y * TILE - 6, bw, 2);
+  ctx.fillStyle = 'rgba(90,84,74,0.5)';
+  for (let gx = bx; gx < bx + bw; gx += 8) ctx.fillRect(gx, CANAPE_Y * TILE + 3, 4, 2);
+  ctx.textAlign = 'center';
+  for (const it of M.items) {
+    if (it.gone) continue;
+    const y = CANAPE_Y * TILE + Math.sin(M.t * 3 + it.bob) * 0.7;
+    ctx.fillStyle = '#d8d3ca';                                  // the little plate
+    ctx.beginPath(); ctx.ellipse(it.x, y + 4, 6, 2, 0, 0, 7); ctx.fill();
+    ctx.font = '10px serif';
+    ctx.fillText(it.em, it.x, y + 3);
+  }
+  ctx.font = '8px monospace';
+  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 30, L.y + 12, 60, 11);
+  ctx.fillStyle = M.wrong ? '#ffd98a' : '#9fe8a0';
+  ctx.fillText('✅' + M.right + '  ✕' + M.wrong + '  ' + M.spawned + '/' + M.total, L.x, L.y + 21);
+  if (M.msg) {
+    ctx.font = '9px monospace';
+    ctx.globalAlpha = Math.min(1, M.msg.t * 3);
+    const w = ctx.measureText(M.msg.text).width + 8;
+    ctx.fillStyle = 'rgba(12,10,20,0.8)'; ctx.fillRect(L.x - w / 2, L.y + 25, w, 12);
+    ctx.fillStyle = M.msg.c; ctx.fillText(M.msg.text, L.x, L.y + 34);
     ctx.globalAlpha = 1;
   }
 }
@@ -3361,6 +3473,8 @@ const CAMPAIGN = [
     why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
   { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
     why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
+  { text: 'Vet the reception canapés (14)', kind: 'canape', n: 1, where: 'the Kitchen counter',
+    why: 'There is a reception upstairs and the kitchen is plating it unsupervised. Station yourself at the counter. Salmon, prawn and cheese may pass; cucumber, onion and grapes may not. Nobody asked you to do this. Do it anyway.' },
   { text: 'Take the stairs at speed', kind: 'sled', n: 1, where: 'the top of the Grand Staircase',
     why: 'The mice are using the staircase at night because nobody else does. Take the whole flight yourself, at speed, and put the word about that it is watched. Your cushion is already at the top.' },
   { text: 'Take the high ground (the bookcase)', kind: 'climb', n: 1, where: 'the Study bookcase',
@@ -3405,13 +3519,14 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled' };
+const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
   race: () => { G.raceCD = 0; },
   climb: () => { G.climbCD = 0; },
   sled: () => { G.sledCD = 0; },
+  canape: () => { G.canapeCD = 0; },
   scrap: () => { G.supperCD = 0; },
   post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
@@ -3727,7 +3842,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false, gullsReady: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -4261,6 +4376,15 @@ function interactPoi(p) {
     showChoice('THE TERRACE', 'The Gull Affair',
       'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
       '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
+    return;
+  }
+  if (p.type === 'canape') {
+    if (G.mini) return;
+    if (G.daily) { toast('🥂 No inspections on sortie day.'); sClick(); return; }
+    if (G.canapeCD > 0) { toast('🥂 The line is clear. The chef has hidden the cucumber, in any case.'); sClick(); return; }
+    showChoice('THE KITCHEN COUNTER', 'The Canapé Line',
+      'A reception is being plated along the counter, and nobody has thought to have it checked.\n\nSalmon, prawn and cheese may pass. Cucumber, onion and grapes may not.\n\nGet under the offending item and pounce it off the counter.',
+      '🥂 Assume quality control', '🚶 Let them poison themselves', which => { if (which === 'a') startCanape(); });
     return;
   }
   if (p.type === 'sled') {
@@ -6732,6 +6856,7 @@ function update(dt) {
   updateGulls(dt);
   updateClimb(dt);
   updateSled(dt);
+  updateCanape(dt);
   updateSummit(dt);
   maybeFox();
   updateFox(dt);
@@ -7024,6 +7149,7 @@ function draw() {
   if (G.mini && G.mini.type === 'dot') drawProtocol();
   if (G.mini && G.mini.type === 'gulls') drawGulls();
   if (G.mini && G.mini.type === 'climb') drawClimb();
+  if (G.mini && G.mini.type === 'canape') drawCanape();
   if (G.mini && G.mini.type === 'summit') drawSummit();
   if (G.mini && G.mini.type === 'fox') drawFox();
   drawGameMarkers();

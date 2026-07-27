@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Twelve mini games — and the Red Box asks for every one
+## Thirteen mini games — and the Red Box asks for every one
 
 - **Post Watch** — the eleven o'clock delivery fires across the Entrance
   Hall: get under each item and POUNCE. Bills fly low and fast, parcels
@@ -57,6 +57,9 @@ the front door having no outside handle:
   settles in the gold, three frames, faster each shot
 - **Kitchen Suppers** — the PM cooks, scraps fall from the flat's supper
   table, and the floor is the enemy
+- **The Canapé Line** — a state reception is being plated unsupervised.
+  Salmon, prawn and cheese may pass; cucumber, onion and grapes may not.
+  Get under the offending item and pounce it off the trolley
 - **The Midnight Zoomies** — ten paw-print gates around the whole ground
   floor at ludicrous speed; gold pace earns The 3 A.M. Protocol
 - **The Pigeon AGM** — grandmother's footsteps at the pond: creep while
@@ -93,7 +96,7 @@ statute. No further questions.)
   *condition of the day* (Night Shift, Swift Day, Rush Hour)
 - **The Morning Red Box & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
-- 37 honours on a proper honours board, a List of Mischief, hidden secrets,
+- 38 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won
