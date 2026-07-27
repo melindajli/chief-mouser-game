@@ -74,9 +74,9 @@ the front door having no outside handle:
   dot, and only a landed pounce counts (unlocked by running the Under-Road)
 - **The Gull Affair** — eight seagulls strafe the garden-party sandwiches;
   read the telegraph, lead the target, close the airspace
-- **The Descent** — ride an unattended ministerial Red Box down the Grand
-  Staircase: steer, hop the civil service, collect kippers on the good line,
-  and try to reach the bottom without apologising to anyone
+- **The Descent** — a behind-the-cat run down the Grand Staircase on your own
+  cushion: steer, hop the ministers, the press pack, the fans and the hoover,
+  collect kippers on the good line, and reach the bottom without apologising
 - **The Heights** — pounce ledge to ledge up the tallest bookcase in
   government; wobbly shelves tip, the air does not hold cats, and the
   highest perch in the house has never held one. Officially.

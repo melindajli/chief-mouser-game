@@ -10,6 +10,7 @@ window.addEventListener('error', e => console.log('GAME ERR:', e.message, 'line'
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 let ZOOM = 3, VW = 0, VH = 0;
+const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 
 let DPR = 1;
 function resize() {
@@ -1317,7 +1318,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
     { x: 24, y: 26, emoji: '🎖️', type: 'honours' },
     { x: 28, y: 6, emoji: '🤝', type: 'gardendeal' },   // the gardener knows where they dig
     { x: 6, y: 10, emoji: '🖼️', type: 'commission' },   // vanity, in oils, on the Grand Staircase
-    { x: 5, y: 12, emoji: '📦', type: 'sled' },         // a Red Box, unattended, at the top of the flight
+    { x: 5, y: 12, emoji: '🛋️', type: 'sled' },        // your cushion, at the top of the flight
   );
   m.secrets = [
     { x: 11, y: 33, f: 'Larry fact: recruited from Battersea Dogs & Cats Home in 2011 — the only member of government hired strictly on merit.' },
@@ -1730,7 +1731,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
-  { id: 'sledder', name: 'The Descent', hint: 'Ride the Red Box down the Grand Staircase without touching a soul.' },
+  { id: 'sledder', name: 'The Descent', hint: 'Ride your cushion down the Grand Staircase without touching a soul.' },
   { id: 'presspass', name: 'Patron of the Press', hint: PARTNER.live ? 'Redeem a code from the photographer\'s shop.' : '[AWAITING ACCREDITATION]' },
   { id: 'perch', name: 'The Highest Authority', hint: 'Reach the perch atop the tallest bookcase in government.' },
   { id: 'redacted', name: '[REDACTED]', hint: '[REDACTED]' },
@@ -1960,7 +1961,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '📦' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -2319,13 +2320,16 @@ function drawClimb() {
   ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.t.toFixed(1) + 's', L.x, L.y - 23);
 }
 
-/* ---------- THE DESCENT: a ministerial Red Box, and gravity ----------
-   Every Chief Mouser eventually works out what the Grand Staircase is FOR.
-   The Box steers; the staircase does the rest. Steering is all you have —
-   the descent is not up for negotiation — but a pounce will clear a clerk.
+/* ---------- THE DESCENT: one cushion, seventy steps ----------
+   Every cat eventually works out what a staircase is FOR. The cushion is
+   yours — it has always been yours — and the flight below is full of people
+   who are, at this moment, entirely in your way. Steering is all you have;
+   the descent is not up for negotiation. A pounce clears a body.
    Somewhere above, thirty Prime Ministers watch from the wall. */
 const SLED_LANES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
-const SLED_HAZARDS = ['clerk', 'stand', 'boxes'];
+// who is actually on those stairs: the government, the press pack that follows
+// you everywhere, the visitors who came to see YOU, and the one true enemy
+const SLED_HAZARDS = ['minister', 'press', 'fan', 'hoover'];
 function buildSledTrack() {
   const hz = [], pk = [];
   // every row leaves a three-lane line through it: the staircase is survivable,
@@ -2344,15 +2348,16 @@ function startSled() {
   const tr = buildSledTrack();
   switchMap('stairs', 6.5 * TILE, 2.5 * TILE);
   G.mini = { type: 'sled', t: 0, spd: 98, hz: tr.hz, pk: tr.pk, kippers: 0, bumps: 0, hops: 0, spin: 0 };
-  toast('📦 Steer. POUNCE to hop. Mind the staff.', 'now');
+  toast('🛋️ Steer. POUNCE to hop. Mind the humans.', 'now');
   tone(300, 500, 0.2, 'triangle', 0.06);
 }
+const SLED_OOF = { minister: 'SORRY, MINISTER', press: 'NO COMMENT', fan: 'NOT NOW', hoover: 'THE HOOVER!!' };
 function sledBump(h) {
   const M = G.mini, L = G.larry;
   M.bumps++;
   M.spd = Math.max(86, M.spd * 0.55);
   M.spin = 0.75;
-  addFloat(L.x, L.y - 16, h.kind === 'clerk' ? 'SORRY!' : h.kind === 'boxes' ? 'PAPERWORK!' : 'OOF', '#ff8080');
+  M.msg = { text: SLED_OOF[h.kind] || 'OOF', t: 0.8, c: '#ff8080' };
   addParticle(L.x, L.y, '#cfc8b8', 8, 40);
   tone(260, 150, 0.16, 'square', 0.06);
 }
@@ -2362,6 +2367,7 @@ function updateSled(dt) {
   if (!M || M.type !== 'sled') return;
   const L = G.larry;
   M.t += dt;
+  if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
   M.spd = Math.min(234, M.spd + 13 * dt);      // it only ever gets worse
   if (M.spin > 0) { M.spin -= dt; L.cvx *= 0.86; }
   L.cvy = 0;                                    // you do not choose the pace of a staircase
@@ -2376,7 +2382,7 @@ function updateSled(dt) {
     h.hit = true;
     if (hopping) {                              // clean over the top of the civil service
       M.hops++;
-      addFloat(hx, hy - 14, 'OVER!', '#9fe8a0');
+      M.msg = { text: 'OVER!', t: 0.6, c: '#9fe8a0' };
       tone(700, 1050, 0.07, 'triangle', 0.05);
     } else sledBump(h);
   }
@@ -2385,7 +2391,7 @@ function updateSled(dt) {
     const qx = (q.x + 0.5) * TILE, qy = (q.y + 0.5) * TILE;
     if (dist(qx, qy, L.x, L.y) < 13) {
       q.got = true; M.kippers++;
-      addFloat(qx, qy - 10, '🐟', '#ffe8b8');
+      M.msg = { text: '🐟 +1', t: 0.5, c: '#ffe8b8' };
       addParticle(qx, qy, '#ffd98a', 5, 26);
       tone(900, 1300, 0.07, 'triangle', 0.06);
     }
@@ -2403,69 +2409,159 @@ function finishSled() {
   G.fish += fish; G.xp += 12 + M.kippers * 2;
   if (clean) earnHonour('sledder');
   briefEvent('sled');
-  toast(clean ? '📦 THE FULL FLIGHT, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Not one civil servant harmed. +' + fish + ' 🐟'
-    : M.bumps <= 2 ? '📦 Down in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Two apologies issued in transit. +' + fish + ' 🐟'
-      : '📦 Down in ' + t.toFixed(1) + 's, via most of the staff. The Box is fine. It is always the Box that is fine. +' + fish + ' 🐟');
+  toast(clean ? '🛋️ THE FULL FLIGHT, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Not one human harmed. +' + fish + ' 🐟'
+    : M.bumps <= 2 ? '🛋️ Down in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Two apologies issued in transit. +' + fish + ' 🐟'
+      : '🛋️ Down in ' + t.toFixed(1) + 's, via most of the guest list. The cushion is fine. It is always the cushion that is fine. +' + fish + ' 🐟');
   [523, 659, 784, clean ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   save();
   startFade(() => switchMap('ground', 5.5 * TILE, 15.5 * TILE)); // delivered to the foot of the stairs
   updateHUD();
 }
+/* The Descent is drawn from BEHIND the Box: the flight recedes to a
+   vanishing point, the stair nosings rush at you, and the staff loom up out
+   of the distance. All the physics stays in plain map coordinates — only the
+   camera is a lie. */
+const SLED_BACK = 46;   // how far behind Larry the camera sits, in world px
 function drawSled() {
   const M = G.mini, L = G.larry;
-  // the banisters, blurring past
-  for (const bx of [1.35 * TILE, 11.65 * TILE]) {
-    ctx.fillStyle = '#6b4a2a'; ctx.fillRect(bx - 2, 0, 4, 72 * TILE);
-    ctx.fillStyle = '#8a6236';
-    for (let y = 0; y < 72 * TILE; y += 14) ctx.fillRect(bx - 1, y, 2, 8);
-  }
-  for (const h of M.hz) {
-    if (h.hit) continue;
-    const x = (h.x + 0.5) * TILE, y = (h.y + 0.5) * TILE;
-    ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.beginPath(); ctx.ellipse(x, y + 6, 6, 2, 0, 0, 7); ctx.fill();
-    if (h.kind === 'clerk') {                    // a civil servant, mid-errand, unaware
-      ctx.drawImage(P_WORKER, x - 8, y - 16);
-    } else if (h.kind === 'boxes') {             // a stack of red boxes, awaiting signature
-      ctx.fillStyle = '#8e1f2b'; ctx.fillRect(x - 6, y - 4, 12, 8);
-      ctx.fillStyle = '#b32a38'; ctx.fillRect(x - 6, y - 9, 12, 6);
-      ctx.fillStyle = '#e8c86a'; ctx.fillRect(x - 2, y - 7, 4, 1); ctx.fillRect(x - 2, y - 1, 4, 1);
-    } else {                                     // an umbrella stand, immovable by tradition
-      ctx.fillStyle = '#3f4652'; ctx.fillRect(x - 4, y - 6, 8, 11);
-      ctx.fillStyle = '#2a2f38'; ctx.fillRect(x - 4, y - 6, 8, 2);
-      ctx.fillStyle = '#7a4a3a'; ctx.fillRect(x - 2, y - 13, 2, 8); ctx.fillRect(x + 1, y - 12, 2, 7);
+  ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);   // out of world space; this view is our own
+  const W = VW, H = VH, hor = H * 0.30;
+  const camX = L.x * 0.72 + 6.5 * TILE * 0.28; // follows you, but you still feel the drift
+  const latK = (0.44 * W) / (5 * TILE);
+  const proj = (wx, wy) => {
+    const z = Math.max(12, (wy - L.y) + SLED_BACK);
+    const s = SLED_BACK / z;
+    return { x: W / 2 + (wx - camX) * latK * s, y: hor + 0.48 * H * s, s };
+  };
+  const FAR = 30 * TILE, X0 = 1.2 * TILE, X1 = 11.8 * TILE;
+  // the wall above, and the Entrance Hall waiting at the bottom of the flight
+  const g = ctx.createLinearGradient(0, 0, 0, hor + 4);
+  g.addColorStop(0, '#241a12'); g.addColorStop(1, '#4a3520');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, hor + 4);
+  const gl = ctx.createRadialGradient(W / 2, hor, 1, W / 2, hor, W * 0.16);
+  gl.addColorStop(0, 'rgba(255,214,140,0.5)'); gl.addColorStop(1, 'rgba(255,214,140,0)');
+  ctx.fillStyle = gl; ctx.fillRect(W / 2 - W * 0.2, hor - H * 0.12, W * 0.4, H * 0.16);
+  // the flight itself: floorboards, then the golden runner down the middle
+  const far = { l: proj(X0, L.y + FAR), r: proj(X1, L.y + FAR) };
+  const near = { l: proj(X0, L.y - 60), r: proj(X1, L.y - 60) };
+  ctx.fillStyle = '#6b4a2a';
+  ctx.beginPath(); ctx.moveTo(far.l.x, far.l.y); ctx.lineTo(far.r.x, far.r.y);
+  ctx.lineTo(near.r.x, near.r.y); ctx.lineTo(near.l.x, near.l.y); ctx.closePath(); ctx.fill();
+  const rf = { l: proj(2.2 * TILE, L.y + FAR), r: proj(10.8 * TILE, L.y + FAR) };
+  const rn = { l: proj(2.2 * TILE, L.y - 60), r: proj(10.8 * TILE, L.y - 60) };
+  ctx.fillStyle = '#c9a23a';
+  ctx.beginPath(); ctx.moveTo(rf.l.x, rf.l.y); ctx.lineTo(rf.r.x, rf.r.y);
+  ctx.lineTo(rn.r.x, rn.r.y); ctx.lineTo(rn.l.x, rn.l.y); ctx.closePath(); ctx.fill();
+  // the walls, and on them the portraits — in strict order, back to Walpole
+  ctx.fillStyle = '#33251a';
+  ctx.beginPath(); ctx.moveTo(0, hor); ctx.lineTo(far.l.x, far.l.y); ctx.lineTo(near.l.x, near.l.y); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(W, hor); ctx.lineTo(far.r.x, far.r.y); ctx.lineTo(near.r.x, near.r.y); ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  for (let t = Math.floor((L.y - 32) / TILE); t * TILE < L.y + FAR; t++) {
+    if (t % 3) continue;
+    for (const wx of [X0 - 7, X1 + 7]) {
+      const a = proj(wx, t * TILE);
+      if (a.y < hor + 1 || a.s < 0.09) continue;
+      const fw = 13 * a.s, fh = 17 * a.s, fy = a.y - 40 * a.s;
+      ctx.fillStyle = '#8a6a30'; ctx.fillRect(a.x - fw / 2, fy, fw, fh);
+      ctx.fillStyle = '#241c2c'; ctx.fillRect(a.x - fw / 2 + fw * 0.16, fy + fh * 0.14, fw * 0.68, fh * 0.7);
     }
-    ctx.restore();
   }
-  for (const q of M.pk) {
-    if (q.got) continue;
-    const x = (q.x + 0.5) * TILE, y = (q.y + 0.5) * TILE;
-    ctx.font = '10px serif'; ctx.textAlign = 'center';
-    ctx.fillText('🐟', x, y + 3 + Math.sin(M.t * 4 + q.x) * 1.5);
+  // the nosings, rushing up at you — this is where all the speed lives
+  const t0 = Math.floor((L.y - 14) / TILE);
+  for (let t = t0; t * TILE < L.y + FAR; t++) {
+    const a = proj(X0, t * TILE), b = proj(X1, t * TILE);
+    if (a.y < hor + 0.4) continue;
+    ctx.strokeStyle = 'rgba(0,0,0,' + (0.1 + 0.3 * a.s).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(0.4, 1.6 * a.s);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    const pl = proj(X0 - 5, t * TILE), pr = proj(X1 + 5, t * TILE);   // banister posts
+    ctx.fillStyle = 'rgba(90,62,36,' + (0.35 + 0.5 * a.s).toFixed(3) + ')';
+    const ph = 22 * a.s;
+    ctx.fillRect(pl.x - 1.4 * a.s, pl.y - ph, 2.8 * a.s, ph);
+    ctx.fillRect(pr.x - 1.4 * a.s, pr.y - ph, 2.8 * a.s, ph);
   }
-  // the Box itself, under the Chief Mouser, going far too fast
+  // the handrails, converging
+  for (const [xw, sgn] of [[X0 - 5, -1], [X1 + 5, 1]]) {
+    const a = proj(xw, L.y + FAR), b = proj(xw, L.y - 14);
+    ctx.strokeStyle = '#8a6236'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(a.x + sgn, a.y - 22 * a.s); ctx.lineTo(b.x + sgn, b.y - 22 * b.s); ctx.stroke();
+  }
+  // everything on the stairs, far to near so the near things overlap
+  const things = [];
+  for (const h of M.hz) if (!h.hit && h.y * TILE > L.y - 20 && h.y * TILE < L.y + FAR) things.push({ o: h, kind: h.kind });
+  for (const q of M.pk) if (!q.got && q.y * TILE > L.y - 20 && q.y * TILE < L.y + FAR) things.push({ o: q, kind: 'kipper' });
+  things.sort((a, b) => b.o.y - a.o.y);
+  for (const th of things) {
+    const o = th.o, pr2 = proj((o.x + 0.5) * TILE, (o.y + 0.5) * TILE);
+    if (pr2.y < hor) continue;
+    const k = pr2.s * 2.3;
+    ctx.globalAlpha = Math.min(1, pr2.s * 3.2);
+    if (th.kind === 'kipper') {
+      ctx.font = Math.max(4, 11 * k) + 'px serif'; ctx.textAlign = 'center';
+      ctx.fillText('🐟', pr2.x, pr2.y - 6 * k + Math.sin(M.t * 4 + o.x) * 2 * k);
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath(); ctx.ellipse(pr2.x, pr2.y, 7 * k, 2.2 * k, 0, 0, 7); ctx.fill();
+      if (th.kind === 'hoover') {          // the natural enemy, upright and humming
+        ctx.fillStyle = '#7a2f36'; ctx.fillRect(pr2.x - 5 * k, pr2.y - 12 * k, 10 * k, 12 * k);
+        ctx.fillStyle = '#9c3d46'; ctx.fillRect(pr2.x - 5 * k, pr2.y - 12 * k, 10 * k, 3 * k);
+        ctx.fillStyle = '#2a2f38'; ctx.fillRect(pr2.x - 1.4 * k, pr2.y - 30 * k, 2.8 * k, 19 * k);
+        ctx.fillStyle = '#c9c2b0'; ctx.fillRect(pr2.x - 4 * k, pr2.y - 32 * k, 8 * k, 3 * k);
+      } else {
+        ctx.drawImage(th.kind === 'press' ? P_PRESS : th.kind === 'fan' ? P_VISITOR : P_WORKER,
+          pr2.x - 8 * k, pr2.y - 24 * k, 16 * k, 24 * k);
+        if (th.kind === 'press') {          // a camera, and the flash going off in your face
+          ctx.fillStyle = '#1b1d24'; ctx.fillRect(pr2.x - 2 * k, pr2.y - 17 * k, 5 * k, 3.5 * k);
+          if ((((M.t * 3 + o.x) | 0) % 3) === 0) { ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillRect(pr2.x + 3 * k, pr2.y - 17 * k, 3 * k, 2.5 * k); }
+        } else if (th.kind === 'fan') {     // a phone, held out, hoping
+          ctx.fillStyle = '#2a2f38'; ctx.fillRect(pr2.x + 4 * k, pr2.y - 16 * k, 2.5 * k, 4 * k);
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+  // the Chief Mouser, from behind, going far too fast
+  const me = proj(L.x, L.y);
+  const lean = clamp(L.cvx * 0.0016, -0.2, 0.2) + (M.spin > 0 ? Math.sin(M.t * 22) * 0.2 : 0);
   ctx.save();
-  ctx.translate(L.x, L.y + 5);
-  ctx.rotate(M.spin > 0 ? Math.sin(M.t * 26) * 0.5 : clamp(L.cvx * 0.002, -0.22, 0.22));
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.beginPath(); ctx.ellipse(0, 4, 9, 2.5, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = '#8e1f2b'; ctx.fillRect(-9, -3, 18, 7);
-  ctx.fillStyle = '#b32a38'; ctx.fillRect(-9, -3, 18, 2);
-  ctx.fillStyle = '#e8c86a'; ctx.fillRect(-2, -1, 4, 2);          // the crest, at speed
+  ctx.translate(me.x, me.y);
+  ctx.rotate(lean);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(0, 2, 22, 5, 0, 0, 7); ctx.fill();
+  ctx.save();
+  ctx.scale(1.75, 1.75);
+  drawCat(CAT_IMGS.larry, L.pounceT > 0 ? 'pawUp' : 'standUp', L.pounceT > 0 ? 1 : 0, 0, 2);
   ctx.restore();
-  if (M.spd > 150) {                                              // speed lines up the runner
-    ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1;
-    for (let i = 0; i < 5; i++) {
-      const sx = L.x + ((i * 37 + ((M.t * 260) | 0)) % 74) - 37;
-      ctx.beginPath(); ctx.moveTo(sx, L.y - 34); ctx.lineTo(sx, L.y - 20); ctx.stroke();
+  ctx.fillStyle = '#7c2d4e'; ctx.fillRect(-20, 3, 40, 11);        // the cushion: velvet, and yours
+  ctx.fillStyle = '#9c3b64'; ctx.fillRect(-20, 3, 40, 3);
+  ctx.fillStyle = '#5e2039'; ctx.fillRect(-20, 12, 40, 2);
+  ctx.fillStyle = '#e8c86a';                                       // the tassels, streaming
+  for (const tx of [-20, -7, 6, 17]) ctx.fillRect(tx, 13, 3, 3 + Math.sin(M.t * 18 + tx) * 1.5);
+  ctx.restore();
+  // speed streaks once it stops being dignified
+  if (M.spd > 148) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 7; i++) {
+      const f = ((i * 53 + (M.t * 420)) % 100) / 100;
+      const sx = W / 2 + (i - 3) * W * 0.14 * (0.4 + f);
+      ctx.beginPath(); ctx.moveTo(sx, hor + f * (H - hor) * 0.7); ctx.lineTo(sx, hor + f * (H - hor) * 0.7 + 10 + f * 26); ctx.stroke();
     }
   }
-  ctx.font = '8px monospace'; ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 30, L.y - 34, 60, 12);
+  ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.72)'; ctx.fillRect(W / 2 - 46, H - 16, 92, 13);
   ctx.fillStyle = M.bumps ? '#ffd98a' : '#9fe8a0';
-  ctx.fillText(M.t.toFixed(1) + 's  🐟' + M.kippers + (M.bumps ? '  ✕' + M.bumps : ''), L.x, L.y - 25);
+  ctx.fillText(M.t.toFixed(1) + 's   🐟' + M.kippers + (M.bumps ? '   ✕' + M.bumps : ''), W / 2, H - 7);
+  if (M.msg) {   // said at the moment of impact, and it must be readable over a crowd
+    ctx.font = '11px monospace';
+    ctx.globalAlpha = Math.min(1, M.msg.t * 3);
+    const mw = ctx.measureText(M.msg.text).width + 10;
+    ctx.fillStyle = 'rgba(12,10,20,0.8)';
+    ctx.fillRect(W / 2 - mw / 2, H * 0.70 - 10, mw, 14);
+    ctx.fillStyle = M.msg.c;
+    ctx.fillText(M.msg.text, W / 2, H * 0.70);
+    ctx.globalAlpha = 1;
+  }
 }
 
 /* ---------- THE UNDER-ROAD: six lanes of rat patrol, one stolen larder ----------
@@ -3265,8 +3361,8 @@ const CAMPAIGN = [
     why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
   { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
     why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
-  { text: 'Ride the Box down the stairs', kind: 'sled', n: 1, where: 'the top of the Grand Staircase',
-    why: 'The despatch boxes are being carried down by hand and the mice are picking them off on the turn. Ride one down yourself — the whole flight, at speed — and see what the run looks like from inside it.' },
+  { text: 'Take the stairs at speed', kind: 'sled', n: 1, where: 'the top of the Grand Staircase',
+    why: 'The mice are using the staircase at night because nobody else does. Take the whole flight yourself, at speed, and put the word about that it is watched. Your cushion is already at the top.' },
   { text: 'Take the high ground (the bookcase)', kind: 'climb', n: 1, where: 'the Study bookcase',
     why: 'You cannot hold a house you cannot see. Get to the highest perch in government — up the Study bookcase, ledge by ledge — and take the measure of the whole floor from above. The wobbly shelves are not your friends.' },
   { text: 'Complete a Red Dot Protocol (8 catches)', kind: 'dot', n: 8, where: 'the Study terminal',
@@ -4169,11 +4265,11 @@ function interactPoi(p) {
   }
   if (p.type === 'sled') {
     if (G.mini) return;
-    if (G.daily) { toast('📦 No joyriding on sortie day. The Box stays put.'); sClick(); return; }
-    if (G.sledCD > 0) { toast('📦 The Box has been reclaimed by a private secretary. There will be others.'); sClick(); return; }
-    showChoice('THE GRAND STAIRCASE', 'An Unattended Red Box',
-      'Someone has left a despatch box at the top of the flight. Below: seventy steps, a golden runner, and the entire staff of No. 10 going about their business.\n\nSteer with the Box. Pounce to hop. There is no brake.',
-      '📦 Get on the Box', '🚶 Behave, for once', which => { if (which === 'a') startSled(); });
+    if (G.daily) { toast('🛋️ No joyriding on sortie day. The cushion stays put.'); sClick(); return; }
+    if (G.sledCD > 0) { toast('🛋️ The cushion has been confiscated and plumped. Give it an hour.'); sClick(); return; }
+    showChoice('THE GRAND STAIRCASE', 'Your Cushion, At The Top',
+      'Your cushion has been left at the top of the flight. Below: seventy steps, a golden runner, the government, the press pack, and a school tour who have all come to see you.\n\nThey will move. Probably.\n\nSteer. Pounce to hop. There is no brake.',
+      '🛋️ Take the stairs', '🚶 Behave, for once', which => { if (which === 'a') startSled(); });
     return;
   }
   if (p.type === 'climb') {
@@ -4417,7 +4513,12 @@ function doPounce(power = 0) {
   }
   // near something interesting with no mouse in play: a plain tap inspects instead
   // (a wound-up leap is always a leap — you meant it)
-  if (power === 0 && G.nearPoi && !G.mice.some(mo => dist(mo.x, mo.y, L.x, L.y) < 55)) { interactPoi(G.nearPoi); return; }
+  if (power === 0 && G.nearPoi) {
+    // standing right on the thing always means the thing; further off, a mouse
+    // in play still wins the tap (you were plainly hunting)
+    const dp = dist(L.x, L.y, (G.nearPoi.x + 0.5) * TILE, (G.nearPoi.y + 0.5) * TILE);
+    if (dp < 15 || !G.mice.some(mo => dist(mo.x, mo.y, L.x, L.y) < 55)) { interactPoi(G.nearPoi); return; }
+  }
   if (L.pounceCD > 0 || L.pounceT > 0) return;
   L.superP = G.superArmed;
   if (G.superArmed) { G.superArmed = false; G.shake = 0.25; addParticle(L.x, L.y, '#ffd98a', 12, 60); tone(400, 150, 0.25, 'square', 0.09); }
@@ -6704,6 +6805,8 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#0b0b10';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (G.mini && G.mini.type === 'sled') { drawSled(); return; } // the Descent draws its own world
+
   ctx.setTransform(ZOOM, 0, 0, ZOOM, -camX * ZOOM, -camY * ZOOM);
 
   ctx.drawImage(m.canvas, 0, 0);
@@ -6821,10 +6924,19 @@ function draw() {
   if (G.nearPoi && !G.napping) {
     const p = G.nearPoi;
     const bob2 = Math.sin(G.time * 4) * 1.5;
+    // the prompt: walking onto a marker is not enough, and the touch button's
+    // emoji swap is invisible on a desktop. Say the word.
+    const px3 = (p.x + 0.5) * TILE, py3 = p.y * TILE - 11 + bob2;
+    const hint = IS_TOUCH ? 'TAP 🐾' : 'SPACE';
+    ctx.font = '7px monospace'; ctx.textAlign = 'center';
+    const hw = ctx.measureText(hint).width + 6;
+    ctx.fillStyle = 'rgba(20,16,32,0.82)';
+    ctx.fillRect(px3 - hw / 2, py3 - 7, hw, 9);
+    ctx.fillStyle = '#ffe8b8'; ctx.fillText(hint, px3, py3);
     ctx.fillStyle = 'rgba(255,232,184,0.95)';
-    ctx.beginPath(); ctx.arc((p.x + 0.5) * TILE, p.y * TILE - 4 + bob2, 2, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(px3, p.y * TILE - 4 + bob2, 2, 0, 7); ctx.fill();
     ctx.fillStyle = 'rgba(20,16,32,0.9)';
-    ctx.beginPath(); ctx.arc((p.x + 0.5) * TILE, p.y * TILE - 4 + bob2, 1, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(px3, p.y * TILE - 4 + bob2, 1, 0, 7); ctx.fill();
   }
 
   // tap-to-walk destination marker
@@ -6912,7 +7024,6 @@ function draw() {
   if (G.mini && G.mini.type === 'dot') drawProtocol();
   if (G.mini && G.mini.type === 'gulls') drawGulls();
   if (G.mini && G.mini.type === 'climb') drawClimb();
-  if (G.mini && G.mini.type === 'sled') drawSled();
   if (G.mini && G.mini.type === 'summit') drawSummit();
   if (G.mini && G.mini.type === 'fox') drawFox();
   drawGameMarkers();
