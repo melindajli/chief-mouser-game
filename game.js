@@ -1627,6 +1627,13 @@ MAPS.heights = makeMap('heights', 11, 26, (m, set, rect) => {
   m.mouseCap = () => 0; // nothing up here but gravity and glory
 });
 
+// --- The roof of the 11, which does not stop for cats ---
+MAPS.bus = makeMap('bus', 13, 70, (m, set, rect) => {
+  rect(1, 1, 11, 68, 'z');
+  m.regions = [[1, 1, 11, 68, 'The 11 Bus']];
+  m.mouseCap = () => 0;
+});
+
 // --- The Marble Hall: freshly polished, and therefore a problem ---
 MAPS.marble = makeMap('marble', 13, 11, (m, set, rect) => {
   rect(1, 1, 11, 9, 'c');
@@ -1669,6 +1676,7 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
   m.pois = [
     { x: 11, y: 5, emoji: '📸', type: 'text', texts: TXT_DOORSTEP },
     { x: 3, y: 6, emoji: '🚐', type: 'homecoming' },   // the Battersea van, on its rounds
+    { x: 17, y: 6, emoji: '🚌', type: 'bus' },         // the 11, at the stop, engine running
   ];
   m.holes = [[1, 12], [20, 12]];           // a couple of gutter mouseholes
   m.lamps = [[3.5, 3.5], [18.5, 3.5]];
@@ -1741,6 +1749,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
+  { id: 'conductor', name: 'No Fare, No Bother', hint: 'Ride the 11 the whole way without touching a thing.' },
   { id: 'polished', name: 'The Polished Floor', hint: 'Cross all three Marble Hall rooms in par.' },
   { id: 'quality', name: 'Quality Control', hint: 'A perfect Canapé Line: every cucumber stopped, every salmon spared.' },
   { id: 'sledder', name: 'The Descent', hint: 'Ride your cushion down the Grand Staircase without touching a soul.' },
@@ -1872,7 +1881,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -1973,7 +1982,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -2846,6 +2855,223 @@ function drawMarble() {
   void L;
 }
 
+/* ---------- THE 11 BUS: Chief Mouser, upper deck, outside ----------
+   The 11 runs past the end of the street and a cat on the roof of it sees
+   more of London than any Prime Minister ever has. Two verbs, not one:
+   POUNCE to clear what is on the roof with you, and HOLD the pounce to
+   flatten under what the city swings at your head. Both, in a hurry. */
+const BUS_LANES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+function buildBusRoute() {
+  const hz = [], pk = [];
+  for (let y = 10; y <= 62; y += 3) {
+    const overhead = Math.random() < 0.42;   // the duck is the new verb; ask for it often
+    if (overhead) {                                   // a bridge, a bough, a signal gantry: DUCK
+      hz.push({ y, over: true, kind: pick(['bridge', 'bough', 'gantry']), hit: false });
+      continue;
+    }
+    const gap = 3 + ((Math.random() * 7) | 0);
+    for (const x of BUS_LANES) {
+      if (Math.abs(x - gap) <= 1) continue;
+      if (Math.random() < 0.55) hz.push({ x, y, over: false, kind: pick(['aerial', 'vent', 'pigeon']), hit: false });
+    }
+    if (Math.random() < 0.5) pk.push({ x: gap, y: y - 1, got: false });
+  }
+  return { hz, pk };
+}
+function startBus() {
+  const r = buildBusRoute();
+  switchMap('bus', 6.5 * TILE, 2.5 * TILE);
+  G.mini = { type: 'bus', t: 0, spd: 104, hz: r.hz, pk: r.pk, kippers: 0, bumps: 0, clears: 0, spin: 0, msg: null };
+  toast('🚌 POUNCE to leap. HOLD to flatten under the bridges.', 'now');
+  tone(240, 400, 0.2, 'square', 0.05);
+}
+const BUS_OOF = { bridge: 'MIND YOUR HEAD', bough: 'LEAVES', gantry: 'CLANG', aerial: 'AERIAL!', vent: 'OOF', pigeon: 'EXCUSE ME' };
+function busBump(h) {
+  const M = G.mini;
+  M.bumps++;
+  M.spd = Math.max(88, M.spd * 0.6);
+  M.spin = 0.7;
+  M.msg = { text: BUS_OOF[h.kind] || 'OOF', t: 0.8, c: '#ff8080' };
+  addParticle(G.larry.x, G.larry.y, '#cfc8b8', 8, 40);
+  tone(250, 150, 0.16, 'square', 0.06);
+}
+function updateBus(dt) {
+  if (G.busCD > 0) G.busCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'bus') return;
+  const L = G.larry;
+  M.t += dt;
+  if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
+  M.spd = Math.min(238, M.spd + 12 * dt);
+  if (M.spin > 0) { M.spin -= dt; L.cvx *= 0.86; }
+  L.cvy = 0;
+  const ny = L.y + (M.spin > 0 ? M.spd * 0.45 : M.spd) * dt;
+  if (circleFree(L.x, ny, 5)) L.y = ny;
+  L.x = clamp(L.x, 1.7 * TILE, 11.3 * TILE);
+  const leaping = L.pounceT > 0, flat = L.charging;   // holding the pounce presses you to the roof
+  for (const h of M.hz) {
+    if (h.hit) continue;
+    const hy = (h.y + 0.5) * TILE;
+    if (Math.abs(hy - L.y) > 10) continue;
+    if (h.over) {                                     // spans the whole roof: only flattening saves you
+      h.hit = true;
+      if (flat) { M.clears++; M.msg = { text: 'UNDER IT', t: 0.6, c: '#9fe8a0' }; tone(600, 900, 0.07, 'triangle', 0.05); }
+      else busBump(h);
+      continue;
+    }
+    if (Math.abs((h.x + 0.5) * TILE - L.x) > 11) continue;
+    h.hit = true;
+    if (leaping) { M.clears++; M.msg = { text: 'OVER IT', t: 0.6, c: '#9fe8a0' }; tone(700, 1050, 0.07, 'triangle', 0.05); }
+    else busBump(h);
+  }
+  for (const q of M.pk) {
+    if (q.got) continue;
+    if (dist((q.x + 0.5) * TILE, (q.y + 0.5) * TILE, L.x, L.y) < 13) {
+      q.got = true; M.kippers++;
+      M.msg = { text: '🐟 +1', t: 0.5, c: '#ffe8b8' };
+      tone(900, 1300, 0.07, 'triangle', 0.06);
+    }
+  }
+  if (L.y > 66 * TILE) finishBus();
+}
+function finishBus() {
+  const M = G.mini;
+  G.mini = null;
+  G.busCD = 110 + Math.random() * 50;
+  const t = M.t, clean = M.bumps === 0;
+  const isBest = !G.busBest || t < G.busBest;
+  if (isBest) G.busBest = t;
+  const fish = (clean ? 5 : M.bumps <= 2 ? 4 : M.bumps <= 4 ? 3 : 2) + M.kippers;
+  G.fish += fish; G.xp += 12 + M.kippers * 2;
+  if (clean) earnHonour('conductor');
+  briefEvent('bus');
+  toast(clean ? '🚌 THE WHOLE ROUTE, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. London went under you. +' + fish + ' 🐟'
+    : M.bumps <= 2 ? '🚌 Rode it in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Two low bridges disagreed. +' + fish + ' 🐟'
+      : '🚌 ' + t.toFixed(1) + 's, and most of the street furniture. You have seen London. It has seen you. +' + fish + ' 🐟');
+  [523, 659, 784, clean ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  startFade(() => switchMap('street', 10.5 * TILE, 6.5 * TILE));
+  updateHUD();
+}
+function drawBus() {
+  const M = G.mini, L = G.larry;
+  ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
+  const W = VW, H = VH, hor = H * 0.34;
+  const camX = L.x * 0.72 + 6.5 * TILE * 0.28;
+  const latK = (0.44 * W) / (5 * TILE);
+  const proj = (wx, wy) => {
+    const z = Math.max(12, (wy - L.y) + SLED_BACK);
+    const s = SLED_BACK / z;
+    return { x: W / 2 + (wx - camX) * latK * s, y: hor + 0.48 * H * s, s };
+  };
+  const FAR = 30 * TILE, X0 = 1.2 * TILE, X1 = 11.8 * TILE;
+  // London, going past: sky, then a terrace of buildings either side
+  const sky = ctx.createLinearGradient(0, 0, 0, hor + 4);
+  sky.addColorStop(0, '#2b3350'); sky.addColorStop(1, '#8a7a86');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, hor + 4);
+  for (let i = 0; i < 9; i++) {                       // a skyline that scrolls with you
+    const f = ((i * 71 - M.t * 26) % 100 + 100) % 100;
+    const bw2 = W * 0.1, bh2 = H * (0.05 + (i % 3) * 0.035);
+    const bx2 = (f / 100) * (W + 60) - 30;
+    ctx.fillStyle = i % 2 ? '#39374e' : '#2f2d42';
+    ctx.fillRect(bx2, hor - bh2, bw2, bh2);
+  }
+  // the roof of the 11, in red
+  const far = { l: proj(X0, L.y + FAR), r: proj(X1, L.y + FAR) };
+  const near = { l: proj(X0, L.y - 60), r: proj(X1, L.y - 60) };
+  ctx.fillStyle = '#8e1f2b';
+  ctx.beginPath(); ctx.moveTo(far.l.x, far.l.y); ctx.lineTo(far.r.x, far.r.y);
+  ctx.lineTo(near.r.x, near.r.y); ctx.lineTo(near.l.x, near.l.y); ctx.closePath(); ctx.fill();
+  // the street below and either side, so the roof is not floating in a void
+  ctx.fillStyle = '#1d2030';
+  ctx.beginPath(); ctx.moveTo(0, hor); ctx.lineTo(far.l.x, far.l.y); ctx.lineTo(near.l.x, near.l.y); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(W, hor); ctx.lineTo(far.r.x, far.r.y); ctx.lineTo(near.r.x, near.r.y); ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+  for (let t = Math.floor((L.y - 60) / TILE); t * TILE < L.y + FAR; t++) {
+    if (t % 2) continue;
+    for (const wx of [X0 - 16, X1 + 16]) {            // lamp posts and lit windows, going past
+      const a = proj(wx, t * TILE);
+      if (a.y < hor + 1 || a.s < 0.1) continue;
+      ctx.fillStyle = 'rgba(60,66,86,0.9)';
+      ctx.fillRect(a.x - 1.2 * a.s, a.y - 34 * a.s, 2.4 * a.s, 34 * a.s);
+      ctx.fillStyle = 'rgba(255,214,140,' + (0.25 + 0.4 * a.s).toFixed(3) + ')';
+      ctx.fillRect(a.x - 3 * a.s, a.y - 38 * a.s, 6 * a.s, 4 * a.s);
+    }
+  }
+  const t0 = Math.floor((L.y - 60) / TILE);
+  for (let t = t0; t * TILE < L.y + FAR; t++) {       // roof ribs, rushing at you
+    const a = proj(X0, t * TILE), b = proj(X1, t * TILE);
+    if (a.y < hor + 0.4) continue;
+    ctx.strokeStyle = 'rgba(0,0,0,' + (0.08 + 0.26 * a.s).toFixed(3) + ')';
+    ctx.lineWidth = Math.max(0.4, 1.4 * a.s);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  const things = [];
+  for (const h of M.hz) if (!h.hit && h.y * TILE > L.y - 20 && h.y * TILE < L.y + FAR) things.push(h);
+  for (const q of M.pk) if (!q.got && q.y * TILE > L.y - 20 && q.y * TILE < L.y + FAR) things.push(q);
+  things.sort((a, b) => b.y - a.y);
+  for (const o of things) {
+    const isPk = o.got !== undefined;
+    if (o.over) {                                     // the overhead: a bar clean across the roof
+      const a = proj(X0 - 6, (o.y + 0.5) * TILE), b = proj(X1 + 6, (o.y + 0.5) * TILE);
+      const h2 = 30 * a.s;
+      ctx.globalAlpha = Math.min(1, a.s * 3.2);
+      ctx.fillStyle = o.kind === 'bough' ? '#3f6a3a' : o.kind === 'gantry' ? '#59606c' : '#6b5442';
+      ctx.fillRect(a.x, a.y - h2 - 5 * a.s, b.x - a.x, Math.max(1.5, 7 * a.s));
+      if (o.kind === 'bough') { ctx.fillStyle = '#4f8046'; ctx.fillRect(a.x, a.y - h2 - 9 * a.s, b.x - a.x, Math.max(1, 4 * a.s)); }
+      ctx.globalAlpha = 1;
+      continue;
+    }
+    const pr2 = proj((o.x + 0.5) * TILE, (o.y + 0.5) * TILE);
+    if (pr2.y < hor) continue;
+    const k = pr2.s * 2.3;
+    ctx.globalAlpha = Math.min(1, pr2.s * 3.2);
+    if (isPk) {
+      ctx.font = Math.max(4, 11 * k) + 'px serif'; ctx.textAlign = 'center';
+      ctx.fillText('🐟', pr2.x, pr2.y - 6 * k + Math.sin(M.t * 4 + o.x) * 2 * k);
+    } else if (o.kind === 'pigeon') {
+      ctx.drawImage(PIGEON_SPRITE, pr2.x - 6 * k, pr2.y - 10 * k, 12 * k, 10 * k);
+    } else if (o.kind === 'vent') {
+      ctx.fillStyle = '#59606c'; ctx.fillRect(pr2.x - 5 * k, pr2.y - 7 * k, 10 * k, 7 * k);
+      ctx.fillStyle = '#3d434d'; ctx.fillRect(pr2.x - 5 * k, pr2.y - 7 * k, 10 * k, 1.6 * k);
+    } else {
+      ctx.fillStyle = '#2a2f38'; ctx.fillRect(pr2.x - 1 * k, pr2.y - 17 * k, 2 * k, 17 * k);
+      ctx.fillStyle = '#7b8492'; ctx.fillRect(pr2.x - 5 * k, pr2.y - 18 * k, 10 * k, 1.6 * k);
+    }
+    ctx.globalAlpha = 1;
+  }
+  const me = proj(L.x, L.y);
+  const flat = L.charging;
+  ctx.save();
+  ctx.translate(me.x, me.y);
+  ctx.rotate(clamp(L.cvx * 0.0016, -0.2, 0.2) + (M.spin > 0 ? Math.sin(M.t * 22) * 0.2 : 0));
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(0, 2, 20, 5, 0, 0, 7); ctx.fill();
+  ctx.scale(1.75, flat ? 0.95 : 1.75);                // flattened: the whole point of the verb
+  drawCat(CAT_IMGS.larry, L.pounceT > 0 ? 'pawUp' : flat ? 'sit' : 'standUp', L.pounceT > 0 ? 1 : 0, 0, 2);
+  ctx.restore();
+  if (M.spd > 150) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 7; i++) {
+      const f = ((i * 53 + (M.t * 420)) % 100) / 100;
+      const sx = W / 2 + (i - 3) * W * 0.14 * (0.4 + f);
+      ctx.beginPath(); ctx.moveTo(sx, hor + f * (H - hor) * 0.7); ctx.lineTo(sx, hor + f * (H - hor) * 0.7 + 10 + f * 26); ctx.stroke();
+    }
+  }
+  ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.72)'; ctx.fillRect(W / 2 - 46, H - 16, 92, 13);
+  ctx.fillStyle = M.bumps ? '#ffd98a' : '#9fe8a0';
+  ctx.fillText(M.t.toFixed(1) + 's   🐟' + M.kippers + (M.bumps ? '   ✕' + M.bumps : ''), W / 2, H - 7);
+  if (M.msg) {
+    ctx.font = '11px monospace';
+    ctx.globalAlpha = Math.min(1, M.msg.t * 3);
+    const mw = ctx.measureText(M.msg.text).width + 10;
+    ctx.fillStyle = 'rgba(12,10,20,0.8)'; ctx.fillRect(W / 2 - mw / 2, H * 0.70 - 10, mw, 14);
+    ctx.fillStyle = M.msg.c; ctx.fillText(M.msg.text, W / 2, H * 0.70);
+    ctx.globalAlpha = 1;
+  }
+}
+
 /* ---------- THE UNDER-ROAD: six lanes of rat patrol, one stolen larder ----------
    Act Two of the war. A pocket map below the Cellar — cross the patrol lanes,
    grab the cheese, and get the time on the board. Seized five times and the
@@ -3643,6 +3869,8 @@ const CAMPAIGN = [
     why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
   { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
     why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
+  { text: 'Ride the 11 to the end of the route', kind: 'bus', n: 1, where: 'the Street, at the stop',
+    why: 'The mice are riding the buses. Of course they are — free transport, and nobody checks. Take the 11 yourself, roof-side, and see the route the way they see it. Mind the low bridges; London does not.' },
   { text: 'Cross the Marble Hall (3 rooms)', kind: 'marble', n: 1, where: 'the Entrance Hall',
     why: 'The hall has been polished to a standard nobody asked for and a cat cannot cross it in a straight line. Learn it anyway — three rooms, stopping on the rug each time. If the mice can run that floor and you cannot, we have a problem.' },
   { text: 'Vet the reception canapés (14)', kind: 'canape', n: 1, where: 'the Kitchen counter',
@@ -3691,7 +3919,7 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble' };
+const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
@@ -3700,6 +3928,7 @@ const BRIEF_ARM = {
   sled: () => { G.sledCD = 0; },
   canape: () => { G.canapeCD = 0; },
   marble: () => { G.marbleCD = 0; },
+  bus: () => { G.busCD = 0; },
   scrap: () => { G.supperCD = 0; },
   post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
@@ -4015,7 +4244,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false, gullsReady: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -4088,7 +4317,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -4549,6 +4778,15 @@ function interactPoi(p) {
     showChoice('THE TERRACE', 'The Gull Affair',
       'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
       '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
+    return;
+  }
+  if (p.type === 'bus') {
+    if (G.mini) return;
+    if (G.daily) { toast('🚌 Not on sortie day. The 11 will come round again.'); sClick(); return; }
+    if (G.busCD > 0) { toast('🚌 You have just missed one. There will be three along shortly.'); sClick(); return; }
+    showChoice('THE STOP, END OF THE STREET', 'The 11 Bus',
+      'The 11 idles at the stop with its engine running and nobody watching the roof.\n\nPOUNCE to leap what is up there with you. HOLD the pounce to flatten under the low bridges.\n\nNo fare is payable by the Chief Mouser.',
+      '🚌 Get on the roof', '🚶 Wait for a taxi', which => { if (which === 'a') startBus(); });
     return;
   }
   if (p.type === 'marble') {
@@ -7040,6 +7278,7 @@ function update(dt) {
   updateSled(dt);
   updateCanape(dt);
   updateMarble(dt);
+  updateBus(dt);
   updateSummit(dt);
   maybeFox();
   updateFox(dt);
@@ -7114,6 +7353,7 @@ function draw() {
   ctx.fillStyle = '#0b0b10';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (G.mini && G.mini.type === 'sled') { drawSled(); return; } // the Descent draws its own world
+  if (G.mini && G.mini.type === 'bus') { drawBus(); return; }   // so does the 11
 
   ctx.setTransform(ZOOM, 0, 0, ZOOM, -camX * ZOOM, -camY * ZOOM);
 
