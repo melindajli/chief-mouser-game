@@ -50,8 +50,9 @@ the front door having no outside handle:
 
 ## Eleven mini games — and the Red Box asks for every one
 
-- **Post Watch** — the eleven o'clock delivery shoots through the letterbox;
-  bat the letters out of the air, and mind the decoy rattles
+- **Post Watch** — the eleven o'clock delivery fires across the Entrance
+  Hall: get under each item and POUNCE. Bills fly low and fast, parcels
+  need a charged leap, and the junk mail is a trap
 - **Hold the Pose** — photo-ops are a composure meter: tap when the tail
   settles in the gold, three frames, faster each shot
 - **Kitchen Suppers** — the PM cooks, scraps fall from the flat's supper

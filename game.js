@@ -1847,12 +1847,11 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
-  if (G.mini.type === 'post') postSwat();
-  else if (G.mini.type === 'photo') photoTap();
+  if (G.mini.type === 'photo') photoTap();
 }
 
 /* ---------- THE MIDNIGHT ZOOMIES: the whole house is the racetrack ----------
@@ -2806,10 +2805,31 @@ function drawSupper() {
 function startPostWatch() {
   G.mini = {
     type: 'post', t: 0, next: 1.1, spawned: 0, total: 8,
-    letters: [], hit: 0, lock: 0, endT: 0,
+    letters: [], hit: 0, junk: 0, lock: 0, endT: 0,
   };
-  toast('📮 Tap when a letter pops. Beware decoy rattles!', 'now');
+  toast('📮 Get under it, then POUNCE. Leave the junk mail.', 'now');
   tone(200, 160, 0.06, 'square', 0.05); tone(200, 160, 0.06, 'square', 0.05, 0.1);
+}
+// four things come through that flap, and they do not fly alike: bills go
+// low and long, parcels drop like parcels, circulars dawdle — and one of
+// them you are supposed to let land.
+function makeMail(kind) {
+  const side = Math.random() < 0.5 ? -1 : 1;
+  const m = { x: POST_SLOT.x + (Math.random() - 0.5) * 10, y: POST_SLOT.y, age: 0, hit: false, landed: false, kind };
+  if (kind === 'bill') {        // second reminders travel fast and stay low
+    m.vx = side * (96 + Math.random() * 52); m.vy = -52; m.grav = 150; m.r = 19;
+    m.landY = (30.5 + Math.random() * 2.4) * TILE;
+  } else if (kind === 'parcel') { // heavy: only a charged leap will shift it
+    m.vx = side * (12 + Math.random() * 20); m.vy = -104; m.grav = 250; m.r = 23;
+    m.landY = (32 + Math.random() * 1.1) * TILE;
+  } else if (kind === 'junk') {   // a takeaway menu, fluttering, beneath you
+    m.vx = side * (54 + Math.random() * 38); m.vy = -74; m.grav = 112; m.r = 17;
+    m.landY = (30.8 + Math.random() * 2.1) * TILE;
+  } else {
+    m.vx = (Math.random() - 0.5) * 78; m.vy = -(84 + Math.random() * 40); m.grav = 170; m.r = 20;
+    m.landY = (31.4 + Math.random() * 1.6) * TILE;
+  }
+  return m;
 }
 const POST_SLOT = { x: 22 * TILE, y: 34 * TILE + 2 }; // the brass flap in the black door
 function postRattle() {
@@ -2827,28 +2847,39 @@ function updatePostWatch(dt) {
     M.next -= dt;
     if (M.next <= 0) {
       postRattle();
-      if (Math.random() < 0.24) { // a decoy — the flap lies
-        M.next = 0.7 + Math.random() * 0.9;
+      const r = Math.random();
+      if (r < 0.13) {                  // a decoy rattle — the flap lies
+        M.next = 0.7 + Math.random() * 0.8;
+      } else if (r < 0.29) {           // junk mail, which does not count and must not be touched
+        M.letters.push(makeMail('junk'));
+        M.next = 0.9 + Math.random() * 0.9;
       } else {
         M.spawned++;
-        M.letters.push({
-          x: POST_SLOT.x + (Math.random() - 0.5) * 10, y: POST_SLOT.y,
-          vx: (Math.random() - 0.5) * 70, vy: -(80 + Math.random() * 45),
-          age: 0, hit: false, landed: false,
-          landY: (31.4 + Math.random() * 1.6) * TILE,
-        });
-        M.next = 1.0 + Math.random() * 1.3;
+        M.letters.push(makeMail(r < 0.52 ? 'bill' : r < 0.68 ? 'parcel' : 'letter'));
+        M.next = 1.0 + Math.random() * 1.2;
       }
     }
   }
   for (const l of M.letters) {
     if (l.landed) continue;
     l.age += dt;
-    l.x += l.vx * dt; l.y += l.vy * dt; l.vy += 170 * dt;
+    l.x += l.vx * dt; l.y += l.vy * dt; l.vy += l.grav * dt;
+    if (l.kind === 'junk') l.vx *= (1 - dt * 1.3);  // circulars stall in the air, tempting you
     if (l.vy > 0 && l.y >= l.landY) {
       l.landed = true;
-      if (!l.hit) addFloat(l.x, l.y - 8, 'delivered…', '#b9b2a2');
+      if (!l.hit && l.kind !== 'junk') addFloat(l.x, l.y - 8, 'delivered…', '#b9b2a2');
     }
+  }
+  // interception is a matter of BEING THERE. Reach is the pounce, not the swipe.
+  const L = G.larry;
+  if (L.pounceT > 0 && M.lock <= 0) {
+    let best = null, bestD = 1e9;
+    for (const l of M.letters) {
+      if (l.hit || l.landed) continue;
+      const d = dist(L.x, L.y, l.x, l.y);
+      if (d < l.r && d < bestD) { best = l; bestD = d; }
+    }
+    if (best) postSwat(best);
   }
   // over when the full post has arrived and settled
   if (M.spawned >= M.total && M.letters.every(l => l.landed)) {
@@ -2856,30 +2887,32 @@ function updatePostWatch(dt) {
     if (M.endT > 0.9) finishPostWatch();
   }
 }
-function postSwat() {
-  const M = G.mini;
-  if (!M || M.type !== 'post' || M.lock > 0) return;
-  const L = G.larry;
-  G.catAnim = { name: 'meow', t: 0, dur: 2 / 6, fps: 6 };
-  // the freshest airborne letter is the battable one
-  const live = M.letters.filter(l => !l.hit && !l.landed && l.age < 0.55);
-  if (live.length) {
-    const l = live.sort((a, b) => a.age - b.age)[0];
-    l.hit = true;
-    l.vx = (l.x < L.x ? -1 : 1) * (130 + Math.random() * 60);
-    l.vy = -70;
-    M.hit++;
-    M.streak = (M.streak || 0) + 1;
-    addFloat(l.x, l.y - 8, M.streak >= 2 ? 'SWAT! ×' + M.streak : 'SWAT!', M.streak >= 4 ? '#ffd98a' : '#ffe8b8');
-    addParticle(l.x, l.y, '#efe9dc', 5 + M.streak, 30);
-    tone(900 + M.streak * 90, 500 + M.streak * 90, 0.06, 'triangle', 0.07); // the streak sings
-    briefEvent('post');
-  } else {
-    M.lock = 0.55; // swung at a rumour
-    M.streak = 0;
-    addFloat(L.x, L.y - 18, 'whiff', '#b9b2a2');
-    tone(300, 200, 0.05, 'sine', 0.04);
+function postSwat(l) {
+  const M = G.mini, L = G.larry;
+  if (l.kind === 'junk') {          // a takeaway menu. The streak dies of embarrassment.
+    l.hit = true; l.vx = (l.x < L.x ? -1 : 1) * 90; l.vy = -50;
+    M.junk++; M.streak = 0; M.lock = 0.45;
+    addFloat(l.x, l.y - 8, 'JUNK MAIL', '#b9b2a2');
+    addParticle(l.x, l.y, '#c9a7d8', 4, 22);
+    tone(240, 170, 0.09, 'square', 0.05);
+    return;
   }
+  if (l.kind === 'parcel' && L.lastPower < 0.3) {  // a flick will not move a parcel
+    M.lock = 0.3;
+    addFloat(l.x, l.y - 8, 'too heavy — CHARGE it', '#ffd98a');
+    tone(300, 220, 0.07, 'sine', 0.05);
+    return;
+  }
+  l.hit = true;
+  l.vx = (l.x < L.x ? -1 : 1) * (130 + Math.random() * 60);
+  l.vy = -70;
+  M.hit++;
+  M.streak = (M.streak || 0) + 1;
+  const label = l.kind === 'parcel' ? 'SIGNED FOR!' : l.kind === 'bill' ? 'RETURN TO SENDER!' : 'SWAT!';
+  addFloat(l.x, l.y - 8, M.streak >= 2 ? label + ' ×' + M.streak : label, M.streak >= 4 ? '#ffd98a' : '#ffe8b8');
+  addParticle(l.x, l.y, '#efe9dc', 5 + M.streak, 30);
+  tone(900 + M.streak * 90, 500 + M.streak * 90, 0.06, 'triangle', 0.07); // the streak sings
+  briefEvent('post');
 }
 function finishPostWatch() {
   const M = G.mini;
@@ -2903,13 +2936,23 @@ function drawPostWatch() {
   for (const l of M.letters) {
     ctx.save();
     ctx.translate(l.x, l.y);
-    if (!l.landed) ctx.rotate(clamp(l.vx * 0.004, -0.5, 0.5));
-    ctx.fillStyle = l.hit ? '#d8d3ca' : '#efe9dc';
-    ctx.fillRect(-4, -3, 8, 5);
-    ctx.strokeStyle = '#b9b2a2'; ctx.lineWidth = 1;
-    ctx.strokeRect(-3.5, -2.5, 7, 4);
-    ctx.beginPath(); ctx.moveTo(-3.5, -2.5); ctx.lineTo(0, 0); ctx.lineTo(3.5, -2.5); ctx.stroke();
-    if (!l.hit) { ctx.fillStyle = '#cf2b3a'; ctx.fillRect(1, -2, 2, 1); } // the stamp
+    if (!l.landed) ctx.rotate(clamp(l.vx * 0.004, -0.5, 0.5) + (l.kind === 'junk' ? Math.sin(l.age * 9) * 0.4 : 0));
+    if (l.kind === 'parcel') {                              // brown paper, string, heft
+      ctx.fillStyle = l.hit ? '#9c7b52' : '#b5915f';
+      ctx.fillRect(-5, -4, 10, 8);
+      ctx.fillStyle = '#7d6340'; ctx.fillRect(-5, -1, 10, 1); ctx.fillRect(-1, -4, 1, 8);
+    } else if (l.kind === 'junk') {                         // a garish circular, beneath your office
+      ctx.fillStyle = l.hit ? '#a98cb8' : '#c9a7d8';
+      ctx.fillRect(-5, -3, 10, 5);
+      ctx.fillStyle = '#8d6a9e'; ctx.fillRect(-4, -2, 8, 1); ctx.fillRect(-4, 0, 5, 1);
+    } else {
+      ctx.fillStyle = l.hit ? '#d8d3ca' : '#efe9dc';
+      ctx.fillRect(-4, -3, 8, 5);
+      ctx.strokeStyle = l.kind === 'bill' ? '#cf2b3a' : '#b9b2a2'; ctx.lineWidth = 1;
+      ctx.strokeRect(-3.5, -2.5, 7, 4);
+      ctx.beginPath(); ctx.moveTo(-3.5, -2.5); ctx.lineTo(0, 0); ctx.lineTo(3.5, -2.5); ctx.stroke();
+      if (!l.hit) { ctx.fillStyle = '#cf2b3a'; ctx.fillRect(1, -2, 2, 1); } // the stamp
+    }
     ctx.restore();
   }
   ctx.font = '8px monospace'; ctx.textAlign = 'center';
@@ -2955,7 +2998,7 @@ const CAMPAIGN = [
     why: 'Your first morning as Chief Mouser. The Cabinet Office would like proof you can, in fact, catch mice. Catch two, anywhere. Set the tone for the reign.' },
   { text: 'Clear 3 mice from the Kitchen', kind: 'catch', map: 'basement', n: 3, where: 'the Kitchen, downstairs',
     why: 'Word has gone round the skirting boards that the new cat is untested. The mice strike the Kitchen first, to see what you do. Clear three (downstairs, down the Grand Staircase).' },
-  { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8, where: 'the ground-floor Corridor',
+  { text: 'Cut the red tape (pounce 8 strips)', kind: 'yarn', n: 8, where: 'the ground-floor Corridor',
     why: 'Your first true adversary at No. 10 is not a mouse. A spool of ministerial red tape has come loose and unrolled the LENGTH of the Corridor — and the mice are watching to see whether bureaucracy defeats you as it defeats everyone else. Cut through it: every strip, claws out.' },
   { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1, where: 'anywhere in the house',
     why: 'They send a fast one — a scout, testing your speed while the rest watch from the dark. Catch the swift brown mouse and end the experiment before they draw conclusions.' },
@@ -2978,7 +3021,7 @@ const CAMPAIGN = [
     why: 'The Kitchen has fallen a SECOND time — and this time they came in numbers, brazen and drilled. Retake it. Clear three. They must learn there is no second chance with you.' },
   { text: 'Defend the flat (2 mice)', kind: 'catch', map: 'flat', n: 2, where: 'the flat, above No. 11',
     why: 'They are in the FLAT. Past the green door at the end of the First Floor landing, up where you SLEEP, where the good sofa is. This stopped being politics the moment they crossed the residence line. Catch two, and let the whole skirting-board world hear about it.' },
-  { text: 'Intercept the post (bat 4 letters)', kind: 'post', n: 4, where: 'the Entrance Hall letterbox',
+  { text: 'Intercept the post (pounce 4 letters)', kind: 'post', n: 4, where: 'the Entrance Hall letterbox',
     why: 'MI-Paw intercepts chatter from below: the mice are riding the eleven o\'clock post in padded envelopes. Take up position at the Entrance Hall letterbox and bat down four before they clear the doormat.' },
   { text: 'Attend a Kitchen Supper (catch 4 scraps)', kind: 'scrap', n: 4, where: 'the flat kitchen, above No. 11',
     why: 'The mice have been feasting on what the Prime Minister drops at supper — morale-critical crumbs, straight to the enemy. Up to the flat with you: sit under the little table and intercept four scraps before the floor does.' },
@@ -2996,7 +3039,7 @@ const CAMPAIGN = [
     why: 'You cannot hold a house you cannot see. Get to the highest perch in government — up the Study bookcase, ledge by ledge — and take the measure of the whole floor from above. The wobbly shelves are not your friends.' },
   { text: 'Complete a Red Dot Protocol (8 catches)', kind: 'dot', n: 8, where: 'the Study terminal',
     why: 'MI-Paw requires evidence the reflexes are being MAINTAINED. Report to the Study terminal, enter the construct, and log eight catches on the dot. It has been patched since your last session. It is faster. It is smug about it.' },
-  { text: 'Cut the red tape (slash 8 strips)', kind: 'yarn', n: 8, where: 'the ground-floor Corridor',
+  { text: 'Cut the red tape (pounce 8 strips)', kind: 'yarn', n: 8, where: 'the ground-floor Corridor',
     why: 'The mice have discovered PAPERWORK. Red tape spools down the Corridor again, nearly to the Cabinet Room door. Slash every strip before the government notices the mice run it better than they do.' },
   { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1, where: 'anywhere, after dark',
     why: 'A coordinated night assault, floor to floor, directed by something large beneath the Cellar. Catch one after dark and send the message back up the chain: the night is still, and will remain, yours.' },
@@ -4618,7 +4661,10 @@ function syncTape() {
   if (!active) { G.tape = []; return; }
   const remaining = G.brief.def.n - G.brief.prog;
   G.tape = TAPE_SPOTS.slice(0, Math.max(0, remaining)).map(([x, y], i) => ({
-    x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, ang: (hash2(x * 7, y * 3) - 0.5) * 1.1, i,
+    x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, i,
+    spd: 12 + hash2(x * 7, y * 3) * 8,       // the spool feeds each strip at its own rate
+    sway: hash2(y * 5, x * 11) * 6.3,
+    flee: 0, taught: false,
   }));
 }
 function updateTape(dt) {
@@ -4626,7 +4672,18 @@ function updateTape(dt) {
   const L = G.larry;
   for (let i = G.tape.length - 1; i >= 0; i--) {
     const t = G.tape[i];
-    if (dist(t.x, t.y, L.x, L.y) < 11 && (L.moving || L.pounceT > 0)) {
+    // the spool never stops feeding: every strip creeps up the Corridor toward
+    // the Cabinet Room door, and a strip that gets there is simply reissued
+    t.flee = Math.max(0, t.flee - dt);
+    t.y -= (t.flee > 0 ? t.spd * 3 : t.spd) * dt;
+    t.x += Math.sin(t.y * 0.05 + t.sway) * 9 * dt + (t.flee > 0 ? Math.sign(t.x - L.x) * 34 * dt : 0);
+    t.x = clamp(t.x, 21.2 * TILE, 23.4 * TILE);
+    if (t.y < 11.5 * TILE) {                            // filed. Bureaucracy is a cycle.
+      addFloat(t.x, t.y + 4, 'filed!', '#b9b2a2');
+      t.y = 32.4 * TILE;
+    }
+    const d = dist(t.x, t.y, L.x, L.y);
+    if (d < 16 && L.pounceT > 0) {                      // CLAWS OUT — the only thing that cuts
       G.tape.splice(i, 1);
       addParticle(t.x, t.y, '#cf2b3a', 7, 30);
       const prog = G.brief ? G.brief.prog + 1 : 0;
@@ -4635,19 +4692,29 @@ function updateTape(dt) {
       tone(900, 300, 0.06, 'square', 0.04, 0.05);
       briefEvent('yarn');
       if (!G.brief) { G.tape = []; break; }              // task done: the corridor is clear
+    } else if (d < 12 && t.flee <= 0 && L.moving) {      // brushed past: the ribbon whips away
+      t.flee = 0.7;
+      if (!t.taught) { t.taught = true; addFloat(t.x, t.y - 9, 'claws out!', '#ffd98a'); }
+      tone(1200, 900, 0.04, 'sine', 0.03);
     }
   }
 }
 function drawTape() {
   for (const t of G.tape || []) {
+    const wob = Math.sin(t.y * 0.05 + t.sway);
     ctx.save();
     ctx.translate(t.x, t.y);
-    ctx.rotate(t.ang);
-    ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(-7, 3, 14, 2);
-    ctx.fillStyle = '#cf2b3a'; ctx.fillRect(-7, -2, 14, 5);         // the strip
-    ctx.fillStyle = '#a31f2e'; ctx.fillRect(-7, 2, 14, 1);
+    ctx.rotate(1.57 + wob * 0.45);                                   // lying along the Corridor, never quite straight
+    ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(-8, 3, 16, 2);
+    ctx.fillStyle = t.flee > 0 ? '#e8434f' : '#cf2b3a'; ctx.fillRect(-8, -2, 16, 5);
+    ctx.fillStyle = '#a31f2e'; ctx.fillRect(-8, 2, 16, 1);
     ctx.fillStyle = '#f0e3c0';                                       // OFFICIAL, in tiny print
-    ctx.fillRect(-5, 0, 2, 1); ctx.fillRect(-1, 0, 2, 1); ctx.fillRect(3, 0, 2, 1);
+    ctx.fillRect(-6, 0, 2, 1); ctx.fillRect(-2, 0, 2, 1); ctx.fillRect(2, 0, 2, 1);
+    ctx.restore();
+    ctx.save();                                                      // the loose end, still unspooling
+    ctx.translate(t.x + wob * 2, t.y + 10);
+    ctx.rotate(wob * 0.9);
+    ctx.fillStyle = '#b9202f'; ctx.fillRect(-2, 0, 4, 5);
     ctx.restore();
   }
 }
