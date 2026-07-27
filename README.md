@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Fifteen mini games — and the Red Box asks for every one
+## Sixteen mini games — and the Red Box asks for every one
 
 - **Post Watch** — the eleven o'clock delivery fires across the Entrance
   Hall: get under each item and POUNCE. Bills fly low and fast, parcels
@@ -80,6 +80,9 @@ the front door having no outside handle:
 - **The Descent** — a behind-the-cat run down the Grand Staircase on your own
   cushion: steer, hop the ministers, the press pack, the fans and the hoover,
   collect kippers on the good line, and reach the bottom without apologising
+- **Billingsgate** — four in the morning at the fish market: a porter
+  throws badly in your direction, you catch them on your back, and every
+  fish makes the stack taller and you slower. Bank it before greed does
 - **The 11 Bus** — roof-side through London, and the only game with two
   verbs: POUNCE to leap what is up there with you, HOLD to flatten under
   the low bridges. No fare is payable by the Chief Mouser
@@ -102,7 +105,7 @@ statute. No further questions.)
   *condition of the day* (Night Shift, Swift Day, Rush Hour)
 - **The Morning Red Box & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
-- 40 honours on a proper honours board, a List of Mischief, hidden secrets,
+- 41 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won

@@ -1627,6 +1627,14 @@ MAPS.heights = makeMap('heights', 11, 26, (m, set, rect) => {
   m.mouseCap = () => 0; // nothing up here but gravity and glory
 });
 
+// --- Billingsgate, four in the morning, wet underfoot ---
+MAPS.market = makeMap('market', 21, 13, (m, set, rect) => {
+  rect(1, 1, 19, 11, 'z');   // wet cobbles, before dawn
+  m.glows = [[4, 3, 110], [11, 6, 120], [18, 3, 110], [8, 10, 110]];
+  m.regions = [[1, 1, 19, 11, 'Billingsgate Market']];
+  m.mouseCap = () => 0;      // even the mice know better than to compete here
+});
+
 // --- The roof of the 11, which does not stop for cats ---
 MAPS.bus = makeMap('bus', 13, 70, (m, set, rect) => {
   rect(1, 1, 11, 68, 'z');
@@ -1677,6 +1685,7 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
     { x: 11, y: 5, emoji: '📸', type: 'text', texts: TXT_DOORSTEP },
     { x: 3, y: 6, emoji: '🚐', type: 'homecoming' },   // the Battersea van, on its rounds
     { x: 17, y: 6, emoji: '🚌', type: 'bus' },         // the 11, at the stop, engine running
+    { x: 6, y: 12, emoji: '🐠', type: 'bill' },        // the fish van, going to market
   ];
   m.holes = [[1, 12], [20, 12]];           // a couple of gutter mouseholes
   m.lamps = [[3.5, 3.5], [18.5, 3.5]];
@@ -1749,6 +1758,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
+  { id: 'porter', name: 'Freeman of Billingsgate', hint: 'Bank two dozen fish in one morning at the market.' },
   { id: 'conductor', name: 'No Fare, No Bother', hint: 'Ride the 11 the whole way without touching a thing.' },
   { id: 'polished', name: 'The Polished Floor', hint: 'Cross all three Marble Hall rooms in par.' },
   { id: 'quality', name: 'Quality Control', hint: 'A perfect Canapé Line: every cucumber stopped, every salmon spared.' },
@@ -1881,7 +1891,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1, bill: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -1982,7 +1992,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', bill: '🐠' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -3072,6 +3082,145 @@ function drawBus() {
   }
 }
 
+/* ---------- BILLINGSGATE: dawn, and an unattended supply ----------
+   The market opens at four. A porter is throwing fish from the lorry to the
+   slab and missing, repeatedly, in your direction. Catch them on your back —
+   a cat can carry more than anyone believes — but every fish makes the stack
+   taller and you slower, and a stack that tips is somebody else's breakfast.
+   Get to the basket before greed does. */
+const BILL_BASKET = { x: 3.5, y: 3.5 };
+function startBilling() {
+  switchMap('market', 10.5 * TILE, 8.5 * TILE);
+  G.mini = { type: 'bill', t: 60, stack: 0, banked: 0, dropped: 0, fish: [], next: 0.9, wob: 0, msg: null };
+  toast('🐟 Catch them. Bank them at the basket before the stack tips.', 'now');
+  tone(400, 700, 0.18, 'triangle', 0.06);
+}
+function billSay(text, c) { const M = G.mini; if (M) M.msg = { text, c, t: 0.8 }; }
+function updateBilling(dt) {
+  if (G.billCD > 0) G.billCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'bill') return;
+  const L = G.larry;
+  M.t -= dt;
+  if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
+  // the porter, throwing badly, faster as the morning gets away from him
+  M.next -= dt;
+  if (M.next <= 0) {
+    const tx = (2 + Math.random() * 15) * TILE, ty = (3 + Math.random() * 8) * TILE;
+    M.fish.push({ x: 19 * TILE, y: 1.5 * TILE, tx, ty, t: 0, dur: 0.85 + Math.random() * 0.35, landed: false, spin: Math.random() * 9 });
+    M.next = Math.max(0.5, 1.15 - (60 - M.t) * 0.008);
+    tone(1500, 1100, 0.05, 'sine', 0.03);
+  }
+  for (const f of M.fish) {
+    if (f.landed) continue;
+    f.t += dt;
+    const p = Math.min(1, f.t / f.dur);
+    f.x = 19 * TILE + (f.tx - 19 * TILE) * p;
+    f.y = 1.5 * TILE + (f.ty - 1.5 * TILE) * p - Math.sin(p * Math.PI) * 34;   // a bad throw, in an arc
+    if (p >= 1) {
+      // caught if you are under it as it comes down
+      if (dist(f.x, f.y, L.x, L.y) < 15) {
+        M.stack++;
+        billSay(M.stack >= 6 ? 'STACK OF ' + M.stack + '!' : 'caught', M.stack >= 6 ? '#ffd98a' : '#9fe8a0');
+        tone(700 + M.stack * 60, 1000 + M.stack * 60, 0.06, 'triangle', 0.06);
+        // greed has a ceiling, and it is seven
+        if (M.stack > 7) { M.dropped += M.stack; M.stack = 0; M.wob = 1; billSay('THE LOT WENT', '#ff8080'); tone(240, 140, 0.2, 'square', 0.07); addParticle(L.x, L.y, '#8fb8d8', 14, 50); }
+      } else { addParticle(f.x, f.y, '#8fb8d8', 3, 18); tone(300, 220, 0.05, 'sine', 0.03); }
+      f.landed = true;
+    }
+  }
+  M.fish = M.fish.filter(f => !f.landed);
+  // a tall stack wobbles: turn too hard and it goes
+  if (M.stack >= 4) {
+    const spd = Math.hypot(L.cvx, L.cvy);
+    M.wob = Math.min(1, M.wob + (spd > 62 ? dt * (0.28 + M.stack * 0.06) : -dt * 0.7));
+    if (M.wob >= 1) { M.dropped += M.stack; M.stack = 0; M.wob = 0; billSay('TOO FAST — THE LOT WENT', '#ff8080'); tone(240, 140, 0.2, 'square', 0.07); addParticle(L.x, L.y, '#8fb8d8', 14, 50); }
+  } else M.wob = Math.max(0, M.wob - dt * 0.7);
+  // the basket: bank what you are carrying
+  if (M.stack > 0 && dist(BILL_BASKET.x * TILE, BILL_BASKET.y * TILE, L.x, L.y) < 20) {
+    M.banked += M.stack;
+    billSay('+' + M.stack + ' banked', '#ffe8b8');
+    addParticle(BILL_BASKET.x * TILE, BILL_BASKET.y * TILE, '#ffd98a', 8 + M.stack, 40);
+    [659, 880].forEach((f, i) => tone(f, f, 0.08, 'triangle', 0.06, i * 0.06));
+    M.stack = 0; M.wob = 0;
+  }
+  if (M.t <= 0) finishBilling();
+}
+function finishBilling() {
+  const M = G.mini;
+  G.mini = null;
+  G.billCD = 110 + Math.random() * 50;
+  const b = M.banked;
+  const fish = b >= 24 ? 6 : b >= 18 ? 5 : b >= 12 ? 4 : b >= 6 ? 3 : 2;
+  G.fish += fish; G.xp += b;
+  if (b >= 24) earnHonour('porter');
+  briefEvent('bill');
+  toast(b >= 24 ? '🐟 ' + b + ' BANKED. Billingsgate has never been worked like that. +' + fish + ' 🐟 +' + b + ' XP'
+    : b >= 12 ? '🐟 ' + b + ' banked' + (M.dropped ? ', ' + M.dropped + ' on the cobbles' : '') + '. A good morning\'s work. +' + fish + ' 🐟 +' + b + ' XP'
+      : '🐟 ' + b + ' banked, ' + M.dropped + ' lost to ambition. The gulls send their thanks. +' + fish + ' 🐟' + (b ? ' +' + b + ' XP' : ''));
+  [523, 659, 784, b >= 18 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  startFade(() => switchMap('street', 10.5 * TILE, 6.5 * TILE));
+  updateHUD();
+}
+function drawFishSprite(x, y, k, ang) {
+  ctx.save();
+  ctx.translate(x, y);
+  if (ang) ctx.rotate(ang);
+  ctx.fillStyle = '#7fa8c9';
+  ctx.beginPath(); ctx.ellipse(0, 0, 5 * k, 2.6 * k, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#9dc2dd';
+  ctx.beginPath(); ctx.ellipse(-0.6 * k, -0.7 * k, 3.4 * k, 1.2 * k, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#5d84a3';
+  ctx.beginPath(); ctx.moveTo(4.4 * k, 0); ctx.lineTo(7.2 * k, -2.4 * k); ctx.lineTo(7.2 * k, 2.4 * k); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#22303c';
+  ctx.beginPath(); ctx.arc(-3 * k, -0.5 * k, 0.7 * k, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function drawBilling() {
+  const M = G.mini, L = G.larry;
+  // the slab the porter is aiming at, and the basket he is not
+  ctx.fillStyle = '#5a6472'; ctx.fillRect(17.4 * TILE, 1 * TILE, 2.2 * TILE, 1.6 * TILE);
+  const bx = BILL_BASKET.x * TILE, by = BILL_BASKET.y * TILE;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(bx, by + 7, 12, 3, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#8a6236'; ctx.fillRect(bx - 11, by - 7, 22, 14);
+  ctx.fillStyle = '#a5743f'; ctx.fillRect(bx - 11, by - 7, 22, 3);
+  ctx.fillStyle = '#6b4a2a';
+  for (let i = -9; i < 10; i += 4) ctx.fillRect(bx + i, by - 4, 2, 11);
+  ctx.font = '7px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffe8b8'; ctx.fillText('BASKET', bx, by - 10);
+  for (const f of M.fish) {
+    const p = Math.min(1, f.t / f.dur);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';                    // the shadow is how you read the landing
+    const sy = 1.5 * TILE + (f.ty - 1.5 * TILE) * p + 6;
+    ctx.beginPath(); ctx.ellipse(f.x, sy, 5 - p * 1.4, 1.8, 0, 0, 7); ctx.fill();
+    drawFishSprite(f.x, f.y, 1.25, Math.sin(f.t * 12 + f.spin) * 0.6);
+  }
+  // the stack, riding on you, leaning as it goes
+  for (let i = 0; i < M.stack; i++) {
+    const lean = Math.sin(M.t * 6 + i) * (1 + M.wob * 4) * (i / Math.max(1, M.stack));
+    drawFishSprite(L.x + lean, L.y - 11 - i * 5, 1.05, lean * 0.07 + (i % 2 ? 0.12 : -0.12));
+  }
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.72)'; ctx.fillRect(L.x - 40, L.y + 12, 80, 11);
+  ctx.fillStyle = M.wob > 0.55 ? '#ff8080' : M.stack >= 6 ? '#ffd98a' : '#9fe8a0';
+  ctx.fillText('carrying ' + M.stack + ' · banked ' + M.banked + ' · ' + Math.ceil(M.t) + 's', L.x, L.y + 21);
+  if (M.wob > 0.25) {
+    ctx.fillStyle = 'rgba(255,128,128,' + (M.wob * 0.8).toFixed(2) + ')';
+    ctx.fillRect(L.x - 22, L.y - 16 - M.stack * 4.5, 44 * M.wob, 2);
+  }
+  if (M.msg) {
+    ctx.font = '9px monospace';
+    ctx.globalAlpha = Math.min(1, M.msg.t * 3);
+    const w = ctx.measureText(M.msg.text).width + 8;
+    ctx.fillStyle = 'rgba(12,10,20,0.8)'; ctx.fillRect(L.x - w / 2, L.y + 25, w, 12);
+    ctx.fillStyle = M.msg.c; ctx.fillText(M.msg.text, L.x, L.y + 34);
+    ctx.globalAlpha = 1;
+  }
+}
+
 /* ---------- THE UNDER-ROAD: six lanes of rat patrol, one stolen larder ----------
    Act Two of the war. A pocket map below the Cellar — cross the patrol lanes,
    grab the cheese, and get the time on the board. Seized five times and the
@@ -3869,6 +4018,8 @@ const CAMPAIGN = [
     why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
   { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
     why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
+  { text: 'Work the dawn at Billingsgate', kind: 'bill', n: 1, where: 'the Street, the fish van',
+    why: 'The kitchen is short and the market opens at four. Ride out with the fish van, catch what the porter throws, and bank it in the basket. Carry too much and you will learn what every porter knows about greed.' },
   { text: 'Ride the 11 to the end of the route', kind: 'bus', n: 1, where: 'the Street, at the stop',
     why: 'The mice are riding the buses. Of course they are — free transport, and nobody checks. Take the 11 yourself, roof-side, and see the route the way they see it. Mind the low bridges; London does not.' },
   { text: 'Cross the Marble Hall (3 rooms)', kind: 'marble', n: 1, where: 'the Entrance Hall',
@@ -3919,7 +4070,7 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus' };
+const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', bill: 'bill' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
@@ -3929,6 +4080,7 @@ const BRIEF_ARM = {
   canape: () => { G.canapeCD = 0; },
   marble: () => { G.marbleCD = 0; },
   bus: () => { G.busCD = 0; },
+  bill: () => { G.billCD = 0; },
   scrap: () => { G.supperCD = 0; },
   post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
@@ -4244,7 +4396,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, billCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false, gullsReady: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -4317,7 +4469,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus' || G.mapId === 'market');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -4778,6 +4930,15 @@ function interactPoi(p) {
     showChoice('THE TERRACE', 'The Gull Affair',
       'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
       '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
+    return;
+  }
+  if (p.type === 'bill') {
+    if (G.mini) return;
+    if (G.daily) { toast('🐠 Not on sortie day. The market will keep.'); sClick(); return; }
+    if (G.billCD > 0) { toast('🐠 The morning trade is over. They start again at four.'); sClick(); return; }
+    showChoice('THE FISH VAN', 'Billingsgate, 4 A.M.',
+      'The van goes to the market before dawn and nobody counts the cats that go with it.\n\nA porter throws fish from the lorry and misses, repeatedly, in your direction. Catch them on your back and bank them at the basket.\n\nCarry more than seven and you will drop the lot. Move too fast with a tall stack and the same.',
+      '🐠 Ride out with the van', '🚶 Wait for breakfast', which => { if (which === 'a') startBilling(); });
     return;
   }
   if (p.type === 'bus') {
@@ -7279,6 +7440,7 @@ function update(dt) {
   updateCanape(dt);
   updateMarble(dt);
   updateBus(dt);
+  updateBilling(dt);
   updateSummit(dt);
   maybeFox();
   updateFox(dt);
@@ -7574,6 +7736,7 @@ function draw() {
   if (G.mini && G.mini.type === 'climb') drawClimb();
   if (G.mini && G.mini.type === 'canape') drawCanape();
   if (G.mini && G.mini.type === 'marble') drawMarble();
+  if (G.mini && G.mini.type === 'bill') drawBilling();
   if (G.mini && G.mini.type === 'summit') drawSummit();
   if (G.mini && G.mini.type === 'fox') drawFox();
   drawGameMarkers();
