@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Eleven mini games — and the Red Box asks for every one
+## Twelve mini games — and the Red Box asks for every one
 
 - **Post Watch** — the eleven o'clock delivery fires across the Entrance
   Hall: get under each item and POUNCE. Bills fly low and fast, parcels
@@ -74,6 +74,9 @@ the front door having no outside handle:
   dot, and only a landed pounce counts (unlocked by running the Under-Road)
 - **The Gull Affair** — eight seagulls strafe the garden-party sandwiches;
   read the telegraph, lead the target, close the airspace
+- **The Descent** — ride an unattended ministerial Red Box down the Grand
+  Staircase: steer, hop the civil service, collect kippers on the good line,
+  and try to reach the bottom without apologising to anyone
 - **The Heights** — pounce ledge to ledge up the tallest bookcase in
   government; wobbly shelves tip, the air does not hold cats, and the
   highest perch in the house has never held one. Officially.
@@ -90,7 +93,7 @@ statute. No further questions.)
   *condition of the day* (Night Shift, Swift Day, Rush Hour)
 - **The Morning Red Box & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
-- 35 honours on a proper honours board, a List of Mischief, hidden secrets,
+- 37 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won

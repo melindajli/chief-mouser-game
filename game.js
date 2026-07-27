@@ -1317,6 +1317,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
     { x: 24, y: 26, emoji: '🎖️', type: 'honours' },
     { x: 28, y: 6, emoji: '🤝', type: 'gardendeal' },   // the gardener knows where they dig
     { x: 6, y: 10, emoji: '🖼️', type: 'commission' },   // vanity, in oils, on the Grand Staircase
+    { x: 5, y: 12, emoji: '📦', type: 'sled' },         // a Red Box, unattended, at the top of the flight
   );
   m.secrets = [
     { x: 11, y: 33, f: 'Larry fact: recruited from Battersea Dogs & Cats Home in 2011 — the only member of government hired strictly on merit.' },
@@ -1623,6 +1624,16 @@ MAPS.heights = makeMap('heights', 11, 26, (m, set, rect) => {
   m.mouseCap = () => 0; // nothing up here but gravity and glory
 });
 
+// --- The Grand Staircase, as experienced from a ministerial Red Box ---
+MAPS.stairs = makeMap('stairs', 13, 72, (m, set, rect) => {
+  rect(1, 1, 11, 70, 'y');   // the golden runner, all the way down
+  // the flight is chandeliered end to end: at these speeds you must be able to READ it
+  m.glows = [];
+  for (let y = 4; y < 70; y += 8) m.glows.push([6, y, 78]);
+  m.regions = [[1, 1, 11, 70, 'The Grand Staircase']];
+  m.mouseCap = () => 0;      // nothing on these stairs but you and momentum
+});
+
 // --- The dream void: MI-Paw's training construct (a nap, weaponized) ---
 MAPS.dreamvoid = makeMap('dreamvoid', 15, 11, (m, set, rect) => {
   rect(1, 1, 13, 9, 'z');
@@ -1719,6 +1730,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
+  { id: 'sledder', name: 'The Descent', hint: 'Ride the Red Box down the Grand Staircase without touching a soul.' },
   { id: 'presspass', name: 'Patron of the Press', hint: PARTNER.live ? 'Redeem a code from the photographer\'s shop.' : '[AWAITING ACCREDITATION]' },
   { id: 'perch', name: 'The Highest Authority', hint: 'Reach the perch atop the tallest bookcase in government.' },
   { id: 'redacted', name: '[REDACTED]', hint: '[REDACTED]' },
@@ -1847,7 +1859,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -1948,7 +1960,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '📦' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -2305,6 +2317,155 @@ function drawClimb() {
   ctx.font = '8px monospace'; ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
   ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.t.toFixed(1) + 's', L.x, L.y - 23);
+}
+
+/* ---------- THE DESCENT: a ministerial Red Box, and gravity ----------
+   Every Chief Mouser eventually works out what the Grand Staircase is FOR.
+   The Box steers; the staircase does the rest. Steering is all you have —
+   the descent is not up for negotiation — but a pounce will clear a clerk.
+   Somewhere above, thirty Prime Ministers watch from the wall. */
+const SLED_LANES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+const SLED_HAZARDS = ['clerk', 'stand', 'boxes'];
+function buildSledTrack() {
+  const hz = [], pk = [];
+  // every row leaves a three-lane line through it: the staircase is survivable,
+  // but only if you are already reading two rows ahead
+  for (let y = 9; y <= 64; y += 3) {
+    const gap = 3 + ((Math.random() * 7) | 0);
+    for (const x of SLED_LANES) {
+      if (Math.abs(x - gap) <= 1) continue;
+      if (Math.random() < 0.6) hz.push({ x, y, kind: pick(SLED_HAZARDS), hit: false, t: Math.random() * 9 });
+    }
+    if (Math.random() < 0.55) pk.push({ x: gap, y: y - 1, got: false });
+  }
+  return { hz, pk };
+}
+function startSled() {
+  const tr = buildSledTrack();
+  switchMap('stairs', 6.5 * TILE, 2.5 * TILE);
+  G.mini = { type: 'sled', t: 0, spd: 98, hz: tr.hz, pk: tr.pk, kippers: 0, bumps: 0, hops: 0, spin: 0 };
+  toast('📦 Steer. POUNCE to hop. Mind the staff.', 'now');
+  tone(300, 500, 0.2, 'triangle', 0.06);
+}
+function sledBump(h) {
+  const M = G.mini, L = G.larry;
+  M.bumps++;
+  M.spd = Math.max(86, M.spd * 0.55);
+  M.spin = 0.75;
+  addFloat(L.x, L.y - 16, h.kind === 'clerk' ? 'SORRY!' : h.kind === 'boxes' ? 'PAPERWORK!' : 'OOF', '#ff8080');
+  addParticle(L.x, L.y, '#cfc8b8', 8, 40);
+  tone(260, 150, 0.16, 'square', 0.06);
+}
+function updateSled(dt) {
+  if (G.sledCD > 0) G.sledCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'sled') return;
+  const L = G.larry;
+  M.t += dt;
+  M.spd = Math.min(234, M.spd + 13 * dt);      // it only ever gets worse
+  if (M.spin > 0) { M.spin -= dt; L.cvx *= 0.86; }
+  L.cvy = 0;                                    // you do not choose the pace of a staircase
+  const ny = L.y + (M.spin > 0 ? M.spd * 0.45 : M.spd) * dt;
+  if (circleFree(L.x, ny, 5)) L.y = ny;
+  L.x = clamp(L.x, 1.7 * TILE, 11.3 * TILE);
+  const hopping = L.pounceT > 0;
+  for (const h of M.hz) {
+    if (h.hit) continue;
+    const hx = (h.x + 0.5) * TILE, hy = (h.y + 0.5) * TILE;
+    if (Math.abs(hy - L.y) > 10 || Math.abs(hx - L.x) > 11) continue;
+    h.hit = true;
+    if (hopping) {                              // clean over the top of the civil service
+      M.hops++;
+      addFloat(hx, hy - 14, 'OVER!', '#9fe8a0');
+      tone(700, 1050, 0.07, 'triangle', 0.05);
+    } else sledBump(h);
+  }
+  for (const q of M.pk) {
+    if (q.got) continue;
+    const qx = (q.x + 0.5) * TILE, qy = (q.y + 0.5) * TILE;
+    if (dist(qx, qy, L.x, L.y) < 13) {
+      q.got = true; M.kippers++;
+      addFloat(qx, qy - 10, '🐟', '#ffe8b8');
+      addParticle(qx, qy, '#ffd98a', 5, 26);
+      tone(900, 1300, 0.07, 'triangle', 0.06);
+    }
+  }
+  if (L.y > 68 * TILE) finishSled();
+}
+function finishSled() {
+  const M = G.mini;
+  G.mini = null;
+  G.sledCD = 110 + Math.random() * 50;
+  const t = M.t, clean = M.bumps === 0;
+  const isBest = !G.sledBest || t < G.sledBest;
+  if (isBest) G.sledBest = t;
+  const fish = (clean ? 5 : M.bumps <= 2 ? 4 : M.bumps <= 4 ? 3 : 2) + M.kippers;
+  G.fish += fish; G.xp += 12 + M.kippers * 2;
+  if (clean) earnHonour('sledder');
+  briefEvent('sled');
+  toast(clean ? '📦 THE FULL FLIGHT, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Not one civil servant harmed. +' + fish + ' 🐟'
+    : M.bumps <= 2 ? '📦 Down in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Two apologies issued in transit. +' + fish + ' 🐟'
+      : '📦 Down in ' + t.toFixed(1) + 's, via most of the staff. The Box is fine. It is always the Box that is fine. +' + fish + ' 🐟');
+  [523, 659, 784, clean ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  startFade(() => switchMap('ground', 5.5 * TILE, 15.5 * TILE)); // delivered to the foot of the stairs
+  updateHUD();
+}
+function drawSled() {
+  const M = G.mini, L = G.larry;
+  // the banisters, blurring past
+  for (const bx of [1.35 * TILE, 11.65 * TILE]) {
+    ctx.fillStyle = '#6b4a2a'; ctx.fillRect(bx - 2, 0, 4, 72 * TILE);
+    ctx.fillStyle = '#8a6236';
+    for (let y = 0; y < 72 * TILE; y += 14) ctx.fillRect(bx - 1, y, 2, 8);
+  }
+  for (const h of M.hz) {
+    if (h.hit) continue;
+    const x = (h.x + 0.5) * TILE, y = (h.y + 0.5) * TILE;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(x, y + 6, 6, 2, 0, 0, 7); ctx.fill();
+    if (h.kind === 'clerk') {                    // a civil servant, mid-errand, unaware
+      ctx.drawImage(P_WORKER, x - 8, y - 16);
+    } else if (h.kind === 'boxes') {             // a stack of red boxes, awaiting signature
+      ctx.fillStyle = '#8e1f2b'; ctx.fillRect(x - 6, y - 4, 12, 8);
+      ctx.fillStyle = '#b32a38'; ctx.fillRect(x - 6, y - 9, 12, 6);
+      ctx.fillStyle = '#e8c86a'; ctx.fillRect(x - 2, y - 7, 4, 1); ctx.fillRect(x - 2, y - 1, 4, 1);
+    } else {                                     // an umbrella stand, immovable by tradition
+      ctx.fillStyle = '#3f4652'; ctx.fillRect(x - 4, y - 6, 8, 11);
+      ctx.fillStyle = '#2a2f38'; ctx.fillRect(x - 4, y - 6, 8, 2);
+      ctx.fillStyle = '#7a4a3a'; ctx.fillRect(x - 2, y - 13, 2, 8); ctx.fillRect(x + 1, y - 12, 2, 7);
+    }
+    ctx.restore();
+  }
+  for (const q of M.pk) {
+    if (q.got) continue;
+    const x = (q.x + 0.5) * TILE, y = (q.y + 0.5) * TILE;
+    ctx.font = '10px serif'; ctx.textAlign = 'center';
+    ctx.fillText('🐟', x, y + 3 + Math.sin(M.t * 4 + q.x) * 1.5);
+  }
+  // the Box itself, under the Chief Mouser, going far too fast
+  ctx.save();
+  ctx.translate(L.x, L.y + 5);
+  ctx.rotate(M.spin > 0 ? Math.sin(M.t * 26) * 0.5 : clamp(L.cvx * 0.002, -0.22, 0.22));
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(0, 4, 9, 2.5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#8e1f2b'; ctx.fillRect(-9, -3, 18, 7);
+  ctx.fillStyle = '#b32a38'; ctx.fillRect(-9, -3, 18, 2);
+  ctx.fillStyle = '#e8c86a'; ctx.fillRect(-2, -1, 4, 2);          // the crest, at speed
+  ctx.restore();
+  if (M.spd > 150) {                                              // speed lines up the runner
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const sx = L.x + ((i * 37 + ((M.t * 260) | 0)) % 74) - 37;
+      ctx.beginPath(); ctx.moveTo(sx, L.y - 34); ctx.lineTo(sx, L.y - 20); ctx.stroke();
+    }
+  }
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 30, L.y - 34, 60, 12);
+  ctx.fillStyle = M.bumps ? '#ffd98a' : '#9fe8a0';
+  ctx.fillText(M.t.toFixed(1) + 's  🐟' + M.kippers + (M.bumps ? '  ✕' + M.bumps : ''), L.x, L.y - 25);
 }
 
 /* ---------- THE UNDER-ROAD: six lanes of rat patrol, one stolen larder ----------
@@ -2757,7 +2918,6 @@ function drawMoles() {
   for (const h of M.choir) {
     const [x, y] = molesHolePos(h);
     const lit = M.lit === h;
-    const next = answering && h === M.seq[M.step];
     ctx.save();
     ctx.fillStyle = lit ? 'rgba(255,217,138,0.85)' : answering ? 'rgba(201,191,170,0.35)' : 'rgba(120,112,100,0.35)';
     ctx.beginPath(); ctx.arc(x, y, lit ? 10 : 6.5, 0, 7); ctx.fill();
@@ -2771,7 +2931,6 @@ function drawMoles() {
       ctx.fillStyle = '#ffe8b8'; ctx.font = '9px serif'; ctx.textAlign = 'center';
       ctx.fillText('♪', x + 9, y - 6);
     }
-    void next;
     ctx.restore();
   }
   const L = G.larry;
@@ -3106,6 +3265,8 @@ const CAMPAIGN = [
     why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
   { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
     why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
+  { text: 'Ride the Box down the stairs', kind: 'sled', n: 1, where: 'the top of the Grand Staircase',
+    why: 'The despatch boxes are being carried down by hand and the mice are picking them off on the turn. Ride one down yourself — the whole flight, at speed — and see what the run looks like from inside it.' },
   { text: 'Take the high ground (the bookcase)', kind: 'climb', n: 1, where: 'the Study bookcase',
     why: 'You cannot hold a house you cannot see. Get to the highest perch in government — up the Study bookcase, ledge by ledge — and take the measure of the whole floor from above. The wobbly shelves are not your friends.' },
   { text: 'Complete a Red Dot Protocol (8 catches)', kind: 'dot', n: 8, where: 'the Study terminal',
@@ -3148,12 +3309,13 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb' };
+const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
   race: () => { G.raceCD = 0; },
   climb: () => { G.climbCD = 0; },
+  sled: () => { G.sledCD = 0; },
   scrap: () => { G.supperCD = 0; },
   post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
@@ -3469,7 +3631,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false, gullsReady: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -3542,7 +3704,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -4003,6 +4165,15 @@ function interactPoi(p) {
     showChoice('THE TERRACE', 'The Gull Affair',
       'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
       '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
+    return;
+  }
+  if (p.type === 'sled') {
+    if (G.mini) return;
+    if (G.daily) { toast('📦 No joyriding on sortie day. The Box stays put.'); sClick(); return; }
+    if (G.sledCD > 0) { toast('📦 The Box has been reclaimed by a private secretary. There will be others.'); sClick(); return; }
+    showChoice('THE GRAND STAIRCASE', 'An Unattended Red Box',
+      'Someone has left a despatch box at the top of the flight. Below: seventy steps, a golden runner, and the entire staff of No. 10 going about their business.\n\nSteer with the Box. Pounce to hop. There is no brake.',
+      '📦 Get on the Box', '🚶 Behave, for once', which => { if (which === 'a') startSled(); });
     return;
   }
   if (p.type === 'climb') {
@@ -6459,6 +6630,7 @@ function update(dt) {
   updateProtocol(dt);
   updateGulls(dt);
   updateClimb(dt);
+  updateSled(dt);
   updateSummit(dt);
   maybeFox();
   updateFox(dt);
@@ -6740,6 +6912,7 @@ function draw() {
   if (G.mini && G.mini.type === 'dot') drawProtocol();
   if (G.mini && G.mini.type === 'gulls') drawGulls();
   if (G.mini && G.mini.type === 'climb') drawClimb();
+  if (G.mini && G.mini.type === 'sled') drawSled();
   if (G.mini && G.mini.type === 'summit') drawSummit();
   if (G.mini && G.mini.type === 'fox') drawFox();
   drawGameMarkers();
