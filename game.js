@@ -1627,6 +1627,14 @@ MAPS.heights = makeMap('heights', 11, 26, (m, set, rect) => {
   m.mouseCap = () => 0; // nothing up here but gravity and glory
 });
 
+// --- Trafalgar Square: four lions, one column, a great many pigeons ---
+MAPS.square = makeMap('square', 24, 16, (m, set, rect) => {
+  rect(1, 1, 22, 14, 'k');   // flagstones
+  m.glows = [[5, 3, 120], [18, 3, 120], [5, 12, 120], [18, 12, 120]];
+  m.regions = [[1, 1, 22, 14, 'Trafalgar Square']];
+  m.mouseCap = () => 0;      // the pigeons have seen off every mouse in W1
+});
+
 // --- Billingsgate, four in the morning, wet underfoot ---
 MAPS.market = makeMap('market', 21, 13, (m, set, rect) => {
   rect(1, 1, 19, 11, 'z');   // wet cobbles, before dawn
@@ -1686,6 +1694,7 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
     { x: 3, y: 6, emoji: '🚐', type: 'homecoming' },   // the Battersea van, on its rounds
     { x: 17, y: 6, emoji: '🚌', type: 'bus' },         // the 11, at the stop, engine running
     { x: 6, y: 12, emoji: '🐠', type: 'bill' },        // the fish van, going to market
+    { x: 14, y: 12, emoji: '🕊', type: 'traf' },       // the tour coach, hourly to the square
   ];
   m.holes = [[1, 12], [20, 12]];           // a couple of gutter mouseholes
   m.lamps = [[3.5, 3.5], [18.5, 3.5]];
@@ -1758,6 +1767,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
+  { id: 'square', name: 'The Square Is Clear', hint: 'Put up every last pigeon in Trafalgar Square.' },
   { id: 'porter', name: 'Freeman of Billingsgate', hint: 'Bank two dozen fish in one morning at the market.' },
   { id: 'conductor', name: 'No Fare, No Bother', hint: 'Ride the 11 the whole way without touching a thing.' },
   { id: 'polished', name: 'The Polished Floor', hint: 'Cross all three Marble Hall rooms in par.' },
@@ -1891,7 +1901,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1, bill: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1, bill: 1, traf: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -1992,7 +2002,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', bill: '🐠' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', bill: '🐠', traf: '🕊' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -3221,6 +3231,138 @@ function drawBilling() {
   }
 }
 
+/* ---------- TRAFALGAR SQUARE: the pigeon capital, cleared ----------
+   Not a stalk — the opposite. The square holds a hundred birds who have
+   never been meaningfully challenged, and panic is contagious: pounce into
+   a cluster and the fright spreads bird to bird, so the whole square can go
+   up from one well-placed leap. Chain it. The Admiral is watching. */
+const TRAF_SPREAD = 34, TRAF_CHAIN = 30;
+function startTrafalgar() {
+  switchMap('square', 11.5 * TILE, 12.5 * TILE);
+  const birds = [];
+  for (let i = 0; i < 60; i++) {
+    birds.push({
+      x: (2 + Math.random() * 19) * TILE, y: (2 + Math.random() * 11) * TILE,
+      up: false, t: 0, vx: 0, vy: 0, a: Math.random() * 9, peck: Math.random() * 9,
+    });
+  }
+  G.mini = { type: 'traf', t: 45, birds, up: 0, best: 0, chainT: 0, chain: 0, msg: null, pending: [] };
+  toast('🕊 Pounce a cluster. Panic spreads. Clear the square.', 'now');
+  tone(500, 800, 0.16, 'sine', 0.05);
+}
+function trafScare(b, M, chain) {
+  if (b.up) return;
+  b.up = true; b.t = 0;
+  const a = Math.random() * Math.PI * 2;
+  b.vx = Math.cos(a) * (70 + Math.random() * 50);
+  b.vy = Math.sin(a) * (70 + Math.random() * 50) - 30;
+  M.up++; M.chain = chain;
+  if (chain > M.best) M.best = chain;
+  addParticle(b.x, b.y, '#c9cfda', 4, 30);
+  tone(700 + Math.min(8, chain) * 70, 1200 + Math.min(8, chain) * 70, 0.05, 'sine', 0.045);
+  // panic is contagious: every bird close to this one goes too, a beat later
+  M.pending.push({ x: b.x, y: b.y, chain: chain + 1, t: 0.09 });
+}
+function updateTrafalgar(dt) {
+  if (G.trafCD > 0) G.trafCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'traf') return;
+  const L = G.larry;
+  M.t -= dt;
+  M.pending = M.pending || [];
+  if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
+  if (M.chainT > 0) { M.chainT -= dt; if (M.chainT <= 0) { if (M.chain >= 3) M.msg = { text: 'CHAIN ×' + M.chain, c: '#ffd98a', t: 0.9 }; M.chain = 0; } }
+  // your own pounce starts it
+  if (L.pounceT > 0) {
+    for (const b of M.birds) {
+      if (b.up) continue;
+      if (dist(b.x, b.y, L.x, L.y) < TRAF_SPREAD) { trafScare(b, M, 1); M.chainT = 1.1; }
+    }
+  }
+  // the fright travelling outward, bird to bird
+  for (let i = M.pending.length - 1; i >= 0; i--) {
+    const p = M.pending[i];
+    p.t -= dt;
+    if (p.t > 0) continue;
+    M.pending.splice(i, 1);
+    for (const b of M.birds) {
+      if (b.up) continue;
+      if (dist(b.x, b.y, p.x, p.y) < TRAF_CHAIN) { trafScare(b, M, p.chain); M.chainT = 1.1; }
+    }
+  }
+  for (const b of M.birds) {
+    b.a += dt;
+    if (b.up) {
+      b.t += dt;
+      b.x += b.vx * dt; b.y += b.vy * dt; b.vy -= 26 * dt;   // away, and up
+    } else {
+      b.peck += dt;
+      if (Math.random() < dt * 0.35) { b.x += (Math.random() - 0.5) * 5; b.y += (Math.random() - 0.5) * 5; }
+    }
+  }
+  if (M.up >= M.birds.length || M.t <= 0) finishTrafalgar();
+}
+function finishTrafalgar() {
+  const M = G.mini;
+  G.mini = null;
+  G.trafCD = 110 + Math.random() * 50;
+  const u = M.up, all = u >= M.birds.length;
+  const fish = all ? 6 : u >= 45 ? 5 : u >= 30 ? 4 : u >= 15 ? 3 : 2;
+  G.fish += fish; G.xp += Math.round(u / 2);
+  if (all) earnHonour('square');
+  briefEvent('traf');
+  toast(all ? '🕊 THE SQUARE IS EMPTY. Every bird in it, and the best chain was ×' + M.best + '. Nelson saw everything. +' + fish + ' 🐟'
+    : u >= 30 ? '🕊 ' + u + '/' + M.birds.length + ' put up, best chain ×' + M.best + '. The square has been advised. +' + fish + ' 🐟'
+      : '🕊 ' + u + '/' + M.birds.length + '. They have seen worse than you, and recently. +' + fish + ' 🐟');
+  [523, 659, 784, all ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  startFade(() => switchMap('street', 10.5 * TILE, 6.5 * TILE));
+  updateHUD();
+}
+function drawTrafalgar() {
+  const M = G.mini, L = G.larry;
+  // the column, and the man on it, declining to comment
+  const cx = 11.5 * TILE, cy = 4.5 * TILE;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath(); ctx.ellipse(cx, cy + 26, 22, 5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#6d6a62'; ctx.fillRect(cx - 16, cy + 14, 32, 12);
+  ctx.fillStyle = '#7d7a72'; ctx.fillRect(cx - 7, cy - 34, 14, 50);
+  ctx.fillStyle = '#8d8a82'; ctx.fillRect(cx - 10, cy - 40, 20, 7);
+  ctx.fillStyle = '#5a5852'; ctx.fillRect(cx - 3, cy - 52, 6, 12);
+  ctx.fillStyle = '#4a4842';
+  ctx.beginPath(); ctx.arc(cx, cy - 54, 3.4, 0, 7); ctx.fill();
+  for (const b of M.birds) {
+    if (b.up && b.t > 2.4) continue;
+    ctx.save();
+    if (b.up) { ctx.globalAlpha = Math.max(0, 1 - (b.t - 1.4) / 1); ctx.translate(b.x, b.y + Math.sin(b.a * 22) * 2); }
+    else {
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath(); ctx.ellipse(b.x, b.y + 4, 4, 1.4, 0, 0, 7); ctx.fill();
+      ctx.translate(b.x, b.y + Math.abs(Math.sin(b.peck * 3)) * 1.6);
+    }
+    ctx.drawImage(PIGEON_SPRITE, -6, -5);
+    ctx.restore();
+  }
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.72)'; ctx.fillRect(L.x - 42, L.y + 12, 84, 11);
+  ctx.fillStyle = M.up >= M.birds.length ? '#9fe8a0' : '#ffe8b8';
+  ctx.fillText('up ' + M.up + '/' + M.birds.length + ' · best ×' + M.best + ' · ' + Math.ceil(M.t) + 's', L.x, L.y + 21);
+  if (M.chain >= 2 && M.chainT > 0) {
+    ctx.font = '10px monospace';
+    ctx.fillStyle = '#ffd98a';
+    ctx.fillText('×' + M.chain, L.x, L.y - 26);
+  }
+  if (M.msg) {
+    ctx.font = '11px monospace';
+    ctx.globalAlpha = Math.min(1, M.msg.t * 3);
+    const w = ctx.measureText(M.msg.text).width + 10;
+    ctx.fillStyle = 'rgba(12,10,20,0.8)'; ctx.fillRect(L.x - w / 2, L.y - 46, w, 14);
+    ctx.fillStyle = M.msg.c; ctx.fillText(M.msg.text, L.x, L.y - 36);
+    ctx.globalAlpha = 1;
+  }
+}
+
 /* ---------- THE UNDER-ROAD: six lanes of rat patrol, one stolen larder ----------
    Act Two of the war. A pocket map below the Cellar — cross the patrol lanes,
    grab the cheese, and get the time on the board. Seized five times and the
@@ -4018,6 +4160,8 @@ const CAMPAIGN = [
     why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
   { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
     why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
+  { text: 'Clear Trafalgar Square', kind: 'traf', n: 1, where: 'the Street, the tour coach',
+    why: 'The pond pigeons take their orders from Trafalgar Square, where a great many birds have never once been challenged. Go and challenge them. Panic spreads on its own — you need only start it in the right place.' },
   { text: 'Work the dawn at Billingsgate', kind: 'bill', n: 1, where: 'the Street, the fish van',
     why: 'The kitchen is short and the market opens at four. Ride out with the fish van, catch what the porter throws, and bank it in the basket. Carry too much and you will learn what every porter knows about greed.' },
   { text: 'Ride the 11 to the end of the route', kind: 'bus', n: 1, where: 'the Street, at the stop',
@@ -4070,7 +4214,7 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', bill: 'bill' };
+const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', bill: 'bill', traf: 'traf' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
@@ -4081,6 +4225,7 @@ const BRIEF_ARM = {
   marble: () => { G.marbleCD = 0; },
   bus: () => { G.busCD = 0; },
   bill: () => { G.billCD = 0; },
+  traf: () => { G.trafCD = 0; },
   scrap: () => { G.supperCD = 0; },
   post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
@@ -4396,7 +4541,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, billCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, billCD: 0, trafCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false, gullsReady: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -4469,7 +4614,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus' || G.mapId === 'market');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus' || G.mapId === 'market' || G.mapId === 'square');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -4930,6 +5075,15 @@ function interactPoi(p) {
     showChoice('THE TERRACE', 'The Gull Affair',
       'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
       '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
+    return;
+  }
+  if (p.type === 'traf') {
+    if (G.mini) return;
+    if (G.daily) { toast('🕊 Not on sortie day. The pigeons will keep.'); sClick(); return; }
+    if (G.trafCD > 0) { toast('🕊 The square has settled again. Give them an hour to forget.'); sClick(); return; }
+    showChoice('THE TOUR COACH', 'Trafalgar Square',
+      'A coach leaves for the square hourly and nobody counts the cats.\n\nSixty birds who have never been meaningfully challenged. Panic is contagious — pounce into a cluster and the fright spreads bird to bird.\n\nOne good leap can empty the whole square.',
+      '🕊 Get on the coach', '🚶 Let them have it', which => { if (which === 'a') startTrafalgar(); });
     return;
   }
   if (p.type === 'bill') {
@@ -7441,6 +7595,7 @@ function update(dt) {
   updateMarble(dt);
   updateBus(dt);
   updateBilling(dt);
+  updateTrafalgar(dt);
   updateSummit(dt);
   maybeFox();
   updateFox(dt);
@@ -7737,6 +7892,7 @@ function draw() {
   if (G.mini && G.mini.type === 'canape') drawCanape();
   if (G.mini && G.mini.type === 'marble') drawMarble();
   if (G.mini && G.mini.type === 'bill') drawBilling();
+  if (G.mini && G.mini.type === 'traf') drawTrafalgar();
   if (G.mini && G.mini.type === 'summit') drawSummit();
   if (G.mini && G.mini.type === 'fox') drawFox();
   drawGameMarkers();
