@@ -1314,7 +1314,8 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
     { x: 19, y: 32, emoji: '🎤', type: 'text', texts: TXT_LECTERN },
     { x: 24, y: 32, emoji: '☂️', type: 'text', texts: TXT_UMBRELLA },
     { x: 21, y: 33, emoji: '📮', type: 'post', texts: TXT_LETTERBOX },
-    { x: 20, y: 27, emoji: '💨', type: 'race' },   // the zoomies, when they take you
+    { x: 20, y: 27, emoji: '💨', type: 'race' },
+    { x: 26, y: 29, emoji: '✨', type: 'marble' },      // the hall, freshly polished   // the zoomies, when they take you
     { x: 24, y: 26, emoji: '🎖️', type: 'honours' },
     { x: 28, y: 6, emoji: '🤝', type: 'gardendeal' },   // the gardener knows where they dig
     { x: 6, y: 10, emoji: '🖼️', type: 'commission' },   // vanity, in oils, on the Grand Staircase
@@ -1626,6 +1627,14 @@ MAPS.heights = makeMap('heights', 11, 26, (m, set, rect) => {
   m.mouseCap = () => 0; // nothing up here but gravity and glory
 });
 
+// --- The Marble Hall: freshly polished, and therefore a problem ---
+MAPS.marble = makeMap('marble', 13, 11, (m, set, rect) => {
+  rect(1, 1, 11, 9, 'c');
+  m.glows = [[3, 3, 110], [9, 3, 110], [3, 7, 110], [9, 7, 110]];
+  m.regions = [[1, 1, 11, 9, 'The Marble Hall']];
+  m.mouseCap = () => 0;      // nothing here but you and the laws of motion
+});
+
 // --- The Grand Staircase, as experienced from a ministerial Red Box ---
 MAPS.stairs = makeMap('stairs', 13, 72, (m, set, rect) => {
   rect(1, 1, 11, 70, 'y');   // the golden runner, all the way down
@@ -1732,6 +1741,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
+  { id: 'polished', name: 'The Polished Floor', hint: 'Cross all three Marble Hall rooms in par.' },
   { id: 'quality', name: 'Quality Control', hint: 'A perfect Canapé Line: every cucumber stopped, every salmon spared.' },
   { id: 'sledder', name: 'The Descent', hint: 'Ride your cushion down the Grand Staircase without touching a soul.' },
   { id: 'presspass', name: 'Patron of the Press', hint: PARTNER.live ? 'Redeem a code from the photographer\'s shop.' : '[AWAITING ACCREDITATION]' },
@@ -1862,7 +1872,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -1963,7 +1973,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -2674,6 +2684,166 @@ function drawCanape() {
     ctx.fillStyle = M.msg.c; ctx.fillText(M.msg.text, L.x, L.y + 34);
     ctx.globalAlpha = 1;
   }
+}
+
+/* ---------- THE MARBLE HALL: no brakes, no traction, no dignity ----------
+   The hall has just been polished. A cat who commits to a direction is going
+   that way until something stops them — which every cat knows, and does
+   anyway. Nudge a direction; you slide until you hit something. Stop on the
+   rug. The only thing in the building you are meant to think about first. */
+const MARBLE_W = 11, MARBLE_H = 9;
+function marbleBlocked(R, x, y) { return R.blocks.some(b => b[0] === x && b[1] === y); }
+function marbleSlide(x, y, dx, dy, R) {
+  let cx = x, cy = y;
+  for (;;) {
+    const nx = cx + dx, ny = cy + dy;
+    if (nx < 1 || ny < 1 || nx > MARBLE_W || ny > MARBLE_H) break;
+    if (marbleBlocked(R, nx, ny)) break;
+    cx = nx; cy = ny;
+    if (cx === R.goal[0] && cy === R.goal[1]) break;   // the rug has traction
+  }
+  return [cx, cy];
+}
+// how few slides can solve it — also proves it CAN be solved before we hand it over
+function marbleSolve(R) {
+  const k = (x, y) => x + ',' + y;
+  const q = [[R.start[0], R.start[1], 0]], seen = new Set([k(R.start[0], R.start[1])]);
+  while (q.length) {
+    const [x, y, d] = q.shift();
+    if (x === R.goal[0] && y === R.goal[1]) return d;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const [nx, ny] = marbleSlide(x, y, dx, dy, R);
+      if ((nx === x && ny === y) || seen.has(k(nx, ny))) continue;
+      seen.add(k(nx, ny)); q.push([nx, ny, d + 1]);
+    }
+  }
+  return -1;
+}
+function buildMarbleRoom(nb, minMoves) {
+  for (let a = 0; a < 400; a++) {
+    const blocks = [];
+    while (blocks.length < nb) {
+      const x = 1 + ((Math.random() * MARBLE_W) | 0), y = 1 + ((Math.random() * MARBLE_H) | 0);
+      if (!blocks.some(b => b[0] === x && b[1] === y)) blocks.push([x, y]);
+    }
+    const free = [];
+    for (let x = 1; x <= MARBLE_W; x++) for (let y = 1; y <= MARBLE_H; y++) if (!blocks.some(b => b[0] === x && b[1] === y)) free.push([x, y]);
+    const start = pick(free), goal = pick(free);
+    if (start[0] === goal[0] && start[1] === goal[1]) continue;
+    const R = { blocks, start, goal, kinds: blocks.map(() => (Math.random() * 3) | 0) };
+    const d = marbleSolve(R);
+    if (d >= minMoves && d <= 7) { R.par = d; return R; }
+  }
+  return { blocks: [[6, 5]], start: [1, 1], goal: [MARBLE_W, MARBLE_H], kinds: [0], par: 2 };
+}
+function marbleLoadRoom(n) {
+  const M = G.mini;
+  M.room = buildMarbleRoom(4 + n * 2, 2 + n);
+  M.cx = M.room.start[0]; M.cy = M.room.start[1];
+  G.larry.x = (M.cx + 0.5) * TILE; G.larry.y = (M.cy + 0.5) * TILE;
+  G.larry.cvx = 0; G.larry.cvy = 0;
+  M.anim = null;
+  toast('✨ Room ' + (n + 1) + ' of 3 — par ' + M.room.par + ' slides.', 'now');
+}
+function startMarble() {
+  switchMap('marble', 6.5 * TILE, 5.5 * TILE);
+  G.mini = { type: 'marble', t: 0, n: 0, moves: 0, total: 0, par: 0, room: null, anim: null, cx: 0, cy: 0 };
+  marbleLoadRoom(0);
+  tone(880, 1180, 0.16, 'sine', 0.05);
+}
+function updateMarble(dt) {
+  if (G.marbleCD > 0) G.marbleCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'marble') return;
+  const L = G.larry;
+  M.t += dt;
+  L.cvx = 0; L.cvy = 0;   // there is no steering once you are moving. That is the game.
+  if (M.anim) {
+    const tx = (M.anim.tx + 0.5) * TILE, ty = (M.anim.ty + 0.5) * TILE;
+    const d = Math.hypot(tx - L.x, ty - L.y), step = 210 * dt;
+    if (Math.random() < dt * 14) addParticle(L.x, L.y + 5, '#e8e4dc', 1, 10);
+    if (d <= step) {
+      L.x = tx; L.y = ty; M.anim = null;
+      tone(300, 200, 0.06, 'square', 0.04);   // the bump into whatever stopped you
+      if (M.cx === M.room.goal[0] && M.cy === M.room.goal[1]) {
+        M.total += M.moves; M.par += M.room.par;
+        addParticle(L.x, L.y, '#ffd98a', 12, 44);
+        [659, 880, 1047].forEach((f, i) => tone(f, f, 0.09, 'triangle', 0.06, i * 0.07));
+        M.n++; M.moves = 0;
+        if (M.n >= 3) { finishMarble(); return; }
+        marbleLoadRoom(M.n);
+      }
+    } else { L.x += (tx - L.x) / d * step; L.y += (ty - L.y) / d * step; }
+    return;
+  }
+  // at rest: a nudge in any direction commits you to it entirely
+  // (joyVec is keys, gamepad, thumbstick and tap-to-walk in one)
+  const v = joyVec();
+  let dx = 0, dy = 0;
+  if (v && Math.hypot(v.x, v.y) > 0.4) {
+    if (Math.abs(v.x) >= Math.abs(v.y)) dx = Math.sign(v.x); else dy = Math.sign(v.y);
+  }
+  if (!dx && !dy) return;
+  const [nx, ny] = marbleSlide(M.cx, M.cy, dx, dy, M.room);
+  if (nx === M.cx && ny === M.cy) return;   // nothing that way but wall
+  M.cx = nx; M.cy = ny; M.moves++;
+  M.anim = { tx: nx, ty: ny };
+  tone(1300, 900, 0.05, 'sine', 0.035);
+}
+function finishMarble() {
+  const M = G.mini;
+  G.mini = null;
+  G.marbleCD = 110 + Math.random() * 50;
+  const over = M.total - M.par;
+  const fish = over <= 0 ? 5 : over <= 2 ? 4 : over <= 5 ? 3 : 2;
+  G.fish += fish; G.xp += 14;
+  if (over <= 0) earnHonour('polished');
+  briefEvent('marble');
+  toast(over <= 0 ? '✨ ALL THREE ROOMS, IN PAR (' + M.total + ' slides). The floor has been solved. +' + fish + ' 🐟 +14 XP'
+    : '✨ Across in ' + M.total + ' slides (par ' + M.par + '). The floor remains undefeated in places. +' + fish + ' 🐟 +14 XP');
+  [523, 659, 784, over <= 0 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  startFade(() => switchMap('ground', 26.5 * TILE, 29.5 * TILE));
+  updateHUD();
+}
+function drawMarble() {
+  const M = G.mini, R = M.room, L = G.larry;
+  // the rug, and what is waiting on it
+  const gx = (R.goal[0] + 0.5) * TILE, gy = (R.goal[1] + 0.5) * TILE;
+  ctx.fillStyle = '#7c2d3e'; ctx.fillRect(gx - 7, gy - 5, 14, 10);
+  ctx.fillStyle = '#9c3b50'; ctx.fillRect(gx - 6, gy - 4, 12, 8);
+  ctx.fillStyle = '#e8c86a'; ctx.fillRect(gx - 7, gy - 5, 14, 1); ctx.fillRect(gx - 7, gy + 4, 14, 1);
+  ctx.font = '9px serif'; ctx.textAlign = 'center';
+  ctx.fillText('🐟', gx, gy + 3 + Math.sin(M.t * 3) * 1.2);
+  R.blocks.forEach(([bx, by], i) => {
+    const x = (bx + 0.5) * TILE, y = (by + 0.5) * TILE, kind = R.kinds[i] || 0;
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.ellipse(x, y + 5, 6, 2, 0, 0, 7); ctx.fill();
+    if (kind === 0) {                                   // a potted palm, immovable by convention
+      ctx.fillStyle = '#5c4632'; ctx.fillRect(x - 4, y - 1, 8, 6);
+      ctx.fillStyle = '#3f7a4a';
+      ctx.beginPath(); ctx.ellipse(x, y - 5, 6, 4, 0, 0, 7); ctx.fill();
+    } else if (kind === 1) {                            // fire irons, in a stand
+      ctx.fillStyle = '#2a2f38'; ctx.fillRect(x - 3, y - 1, 6, 6);
+      ctx.fillStyle = '#7b8492';
+      ctx.fillRect(x - 2, y - 9, 1.4, 9); ctx.fillRect(x + 0.6, y - 11, 1.4, 11);
+    } else {                                            // a globe on a stand, of the world as it was
+      ctx.fillStyle = '#5c4632'; ctx.fillRect(x - 1, y - 1, 2, 6);
+      ctx.fillStyle = '#3f6fae';
+      ctx.beginPath(); ctx.arc(x, y - 5, 4.5, 0, 7); ctx.fill();
+      ctx.fillStyle = '#6a9a5a'; ctx.fillRect(x - 3, y - 6, 3, 2); ctx.fillRect(x + 1, y - 4, 2, 2);
+    }
+  });
+  // a fixed header — the room is a static board, so the readout should be too
+  ctx.font = '7px monospace'; ctx.textAlign = 'center';
+  const txt = 'ROOM ' + (M.n + 1) + '/3 · slides ' + M.moves + ' (par ' + R.par + ')';
+  const hx = 6 * TILE, hy = 0.62 * TILE;
+  const hw = ctx.measureText(txt).width + 10;
+  ctx.fillStyle = 'rgba(12,10,20,0.72)'; ctx.fillRect(hx - hw / 2, hy - 6, hw, 10);
+  ctx.fillStyle = M.moves > R.par ? '#ffd98a' : '#9fe8a0';
+  ctx.fillText(txt, hx, hy + 1);
+  void L;
 }
 
 /* ---------- THE UNDER-ROAD: six lanes of rat patrol, one stolen larder ----------
@@ -3473,6 +3643,8 @@ const CAMPAIGN = [
     why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
   { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
     why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
+  { text: 'Cross the Marble Hall (3 rooms)', kind: 'marble', n: 1, where: 'the Entrance Hall',
+    why: 'The hall has been polished to a standard nobody asked for and a cat cannot cross it in a straight line. Learn it anyway — three rooms, stopping on the rug each time. If the mice can run that floor and you cannot, we have a problem.' },
   { text: 'Vet the reception canapés (14)', kind: 'canape', n: 1, where: 'the Kitchen counter',
     why: 'There is a reception upstairs and the kitchen is plating it unsupervised. Station yourself at the counter. Salmon, prawn and cheese may pass; cucumber, onion and grapes may not. Nobody asked you to do this. Do it anyway.' },
   { text: 'Take the stairs at speed', kind: 'sled', n: 1, where: 'the top of the Grand Staircase',
@@ -3519,7 +3691,7 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape' };
+const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
@@ -3527,6 +3699,7 @@ const BRIEF_ARM = {
   climb: () => { G.climbCD = 0; },
   sled: () => { G.sledCD = 0; },
   canape: () => { G.canapeCD = 0; },
+  marble: () => { G.marbleCD = 0; },
   scrap: () => { G.supperCD = 0; },
   post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
@@ -3842,7 +4015,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false, gullsReady: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -3915,7 +4088,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -4376,6 +4549,15 @@ function interactPoi(p) {
     showChoice('THE TERRACE', 'The Gull Affair',
       'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
       '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
+    return;
+  }
+  if (p.type === 'marble') {
+    if (G.mini) return;
+    if (G.daily) { toast('✨ Not on sortie day. The floor will still be slippery tomorrow.'); sClick(); return; }
+    if (G.marbleCD > 0) { toast('✨ Somebody has put the mats down. Give it an hour.'); sClick(); return; }
+    showChoice('THE ENTRANCE HALL', 'Freshly Polished',
+      'They have done the floor again. A cat who commits to a direction on this surface is going that way until something stops them.\n\nThree rooms. Nudge a direction, slide until you hit something, and stop on the rug.\n\nThink first. Genuinely.',
+      '✨ Take the floor on', '🚶 Walk around the edge', which => { if (which === 'a') startMarble(); });
     return;
   }
   if (p.type === 'canape') {
@@ -6857,6 +7039,7 @@ function update(dt) {
   updateClimb(dt);
   updateSled(dt);
   updateCanape(dt);
+  updateMarble(dt);
   updateSummit(dt);
   maybeFox();
   updateFox(dt);
@@ -7150,6 +7333,7 @@ function draw() {
   if (G.mini && G.mini.type === 'gulls') drawGulls();
   if (G.mini && G.mini.type === 'climb') drawClimb();
   if (G.mini && G.mini.type === 'canape') drawCanape();
+  if (G.mini && G.mini.type === 'marble') drawMarble();
   if (G.mini && G.mini.type === 'summit') drawSummit();
   if (G.mini && G.mini.type === 'fox') drawFox();
   drawGameMarkers();
