@@ -64,7 +64,9 @@ the front door having no outside handle:
 - **The Fox Incident** — the real story: past midnight on the Street,
   something long, low, and amber. Advance while it paces; when it lunges,
   DO NOT MOVE. Hold three stands and it blinks first
-- **Whack-a-Mouse** — the basement holes are singing; answer every head
+- **The Cellar Chorus** — five mouseholes sing a phrase from the Rat
+  King's songbook; learn it, then answer it hole by hole, on foot. The
+  only thing in the building that asks you to remember
 - **The Under-Road** — Act Two of the war: a smuggling tunnel below the
   Cellar, six lanes of rat patrol, one stolen larder (unlocked by deposing
   the Rat King)

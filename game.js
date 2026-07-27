@@ -1714,7 +1714,7 @@ const HONOURS = [
   { id: 'gravy', name: 'Not One Pea Lost', hint: 'A perfect Kitchen Supper: catch every falling scrap.' },
   { id: 'zoomgold', name: 'The 3 A.M. Protocol', hint: 'Run the Zoomies course at full tilt. Gold pace.' },
   { id: 'agm', name: 'Item One, Resolved', hint: 'Reach the pigeons\' pond congress undetected.' },
-  { id: 'bonk', name: 'Bonk Diplomacy', hint: 'A perfect Whack-a-Mouse: every head answered.' },
+  { id: 'bonk', name: 'Perfect Pitch', hint: 'Answer the Cellar Chorus without one wrong note.' },
   { id: 'underroad', name: 'Keeper of the Under-Road', hint: 'Reclaim the larder from the tunnel in under 20 seconds.' },
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
@@ -2631,85 +2631,156 @@ function drawAGM() {
   ctx.fillText(watching ? '👀 FREEZE' : telling ? '! ' + d : '👣' + d, L.x, L.y - 23);
 }
 
-/* ---------- WHACK-A-MOUSE: the holes are singing tonight ----------
-   Heads pop from the basement's mouseholes to taunt the management. Watch
-   for the dust, be at the right hole, answer every head. Firmly. */
+/* ---------- THE CELLAR CHORUS: the holes sing, and you answer ----------
+   The Rat King's songbook, performed nightly by five mouseholes. They give
+   you the phrase; you give it back, hole by hole, on foot. Nothing else in
+   this building asks you to REMEMBER something — which is precisely why
+   they chose it. */
+const CHOIR_NOTES = [523, 587, 659, 784, 880]; // pentatonic: it cannot sound wrong
+const CHOIR_HOME = { x: 24.5 * 16, y: 14.5 * 16 }; // the Cellar: the choir stalls nearest it
 function startMoles() {
-  G.mini = { type: 'moles', t: 0, total: 12, done: 0, bonks: 0, hole: -1, phase: 'wait', phT: 1.0 };
-  toast('🎯 12 heads. Watch the dust, be at the hole, BONK.', 'now');
-  tone(500, 700, 0.12, 'triangle', 0.06);
+  const holes = curMap().holes;
+  const choir = holes.map((h, i) => i)
+    .sort((a, b) => {
+      const [ax, ay] = molesHolePos(a), [bx, by] = molesHolePos(b);
+      return dist(ax, ay, CHOIR_HOME.x, CHOIR_HOME.y) - dist(bx, by, CHOIR_HOME.x, CHOIR_HOME.y);
+    })
+    .slice(0, 5);
+  G.mini = {
+    type: 'moles', t: 0, choir, round: 0, rounds: 4, seq: [], step: 0,
+    strikes: 0, cleared: 0, done: 0, phase: 'sing', singT: 1.1, lit: -1, onHole: -1, roundT: 0,
+  };
+  molesNextRound();
+  toast('🎵 They sing a phrase. Answer it, hole by hole.', 'now');
 }
 function molesHolePos(i) {
   const [hx, hy] = curMap().holes[i];
   return [(hx + 0.5) * TILE, (hy + 0.5) * TILE];
+}
+function molesPitch(h) { return CHOIR_NOTES[Math.max(0, G.mini.choir.indexOf(h))]; }
+function molesNextRound() {
+  const M = G.mini;
+  M.round++;
+  M.seq = [];
+  for (let i = 0; i < M.round + 2; i++) M.seq.push(M.choir[(Math.random() * M.choir.length) | 0]);
+  molesSing(1.1);
+}
+function molesSing(pause) {
+  const M = G.mini;
+  M.phase = 'sing'; M.step = 0; M.lit = -1; M.singT = pause;
+}
+function molesAnswer() {
+  const M = G.mini;
+  M.phase = 'answer'; M.step = 0; M.onHole = -1;
+  M.roundT = 11 + M.seq.length * 5;   // generous: forgetting should beat you, not the clock
+  addFloat(G.larry.x, G.larry.y - 20, 'YOUR TURN', '#ffe8b8');
+  tone(320, 520, 0.14, 'sine', 0.05);
+}
+function molesStrike(why) {
+  const M = G.mini;
+  M.strikes++;
+  addFloat(G.larry.x, G.larry.y - 20, why, '#ff8080');
+  tone(260, 150, 0.2, 'square', 0.06);
+  for (const h of M.choir) { const [x, y] = molesHolePos(h); addParticle(x, y, '#b9b2a2', 3, 14); } // the chorus jeers
+  if (M.strikes >= 3) { finishMoles(); return; }
+  molesSing(1.0);                      // the same phrase, once more, slowly, for the cat
+}
+function molesHoleUnder() {
+  const M = G.mini, L = G.larry;
+  for (const h of M.choir) {
+    const [x, y] = molesHolePos(h);
+    if (dist(L.x, L.y, x, y) < 22) return h;
+  }
+  return -1;
 }
 function updateMoles(dt) {
   if (G.molesCD > 0) G.molesCD -= dt;
   const M = G.mini;
   if (!M || M.type !== 'moles') return;
   M.t += dt;
-  M.phT -= dt;
-  if (M.phase === 'wait' && M.phT <= 0) {
-    M.hole = (Math.random() * curMap().holes.length) | 0;
-    M.phase = 'tell'; M.phT = 0.55;
-    const [x, y] = molesHolePos(M.hole);
-    addParticle(x, y, '#b3aa99', 4, 16); // the tell-tale dust
-    tone(1500, 1900, 0.05, 'sine', 0.04); // a muffled squeak of intent
-  } else if (M.phase === 'tell' && M.phT <= 0) {
-    M.phase = 'up'; M.phT = Math.max(0.55, 0.95 - M.done * 0.035); // windows shrink as they wise up
-  } else if (M.phase === 'up') {
-    const [x, y] = molesHolePos(M.hole);
-    if (dist(G.larry.x, G.larry.y, x, y) < 22) { // BONK
-      M.bonks++;
-      addFloat(x, y - 10, 'BONK! ' + M.bonks + '/' + M.total, '#ffe8b8');
-      addParticle(x, y, '#b4aea6', 6, 28);
-      tone(300, 180, 0.07, 'square', 0.07);
-      briefEvent('bonk');
-      M.done++; M.phase = 'wait'; M.phT = 0.5 + Math.random() * 0.9;
-    } else if (M.phT <= 0) {
-      const [mx, my] = molesHolePos(M.hole);
-      addFloat(mx, my - 8, 'nyeh!', '#b9b2a2'); // it got its taunt off
-      M.done++; M.phase = 'wait'; M.phT = 0.5 + Math.random() * 0.9;
-    }
-    if (M.done >= M.total) { finishMoles(); return; }
+  if (M.phase === 'sing') {            // the phrase is delivered, note by note
+    M.singT -= dt;
+    if (M.singT > 0) return;
+    if (M.lit >= 0) { M.lit = -1; M.singT = 0.14; return; }
+    if (M.step >= M.seq.length) { molesAnswer(); return; }
+    const h = M.seq[M.step++];
+    M.lit = h;
+    const [x, y] = molesHolePos(h);
+    addParticle(x, y, '#b3aa99', 4, 16);
+    const f = molesPitch(h);
+    tone(f, f, 0.26, 'triangle', 0.07);
+    M.singT = 0.42;
+    return;
+  }
+  M.roundT -= dt;
+  if (M.roundT <= 0) { molesStrike('TOO SLOW'); return; }
+  const h = molesHoleUnder();
+  if (h < 0) { M.onHole = -1; return; }
+  if (h === M.onHole) return;          // one answer per visit: step off to sing again
+  M.onHole = h;
+  if (h !== M.seq[M.step]) { molesStrike('WRONG HOLE'); return; }
+  M.step++; M.done++;
+  const [x, y] = molesHolePos(h);
+  const f = molesPitch(h);
+  addFloat(x, y - 10, M.step + '/' + M.seq.length, '#ffe8b8');
+  addParticle(x, y, '#ffe8b8', 5, 26);
+  tone(f, f * 1.5, 0.12, 'triangle', 0.08);
+  briefEvent('bonk');
+  if (M.step >= M.seq.length) {        // phrase answered in full
+    M.cleared++;
+    addFloat(x, y - 22, 'ANSWERED', '#9fe8a0');
+    [f, f * 1.25, f * 1.5].forEach((n, i) => tone(n, n, 0.1, 'triangle', 0.06, i * 0.07));
+    if (M.round >= M.rounds) { finishMoles(); return; }
+    molesNextRound();
   }
 }
 function finishMoles() {
   const M = G.mini;
   G.mini = null;
   G.molesCD = 100 + Math.random() * 60;
-  const b = M.bonks;
-  const fish = b >= 12 ? 5 : b >= 9 ? 4 : b >= 6 ? 3 : b >= 3 ? 2 : 1;
-  G.fish += fish; G.xp += b;
-  if (b >= 12) earnHonour('bonk');
-  toast(b >= 12 ? '🎯 TWELVE FOR TWELVE. The holes fall silent. Somewhere below, a king revises his opinion of the management. +' + fish + ' 🐟 +' + b + ' XP'
-    : b >= 8 ? '🎯 ' + b + '/12 answered. The singing has stopped. Mostly. +' + fish + ' 🐟 +' + b + ' XP'
-      : '🎯 ' + b + '/12. The holes consider this a win. The holes should enjoy it while it lasts. +' + fish + ' 🐟' + (b ? ' +' + b + ' XP' : ''));
-  [659, 784, b >= 9 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
+  const c = M.cleared;
+  const fish = c >= 4 ? 5 : c >= 3 ? 4 : c >= 2 ? 3 : c >= 1 ? 2 : 1;
+  G.fish += fish; G.xp += c * 5;
+  const perfect = c >= M.rounds && M.strikes === 0;
+  if (perfect) earnHonour('bonk');
+  toast(perfect ? '🎵 FOUR PHRASES, NOTE PERFECT. The songbook is closed. +' + fish + ' 🐟 +' + c * 5 + ' XP'
+    : c >= 3 ? '🎵 ' + c + '/4 phrases answered. They are running out of material. +' + fish + ' 🐟 +' + c * 5 + ' XP'
+      : c >= 1 ? '🎵 ' + c + '/4. A creditable ear. The chorus reconvenes. +' + fish + ' 🐟 +' + c * 5 + ' XP'
+        : '🎵 Not one phrase. They sing it again tomorrow, slower, for you. +' + fish + ' 🐟');
+  [659, 784, perfect ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   updateHUD();
 }
 function drawMoles() {
   const M = G.mini;
-  if (M.phase === 'tell' || M.phase === 'up') {
-    const [x, y] = molesHolePos(M.hole);
-    ctx.strokeStyle = M.phase === 'up' ? '#ffd98a' : 'rgba(255,217,138,0.4)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(x, y, 10 + (M.phase === 'tell' ? Math.sin(M.t * 12) * 2 : 0), 0, 7); ctx.stroke();
-    if (M.phase === 'up') { // the head, mid-taunt
+  const answering = M.phase === 'answer';
+  for (const h of M.choir) {
+    const [x, y] = molesHolePos(h);
+    const lit = M.lit === h;
+    const next = answering && h === M.seq[M.step];
+    ctx.save();
+    ctx.fillStyle = lit ? 'rgba(255,217,138,0.85)' : answering ? 'rgba(201,191,170,0.35)' : 'rgba(120,112,100,0.35)';
+    ctx.beginPath(); ctx.arc(x, y, lit ? 10 : 6.5, 0, 7); ctx.fill();
+    if (lit) {                          // a head, mid-note
       ctx.fillStyle = '#b4aea6';
       ctx.beginPath(); ctx.arc(x, y - 2, 3.5, 0, 7); ctx.fill();
       ctx.fillStyle = '#d78f92';
       ctx.beginPath(); ctx.arc(x - 3, y - 5, 1.5, 0, 7); ctx.fill();
       ctx.beginPath(); ctx.arc(x + 3, y - 5, 1.5, 0, 7); ctx.fill();
-      ctx.fillStyle = '#2a2522';
-      ctx.fillRect(x - 2, y - 3, 1, 1); ctx.fillRect(x + 1, y - 3, 1, 1);
+      ctx.fillStyle = '#2a2522'; ctx.fillRect(x - 2, y - 3, 1, 1); ctx.fillRect(x + 1, y - 3, 1, 1);
+      ctx.fillStyle = '#ffe8b8'; ctx.font = '9px serif'; ctx.textAlign = 'center';
+      ctx.fillText('♪', x + 9, y - 6);
     }
+    void next;
+    ctx.restore();
   }
   const L = G.larry;
   ctx.font = '8px monospace'; ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(12,10,20,0.65)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
-  ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.bonks + '/' + M.total, L.x, L.y - 23);
+  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 32, L.y - 36, 64, 23);
+  ctx.fillStyle = answering ? '#9fe8a0' : '#ffd98a';
+  ctx.fillText(answering ? M.seq.map((_, i) => i < M.step ? '●' : '○').join('') : 'listen…', L.x, L.y - 27);
+  ctx.fillStyle = '#e8c9a0';
+  ctx.fillText('phrase ' + M.round + '/' + M.rounds + (M.strikes ? '  ' + '✕'.repeat(M.strikes) : ''), L.x, L.y - 17);
 }
 
 /* ---------- KITCHEN SUPPERS: the PM cooks; gravity does the rest ----------
@@ -3027,7 +3098,7 @@ const CAMPAIGN = [
     why: 'The mice have been feasting on what the Prime Minister drops at supper — morale-critical crumbs, straight to the enemy. Up to the flat with you: sit under the little table and intercept four scraps before the floor does.' },
   { text: 'Disperse the Pigeon AGM', kind: 'agm', n: 1, where: 'the garden pond',
     why: 'MI-Paw believes the pond pigeons have been passing intelligence to the mice — minutes of their AGM were found behind the skirting board, annotated. Attend their next session at the garden pond. Uninvited. Undetected.' },
-  { text: 'Answer the singing holes (8 bonks)', kind: 'bonk', n: 8, where: 'the Cellar, downstairs',
+  { text: 'Answer the singing holes (8 notes)', kind: 'bonk', n: 8, where: 'the Cellar, downstairs',
     why: 'The basement holes have begun SINGING at night — coordinated taunting, straight from the Rat King\'s songbook. Take up the drum at the Cellar and answer eight heads personally. Morale is watching.' },
   { text: 'Run the Under-Road', kind: 'gauntlet', n: 1, where: 'the crack in the Cellar wall',
     why: 'The heirs move the stolen larder through their tunnel tonight. Go under — the crack in the Cellar wall — cross the patrol lanes, and take the cheese back where they sleep. Nothing says DEPOSED like a burglary.' },
@@ -4011,8 +4082,8 @@ function interactPoi(p) {
     if (G.daily) { toast('🎯 The holes are quiet during the sortie. Even taunting has hours.'); sClick(); return; }
     if (G.molesCD > 0) { toast('🎯 The holes are quiet. Regrouping, probably. Composing new taunts.'); sClick(); return; }
     showChoice('THE CELLAR', 'The Holes Are Singing',
-      'From every mousehole: rhythmic, TAUNTING squeaking.\n\nTwelve heads. Watch the dust, be at the hole, answer firmly.',
-      '🐾 Answer every single one', '🚶 Rise above it (for now)', which => { if (which === 'a') startMoles(); });
+      'Five mouseholes, one phrase, sung in turn.\n\nLearn it. Then answer it — hole by hole, in order, on foot.',
+      '🐾 Answer the chorus', '🚶 Rise above it (for now)', which => { if (which === 'a') startMoles(); });
     return;
   }
   if (p.type === 'supper') {
