@@ -48,11 +48,15 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Sixteen mini games — and the Red Box asks for every one
+## Seventeen mini games — and the Red Box asks for every one
 
 - **Post Watch** — the eleven o'clock delivery fires across the Entrance
   Hall: get under each item and POUNCE. Bills fly low and fast, parcels
   need a charged leap, and the junk mail is a trap
+- **The Doorstep Scrum** — the press pack fires at anything that moves and a
+  cat caught mid-blink is tomorrow's unflattering front page. Stay out of
+  their flashes; when the photographer who asks properly frames a shot, get
+  in it and hold still
 - **Hold the Pose** — photo-ops are a composure meter: tap when the tail
   settles in the gold, three frames, faster each shot
 - **Kitchen Suppers** — the PM cooks, scraps fall from the flat's supper
@@ -100,12 +104,9 @@ statute. No further questions.)
 
 - A serialized Red Box campaign (the mice organise, then besiege) with the
   biggest escalations delivered by a breathless aide, in person
-- **The Daily Sortie** — a seeded 120-second score attack, the same mice for
-  everyone in the world that day, with a shareable result — plus a seeded
-  *condition of the day* (Night Shift, Swift Day, Rush Hour)
 - **The Morning Red Box & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
-- 40 honours on a proper honours board, a List of Mischief, hidden secrets,
+- 41 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won

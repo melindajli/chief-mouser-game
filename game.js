@@ -1693,6 +1693,7 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
     { x: 3, y: 6, emoji: '🚐', type: 'homecoming' },   // the Battersea van, on its rounds
     { x: 17, y: 6, emoji: '🚌', type: 'bus' },         // the 11, at the stop, engine running
     { x: 14, y: 12, emoji: '🕊', type: 'traf' },       // the tour coach, hourly to the square
+    { x: 6, y: 7, emoji: '⚡', type: 'scrum' },        // the pack, at his pitch
   ];
   m.holes = [[1, 12], [20, 12]];           // a couple of gutter mouseholes
   m.lamps = [[3.5, 3.5], [18.5, 3.5]];
@@ -1774,6 +1775,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
+  { id: 'muse', name: 'The Photographer\'s Muse', hint: 'Give him six clean frames in one scrum, untouched by the pack.' },
   { id: 'square', name: 'The Square Is Clear', hint: 'Put up every last pigeon in Trafalgar Square.' },
   { id: 'conductor', name: 'No Fare, No Bother', hint: 'Ride the 11 the whole way without touching a thing.' },
   { id: 'polished', name: 'The Polished Floor', hint: 'Cross all three Marble Hall rooms in par.' },
@@ -1907,7 +1909,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1, scrum: 1 };
 const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
 function miniTap() {
   if (!G.mini) return;
@@ -2008,7 +2010,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', traf: '🕊' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', traf: '🕊', scrum: '⚡' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -3230,6 +3232,166 @@ function drawTrafalgar() {
   }
 }
 
+/* ---------- THE DOORSTEP SCRUM: everyone wants a photo ----------
+   The pack fires on anything that moves and a cat caught mid-blink is
+   tomorrow's unflattering front page. Stay out of their flashes. But ONE of
+   them has been on this pavement fifteen years and asks properly — when he
+   frames a shot, get in it and hold. Avoid everybody. Pose for him. */
+function startScrum() {
+  G.mini = {
+    type: 'scrum', t: 42, flashes: [], next: 1.0,
+    frame: null, frameNext: 2.2, good: 0, called: 0, caught: 0, msg: null,
+  };
+  toast('⚡ Dodge the pack. When he frames you — get in it and HOLD.', 'now');
+  tone(600, 900, 0.14, 'sine', 0.05);
+}
+function scrumSay(text, c) { const M = G.mini; if (M) M.msg = { text, c, t: 0.9 }; }
+function updateScrum(dt) {
+  if (G.scrumCD > 0) G.scrumCD -= dt;
+  const M = G.mini;
+  if (!M || M.type !== 'scrum') return;
+  const L = G.larry;
+  M.t -= dt;
+  if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
+  // the pack: a flash telegraphs where it will land, then lands there
+  M.next -= dt;
+  if (M.next <= 0) {
+    const near = Math.random() < 0.6;   // most of them are aiming AT you
+    M.flashes.push({
+      x: near ? clamp(L.x + (Math.random() - 0.5) * 46, 3 * TILE, 18 * TILE) : (3 + Math.random() * 15) * TILE,
+      y: near ? clamp(L.y + (Math.random() - 0.5) * 40, 5 * TILE, 9.4 * TILE) : (5 + Math.random() * 4.4) * TILE,
+      r: 20 + Math.random() * 10, tel: 0.72, fired: 0,
+    });
+    M.next = Math.max(0.42, 1.05 - (42 - M.t) * 0.011);
+    tone(1200, 1500, 0.03, 'sine', 0.025);
+  }
+  for (let i = M.flashes.length - 1; i >= 0; i--) {
+    const f = M.flashes[i];
+    if (f.tel > 0) {
+      f.tel -= dt;
+      if (f.tel <= 0) {                                  // it goes off
+        tone(1800, 600, 0.06, 'square', 0.05);
+        G.flash = Math.max(G.flash, 0.25);
+        if (dist(f.x, f.y, L.x, L.y) < f.r) {
+          M.caught++;
+          scrumSay(pick(['CAUGHT MID-BLINK', 'UNFLATTERING', 'THAT ONE WILL RUN']), '#ff8080');
+          addParticle(L.x, L.y, '#ffffff', 8, 40);
+          tone(260, 160, 0.14, 'square', 0.06);
+        }
+        f.fired = 0.22;
+      }
+    } else { f.fired -= dt; if (f.fired <= 0) M.flashes.splice(i, 1); }
+  }
+  // and the one who asks: a frame you have to stand in and hold
+  if (!M.frame) {
+    M.frameNext -= dt;
+    if (M.frameNext <= 0) {
+      M.called++;
+      M.frame = {
+        x: clamp((4 + Math.random() * 13) * TILE, 3 * TILE, 18 * TILE),
+        y: (5.4 + Math.random() * 3.6) * TILE,
+        r: 24, t: 3.2, held: 0,
+      };
+      scrumSay('“Larry — over here!”', '#ffe8b8');
+      tone(700, 950, 0.09, 'triangle', 0.055);
+    }
+  } else {
+    const fr = M.frame;
+    fr.t -= dt;
+    const inFrame = dist(fr.x, fr.y, L.x, L.y) < fr.r;
+    const still = Math.hypot(L.cvx, L.cvy) < 46;
+    if (inFrame && still) fr.held += dt; else fr.held = Math.max(0, fr.held - dt * 1.6);
+    if (fr.held >= 0.85) {                               // he has it
+      M.good++;
+      scrumSay(pick(['THAT is the shot.', 'Beautiful. Hold— got it.', 'Front page.']), '#9fe8a0');
+      addParticle(fr.x, fr.y, '#ffd98a', 10, 44);
+      pressFlashes(L.x, L.y);
+      [880, 1180].forEach((f2, k) => tone(f2, f2, 0.08, 'triangle', 0.06, k * 0.07));
+      M.frame = null; M.frameNext = 2.4 + Math.random() * 1.4;
+    } else if (fr.t <= 0) {
+      scrumSay('…he lowers the camera. Next time.', '#b9b2a2');
+      tone(320, 240, 0.1, 'sine', 0.04);
+      M.frame = null; M.frameNext = 2.4 + Math.random() * 1.4;
+    }
+  }
+  if (M.t <= 0) finishScrum();
+}
+function finishScrum() {
+  const M = G.mini;
+  G.mini = null;
+  G.scrumCD = 110 + Math.random() * 50;
+  const g = M.good;
+  const fish = g >= 6 ? 6 : g >= 4 ? 4 : g >= 2 ? 3 : 2;
+  G.fish += fish; G.xp += g * 3;
+  G.approval = clamp(G.approval + (g >= 4 ? 4 : 1) - Math.min(6, M.caught), 0, 100);
+  if (g >= 6 && M.caught === 0) earnHonour('muse');
+  briefEvent('scrum');
+  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save(); updateHUD();
+  // he says thank you, and — if he is a credited partner — shows you the results
+  const closer = g >= 6 ? 'Six clean frames. I have been doing this fifteen years and that is the best you have ever given me.'
+    : g >= 3 ? 'Got three or four I am pleased with. The rest of them got your tail leaving.'
+      : 'Mostly your back, that. Still sells, mind. Everything with you in it sells.';
+  const steps = [{ who: PHOTOG_NAME(), text: closer }];
+  if (PARTNER.live && PARTNER.kofi) {
+    steps.push({
+      who: PHOTOG_NAME(),
+      text: 'They go up on the shop tonight — calendars, mugs, the lot. Have a look if you like. Bring the cat.',
+      choice: [
+        ['📷 See the shop', () => window.open(PARTNER.kofi, '_blank', 'noopener')],
+        ['🐾 Back to work', () => { }],
+      ],
+    });
+  }
+  playScene(steps, () => {
+    toast('⚡ ' + g + '/' + M.called + ' frames given' + (M.caught ? ', ' + M.caught + ' caught by the pack' : ', untouched by the pack') + '. +' + fish + ' 🐟');
+  });
+}
+function drawScrum() {
+  const M = G.mini, L = G.larry;
+  for (const f of M.flashes) {
+    if (f.tel > 0) {                                     // where it is about to go off
+      const p = 1 - f.tel / 0.72;
+      ctx.strokeStyle = 'rgba(255,255,255,' + (0.18 + p * 0.5).toFixed(2) + ')';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.4 + p * 0.6), 0, 7); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.05 + p * 0.1).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 0.3, 0, 7); ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(255,255,255,' + (f.fired / 0.22 * 0.55).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 7); ctx.fill();
+    }
+  }
+  const fr = M.frame;
+  if (fr) {                                              // his viewfinder, waiting for you
+    const pulse = 0.5 + Math.sin(M.t * 8) * 0.2;
+    ctx.strokeStyle = 'rgba(232,200,106,' + pulse.toFixed(2) + ')';
+    ctx.lineWidth = 1.4;
+    const s = fr.r;
+    ctx.strokeRect(fr.x - s, fr.y - s * 0.7, s * 2, s * 1.4);
+    ctx.fillStyle = '#e8c86a';
+    for (const [cx, cy] of [[-s, -s * 0.7], [s, -s * 0.7], [-s, s * 0.7], [s, s * 0.7]]) {
+      ctx.fillRect(fr.x + cx - 2, fr.y + cy - 2, 4, 4);   // frame corners
+    }
+    if (fr.held > 0) {                                   // the hold meter
+      ctx.fillStyle = 'rgba(12,10,20,0.6)'; ctx.fillRect(fr.x - 16, fr.y - s * 0.7 - 8, 32, 4);
+      ctx.fillStyle = '#9fe8a0'; ctx.fillRect(fr.x - 16, fr.y - s * 0.7 - 8, 32 * Math.min(1, fr.held / 0.85), 4);
+    }
+  }
+  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(12,10,20,0.72)'; ctx.fillRect(L.x - 44, L.y + 12, 88, 11);
+  ctx.fillStyle = M.caught ? '#ffd98a' : '#9fe8a0';
+  ctx.fillText('📷 ' + M.good + '/' + M.called + '  ⚡' + M.caught + '  ' + Math.ceil(M.t) + 's', L.x, L.y + 21);
+  if (M.msg) {
+    ctx.font = '9px monospace';
+    ctx.globalAlpha = Math.min(1, M.msg.t * 3);
+    const w = ctx.measureText(M.msg.text).width + 8;
+    ctx.fillStyle = 'rgba(12,10,20,0.82)'; ctx.fillRect(L.x - w / 2, L.y - 40, w, 12);
+    ctx.fillStyle = M.msg.c; ctx.fillText(M.msg.text, L.x, L.y - 31);
+    ctx.globalAlpha = 1;
+  }
+}
+
 /* ---------- THE UNDER-ROAD: six lanes of rat patrol, one stolen larder ----------
    Act Two of the war. A pocket map below the Cellar — cross the patrol lanes,
    grab the cheese, and get the time on the board. Seized five times and the
@@ -4027,6 +4189,8 @@ const CAMPAIGN = [
     why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
   { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
     why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
+  { text: 'Face down the doorstep scrum', kind: 'scrum', n: 1, where: 'the Street, by the photographer',
+    why: 'The pack is three deep on the pavement and every one of them wants you mid-blink. Go out and give them nothing — except the one who has stood there fifteen years and asks properly. Give HIM the shot.' },
   { text: 'Clear Trafalgar Square', kind: 'traf', n: 1, where: 'the Street, the tour coach',
     why: 'The pond pigeons take their orders from Trafalgar Square, where a great many birds have never once been challenged. Go and challenge them. Panic spreads on its own — you need only start it in the right place.' },
   { text: 'Ride the 11 to the end of the route', kind: 'bus', n: 1, where: 'the Street, at the stop',
@@ -4079,7 +4243,7 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', traf: 'traf' };
+const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', traf: 'traf', scrum: 'scrum' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
@@ -4090,6 +4254,7 @@ const BRIEF_ARM = {
   marble: () => { G.marbleCD = 0; },
   bus: () => { G.busCD = 0; },
   traf: () => { G.trafCD = 0; },
+  scrum: () => { G.scrumCD = 0; },
   scrap: () => { G.supperCD = 0; },
   post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
@@ -4405,7 +4570,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, trafCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, trafCD: 0, scrumCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false, gullsReady: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -4939,6 +5104,15 @@ function interactPoi(p) {
     showChoice('THE TERRACE', 'The Gull Affair',
       'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
       '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
+    return;
+  }
+  if (p.type === 'scrum') {
+    if (G.mini) return;
+    if (G.daily) { toast('⚡ Not on sortie day.'); sClick(); return; }
+    if (G.scrumCD > 0) { toast('⚡ The pack has filed for the day. They will be back at six.'); sClick(); return; }
+    showChoice('THE PAVEMENT', 'The Doorstep Scrum',
+      'The press are three deep and firing at anything that moves. A cat caught mid-blink is tomorrow\'s unflattering front page.\n\nStay out of their flashes.\n\nBut when the one who has stood here fifteen years frames a shot — get in it, and HOLD STILL.',
+      '⚡ Give them nothing', '🚶 Use the back door', which => { if (which === 'a') startScrum(); });
     return;
   }
   if (p.type === 'traf') {
@@ -7088,7 +7262,6 @@ function update(dt) {
       document.getElementById('pmline').textContent = '📅 DAILY SORTIE';
       document.getElementById('pmday').textContent = '⏱ ' + secs + 's · ' + G.daily.score;
     }
-    if (G.daily.t <= 0) { dailyEnd(); return; }
   }
 
   // approval: the nation is always keeping score — but it also forgets.
@@ -7486,6 +7659,7 @@ function update(dt) {
   updateMarble(dt);
   updateBus(dt);
   updateTrafalgar(dt);
+  updateScrum(dt);
   updateSummit(dt);
   maybeFox();
   updateFox(dt);
@@ -7791,6 +7965,7 @@ function draw() {
   if (G.mini && G.mini.type === 'canape') drawCanape();
   if (G.mini && G.mini.type === 'marble') drawMarble();
   if (G.mini && G.mini.type === 'traf') drawTrafalgar();
+  if (G.mini && G.mini.type === 'scrum') drawScrum();
   if (G.mini && G.mini.type === 'summit') drawSummit();
   if (G.mini && G.mini.type === 'fox') drawFox();
   drawGameMarkers();
@@ -8118,76 +8293,6 @@ function mulberry32(a) {
 }
 // the sortie's condition of the day — seeded, so the whole world plays the
 // same twist and the group-chat scores stay comparable
-const DAILY_MODS = [
-  { id: 'std', w: 3 },
-  { id: 'night', name: '🌙 NIGHT SHIFT', blurb: 'Tonight\'s sortie runs after dark. The mice believe this helps them.', w: 1 },
-  { id: 'swift', name: '💨 SWIFT DAY', blurb: 'Every mouse today is a swift brown. Union rules.', w: 1 },
-  { id: 'rush', name: '🐭 RUSH HOUR', blurb: 'Someone left a door open. There are SO many mice.', w: 1 },
-];
-function dailyModFor(seed) {
-  const r = mulberry32(seed ^ 0x50D)();
-  const total = DAILY_MODS.reduce((a, m2) => a + m2.w, 0);
-  let acc = 0;
-  for (const m2 of DAILY_MODS) { acc += m2.w / total; if (r < acc) return m2; }
-  return DAILY_MODS[0];
-}
-function startDaily() {
-  const d = new Date();
-  const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-  G.dailyRng = mulberry32(seed);
-  G.dailyMod = dailyModFor(seed);
-  G.daily = { t: 120, score: 0, caught: 0, escaped: 0, combo: 0, bestCombo: 0, seed, over: false, shown: -1 };
-  G.level = 5; G.xp = 0; G.catches = 0;
-  if (!pmCount) pmCount = 1;
-  G.pm = 'PM #' + pmCount; G.bowtie = true;
-  G.intro = { phase: 'done', catches: 0 };
-  G.tut = 9;
-  G.mapId = 'ground';
-  G.larry.x = 21.5 * TILE; G.larry.y = 31 * TILE;
-  G.time = 40; G.isNight = false;
-  G.raining = false; G.snowing = false; G.rainT = 1e9;
-  G.press.active = false; G.press.cd = 1e9; G.paps = [];
-  G.brief = null; G.briefCD = 1e9;
-  G.ratKingCD = 1e9;
-  G.summons = null; G.summonsCD = 1e9;
-  G.fish = 10; G.stam = 100; G.larder = 0; // fixed ration: gadget budgeting is part of the puzzle
-  // a level playing field: career buffs never ride into the sortie
-  G.nv = false; G.dream = null; G.superArmed = false;
-  if (G.dailyMod.id === 'night') G.nv = true; // night sorties come with the monocle fitted
-  bootWorld();
-  toast('📅 TODAY\'S SORTIE — 120 seconds. Everyone in the world gets these exact mice today.'
-    + (G.dailyMod.name ? ' ' + G.dailyMod.name + ': ' + G.dailyMod.blurb : '') + ' GO!', 'now');
-  tone(523, 784, 0.25, 'triangle', 0.07);
-}
-function dailySeedStr(seed) {
-  const y = (seed / 10000) | 0, mo = ((seed / 100) | 0) % 100, da = seed % 100;
-  return da + '/' + mo + '/' + y;
-}
-function dailyEnd() {
-  const D = G.daily;
-  D.over = true;
-  G.paused = true;
-  const key = 'larry-daily-' + D.seed;
-  let best = 0;
-  try { best = parseInt(localStorage.getItem(key) || '0', 10) || 0; } catch (e) { }
-  const isBest = D.score > best;
-  if (isBest) { best = D.score; try { localStorage.setItem(key, '' + best); } catch (e) { } }
-  const statsLine = '🐭 ' + D.caught + ' caught · 💨 ' + D.escaped + ' escaped · 🔥 best streak ×' + D.bestCombo;
-  // the compact grid line is what actually gets pasted into the group chat
-  const grid = (D.caught ? '🐭'.repeat(Math.min(D.caught, 10)) + (D.caught > 10 ? '+' : '') : '—')
-    + (D.escaped ? ' 💨×' + D.escaped : '')
-    + (D.perfects ? ' ⭐×' + D.perfects : '')
-    + (D.bestCombo > 1 ? ' 🔥×' + D.bestCombo : '');
-  D.shareText = '🐈 LARRY — Daily Sortie ' + dailySeedStr(D.seed) +
-    (G.dailyMod && G.dailyMod.name ? ' · ' + G.dailyMod.name : '') +
-    '\n' + grid +
-    '\n🏆 ' + D.score + (isBest ? ' — personal best!' : ' (best today: ' + best + ')');
-  document.getElementById('dailyStats').textContent = statsLine;
-  document.getElementById('dailyScore').textContent = D.score + (isBest ? ' ★ NEW BEST' : '');
-  document.getElementById('dailyBest').textContent = 'Best today: ' + best + ' · ' + dailySeedStr(D.seed);
-  document.getElementById('dailyWrap').classList.remove('hidden');
-  [784, 659, 523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.12, 'square', 0.06, i * 0.09));
-}
 
 function startGame(fresh) {
   const s = fresh ? null : loadSave();
@@ -8275,7 +8380,6 @@ function startGame(fresh) {
 
 document.getElementById('btnNew').addEventListener('click', () => { audio(); playMotif(0.13, 0.055, 'square'); startGame(true); });
 document.getElementById('btnContinue').addEventListener('click', () => { audio(); playMotif(0.13, 0.055, 'square'); startGame(false); });
-document.getElementById('btnDaily').addEventListener('click', () => { audio(); sClick(); startDaily(); });
 // PWA: offline play when served over http(s) with sw.js alongside (no-op in the artifact)
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   try { navigator.serviceWorker.register('sw.js').catch(() => { }); } catch (e) { }
@@ -8483,7 +8587,6 @@ function toggleHouseMap() {
   if (houseMapOpen()) { closeHouseMap(); return; }
   // don't pop it over a story card or the daily results
   if (!document.getElementById('cardWrap').classList.contains('hidden')) return;
-  if (!document.getElementById('dailyWrap').classList.contains('hidden')) return;
   openHouseMap();
 }
 bindBtn(document.getElementById('menuMap'), openHouseMap);
@@ -8670,18 +8773,6 @@ bindBtn(document.getElementById('photoClose'), () => {
 // ---------- Daily Sortie buttons ----------
 // plain click, not pointerdown: navigator.share needs the transient user
 // activation that touch pointerdown doesn't grant
-document.getElementById('dailyCopy').addEventListener('click', () => {
-  const t = G.daily && G.daily.shareText;
-  if (!t) return;
-  if (navigator.share) {
-    navigator.share({ text: t }).catch(() => {
-      if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast('📋 Result copied — paste it to a friend.')).catch(() => { });
-    });
-  } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(t).then(() => toast('📋 Result copied — paste it to a friend.')).catch(() => { });
-  }
-});
-bindBtn(document.getElementById('dailyDone'), () => location.reload());
 document.getElementById('titleCat').textContent = '🐈';
 const existingSave = loadSave();
 if (existingSave && existingSave.introDone) document.getElementById('btnContinue').classList.remove('hidden');
