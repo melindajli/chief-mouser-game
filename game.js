@@ -1111,10 +1111,13 @@ const IS_XMAS = IS_DECEMBER && REAL_DATE.getDate() >= 24 && REAL_DATE.getDate() 
 const IS_GOTCHA_DAY = SEASON_M === 2 && REAL_DATE.getDate() === 15; // hired 15 Feb 2011, on merit
 const DATE_SEED = REAL_DATE.getFullYear() * 10000 + SEASON_M * 100 + REAL_DATE.getDate();
 // roughly two days in five, Palmerston pays a visit (seeded: the same days for everyone)
-const PALM_VISIT = mulberry32(DATE_SEED ^ 0xCA7)() < 0.4;
+// These were a real-date lottery, so on most days Palmerston and the dog could
+// not exist — while the story cards still told you to go and beat them. They
+// vary by in-game day now, and a card that promises one makes it true.
+let PALM_VISIT = mulberry32(DATE_SEED ^ 0xCA7)() < 0.55;
 // and now and then — never on a Palmerston day; the garden could not take both —
 // the PM's DOG gets garden access. Composure will be tested.
-const DOG_VISIT = !PALM_VISIT && mulberry32(DATE_SEED ^ 0xD06)() < 0.25;
+let DOG_VISIT = !PALM_VISIT && mulberry32(DATE_SEED ^ 0xD06)() < 0.45;
 // and some nights — after the first Incident — the fox comes back
 const FOX_NIGHT = mulberry32(DATE_SEED ^ 0xF08)() < 0.18;
 
@@ -2353,7 +2356,7 @@ function finishSled() {
   if (clean) earnHonour('sledder');
   briefEvent('sled');
   miniResult('THE DESCENT',clean ? '🛋️ THE FULL FLIGHT, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Not one human harmed. +' + fish + ' 🐟'
-    : M.bumps <= 2 ? '🛋️ Down in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Two apologies issued in transit. +' + fish + ' 🐟'
+    : M.bumps <= 2 ? '🛋️ Down in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. ' + M.bumps + (M.bumps === 1 ? ' apology' : ' apologies') + ' issued in transit, 🐟' + M.kippers + ' collected. +' + fish + ' 🐟'
       : '🛋️ Down in ' + t.toFixed(1) + 's, via most of the guest list. The cushion is fine. It is always the cushion that is fine. +' + fish + ' 🐟');
   [523, 659, 784, clean ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -2886,7 +2889,7 @@ function finishBus() {
   if (clean) earnHonour('conductor');
   briefEvent('bus');
   miniResult('THE 11 BUS',clean ? '🚌 THE WHOLE ROUTE, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. London went under you. +' + fish + ' 🐟'
-    : M.bumps <= 2 ? '🚌 Rode it in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Two low bridges disagreed. +' + fish + ' 🐟'
+    : M.bumps <= 2 ? '🚌 Rode it in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. ' + M.bumps + (M.bumps === 1 ? ' low bridge' : ' low bridges') + ' disagreed, 🐟' + M.kippers + ' collected. +' + fish + ' 🐟'
       : '🚌 ' + t.toFixed(1) + 's, and most of the street furniture. You have seen London. It has seen you. +' + fish + ' 🐟');
   [523, 659, 784, clean ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -3590,13 +3593,13 @@ function agmScatter(win) {
     G.fish += 4; G.xp += 12;
     earnHonour('agm');
     briefEvent('agm');
-    toast('🐦 The AGM erupts in disarray — Item One RESOLVED, in person. The minutes record only feathers. +4 🐟 +12 XP');
+    miniResult('THE PIGEON AGM', '🐦 The AGM erupts in disarray — Item One RESOLVED, in person. The minutes record only feathers. +4 🐟 +12 XP');
     [659, 784, 1047].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
     save();
   } else {
     G.agmCD = 45 + Math.random() * 30;
-    toast('🐦 SPOTTED. The congress scatters, cooing procedural objections. They will reconvene — and so will you.');
+    miniResult('THE PIGEON AGM', '🐦 SPOTTED. The congress scatters, cooing procedural objections. They will reconvene — and so will you.');
   }
   updateHUD();
 }
@@ -3681,7 +3684,12 @@ function molesNextRound() {
   const M = G.mini;
   M.round++;
   M.seq = [];
-  for (let i = 0; i < M.round + 2; i++) M.seq.push(M.choir[(Math.random() * M.choir.length) | 0]);
+  // never the same stall twice running — answering a repeat would mean stepping
+  // out of the hole and back in, a rule the game has no way of telling you
+  for (let i = 0; i < M.round + 2; i++) {
+    let note; do { note = M.choir[(Math.random() * M.choir.length) | 0]; } while (M.seq.length && note === M.seq[M.seq.length - 1]);
+    M.seq.push(note);
+  }
   molesSing(1.1);
 }
 function molesSing(pause) {
@@ -3690,7 +3698,10 @@ function molesSing(pause) {
 }
 function molesAnswer() {
   const M = G.mini;
-  M.phase = 'answer'; M.step = 0; M.onHole = -1;
+  M.phase = 'answer'; M.step = 0;
+  // count the hole you are ALREADY in as entered, or a wrong first note strikes
+  // again the instant the phrase replays — three times, without you touching a key
+  M.onHole = molesHoleUnder();
   M.roundT = 11 + M.seq.length * 5;   // generous: forgetting should beat you, not the clock
   addFloat(G.larry.x, G.larry.y - 20, 'YOUR TURN', '#ffe8b8');
   tone(320, 520, 0.14, 'sine', 0.05);
@@ -3905,10 +3916,10 @@ function makeMail(kind) {
   const side = Math.random() < 0.5 ? -1 : 1;
   const m = { x: POST_SLOT.x + (Math.random() - 0.5) * 10, y: POST_SLOT.y, age: 0, hit: false, landed: false, kind };
   if (kind === 'bill') {        // second reminders travel fast and stay low
-    m.vx = side * (96 + Math.random() * 52); m.vy = -52; m.grav = 150; m.r = 19;
+    m.vx = side * (58 + Math.random() * 34); m.vy = -74; m.grav = 96; m.r = 21;
     m.landY = (30.5 + Math.random() * 2.4) * TILE;
   } else if (kind === 'parcel') { // heavy: only a charged leap will shift it
-    m.vx = side * (12 + Math.random() * 20); m.vy = -104; m.grav = 250; m.r = 23;
+    m.vx = side * (12 + Math.random() * 18); m.vy = -112; m.grav = 168; m.r = 25;
     m.landY = (32 + Math.random() * 1.1) * TILE;
   } else if (kind === 'junk') {   // a takeaway menu, fluttering, beneath you
     m.vx = side * (54 + Math.random() * 38); m.vy = -74; m.grav = 112; m.r = 17;
@@ -5349,7 +5360,10 @@ function doPounce(power = 0) {
   }
   // near something interesting with no mouse in play: a plain tap inspects instead
   // (a wound-up leap is always a leap — you meant it)
-  if (power === 0 && G.nearPoi) {
+  // NOT while a mini game is running: the letterbox IS the Post Watch marker
+  // and the trolley sits on the Canapé one, so a tap on the spot the game tells
+  // you to stand was being handed to interactPoi and silently dropped
+  if (power === 0 && G.nearPoi && !G.mini) {
     // standing right on the thing always means the thing; further off, a mouse
     // in play still wins the tap (you were plainly hunting)
     const dp = dist(L.x, L.y, (G.nearPoi.x + 0.5) * TILE, (G.nearPoi.y + 0.5) * TILE);
@@ -6310,6 +6324,10 @@ function queueBeat(level) {
   // night's sleep. Only the level-3 beat defers (the dawn handler re-queues it);
   // later pmChange beats fire on their level regardless, so none are ever lost.
   if (b.pmChange && level === 3 && pmCount <= 1 && Math.floor(G.time / DAYLEN) < 1 && !G.daily) return;
+  // never promise a rival who cannot turn up: the card that declares war on
+  // Palmerston makes him real, and the one about the terrier likewise
+  if (/Palmerston|Foreign Office cat/i.test(b.body || '')) { PALM_VISIT = true; setupRivals(); }
+  if (/dog/i.test(b.title || '')) { DOG_VISIT = true; setupDog(); }
   // a New Life restarts the climb, but you are only knighted once
   if (b.finale && G.honours.has('garter')) return;
   let body = b.body, newPM = null;
@@ -7230,13 +7248,20 @@ function update(dt) {
     }
     // …and anyone standing about with something to say. Ambient quips are
     // easy to miss; this makes talking to somebody a thing you can DO.
+    // Whoever is CLOSER wins. The photographer stands on the scrum marker and
+    // the press pack on the coach marker, so a POI that always won made the
+    // most-written characters on the street impossible to talk to at all.
     G.nearChat = null;
-    if (!G.nearPoi && !G.mini && !SCENE) {
-      let cd = 26;
+    if (!G.mini && !SCENE) {
+      let cd = 30;
       for (const n of G.npcs) {
         if (!n.quips || !n.quips.length) continue;
         const d = dist(L.x, L.y, n.x, n.y);
         if (d < cd) { cd = d; G.nearChat = n; }
+      }
+      if (G.nearChat && G.nearPoi) {
+        const dp = dist(L.x, L.y, (G.nearPoi.x + 0.5) * TILE, (G.nearPoi.y + 0.5) * TILE);
+        if (dp <= cd) G.nearChat = null; else G.nearPoi = null;   // nearer thing wins
       }
     }
     const btn = document.getElementById('btnPounce');
