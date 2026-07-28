@@ -1763,7 +1763,6 @@ const HONOURS = [
   { id: 'vanity', name: 'Patron of the Arts (Self-Portraits)', hint: 'Commission every tier of your own portrait.' },
   { id: 'newlife', name: 'Nine Lives (One Spent Well)', hint: 'Begin a New Life. Cats are issued nine.' },
   { id: 'post8', name: 'Postmaster General (Feline Div.)', hint: 'A perfect Post Watch: eight for eight.' },
-  { id: 'steady', name: 'Perfectly Composed', hint: 'A perfect photo-op: hold every pose.' },
   { id: 'patron', name: 'Friend of Battersea', hint: 'Send five parcels home.', test: () => (G.donated || 0) >= 5 },
   { id: 'home', name: 'Local Cat Made Good', hint: 'Go home again, decorated.' },
   { id: 'incident', name: 'The Incident Was Handled', hint: 'Hold your ground when the dog comes to the garden.' },
@@ -1910,11 +1909,6 @@ function drawKnock(kn) {
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
 const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1, scrum: 1 };
-const miniTakesInput = () => G.mini && !MOVE_MINIS[G.mini.type];
-function miniTap() {
-  if (!G.mini) return;
-  if (G.mini.type === 'photo') photoTap();
-}
 
 /* ---------- THE MIDNIGHT ZOOMIES: the whole house is the racetrack ----------
    Every cat knows the moment: the legs decide before the brain does. A course
@@ -2019,7 +2013,6 @@ function drawGameMarkers() {
     if (!em) continue;
     if (p.type === 'gauntlet' && !G.gauntletOpen) continue;   // still just a crack
     if (p.type === 'protocol' && !G.protocolOpen) continue;   // still just a dark box
-    if (p.type === 'gulls' && !G.gullsReady) continue;        // no platters, no raid
     if (G.nearPoi === p) continue;                            // the close-up indicator takes over
     const wanted = G.brief && BRIEF_POI[G.brief.def.kind] === p.type; // the Red Box sent you here
     const mx = (p.x + 0.5) * TILE, my = (p.y - 0.2) * TILE + Math.sin(t * 2.2 + p.x) * 1.8;
@@ -2102,15 +2095,13 @@ function updateGulls(dt) {
 function finishGulls() {
   const M = G.mini;
   G.mini = null;
-  G.gullsReady = false; // the platters are cleared; the next reception re-arms the raid
+  G.gullsCD = 110 + Math.random() * 50;   // catering needs time to lay another one
   save();
   const s = M.saved;
   const fish = s >= 8 ? 5 : s >= 6 ? 4 : s >= 4 ? 3 : s >= 2 ? 2 : 1;
   G.fish += fish; G.xp += s * 2;
   if (s >= 8) earnHonour('airspace');
   if (s >= 4) briefEvent('gulls'); // the terrace counts as held if most of it survives
-  // a failed raid must not strip the platters the task needs — catering re-lays
-  if (G.brief && G.brief.def.kind === 'gulls') { G.gullsReady = true; save(); }
   toast(s >= 8 ? '🥪 EIGHT INTERCEPTIONS. The airspace is closed; catering weeps with gratitude. +' + fish + ' 🐟 +' + s * 2 + ' XP'
     : s >= 5 ? '🥪 ' + s + '/8 turned back. The reception is saved. Mostly. +' + fish + ' 🐟 +' + s * 2 + ' XP'
       : '🥪 ' + s + '/8. The gulls dine well tonight, and without remorse. +' + fish + ' 🐟' + (s ? ' +' + s * 2 + ' XP' : ''));
@@ -4117,28 +4108,6 @@ function drawPostWatch() {
 }
 
 // ---------- Summons: politics barges in and demands a photograph ----------
-const SUMMONS_SPOTS = [
-  ['ground', 'The Cabinet Room', 'the trade delegation photo'],
-  ['ground', 'The Entrance Hall', 'the doorstep arrival shot'],
-  ['ground', 'The Garden', 'the garden reception'],
-  ['first', 'The State Dining Room', 'the state dinner walkthrough'],
-  ['first', 'The White Drawing Room', 'the ambassador\'s farewell'],
-];
-function startSummons() {
-  const [mapId, region, why] = SUMMONS_SPOTS[(Math.random() * SUMMONS_SPOTS.length) | 0];
-  // a photo-op is a quest, not a race: it stands until you wander over — no
-  // countdown, no penalty for taking your time (the main arc is never timed)
-  G.summons = { mapId, region, why, att: 0, shown: null };
-  toast('📜 PHOTO-OP: ' + (G.pm || 'The PM') + ' would like you in ' + region + ' for ' + why + '. Wander over whenever — there is, of course, a treat in it.');
-  tone(392, 392, 0.15, 'square', 0.06); tone(523, 523, 0.15, 'square', 0.06, 0.18);
-  updateSummonsHUD();
-}
-function updateSummonsHUD() {
-  // the photo-op lives inside the day tracker now — one corner block, one
-  // narrative, no separate checklist line
-  document.getElementById('summons').classList.add('hidden');
-  updateDayHUD();
-}
 
 // ---------- Red Box briefs: little missions with XP attached ----------
 // Each Red Box brief carries a `why` — the in-world reason it landed on your
@@ -4259,7 +4228,7 @@ const BRIEF_ARM = {
   post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
   bonk: () => { G.molesCD = 0; },
-  gulls: () => { G.gullsCD = 0; G.gullsReady = true; }, // the reception is laid on for you
+  gulls: () => { G.gullsCD = 0; },
 };
 function newBrief() {
   const len = CAMPAIGN.length;
@@ -4572,7 +4541,7 @@ const G = {
   sceneNpcs: [], met: new Set(),
   mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, trafCD: 0, scrumCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
-  underroadWins: 0, coronation: false, treaty: false, gullsReady: false,
+  underroadWins: 0, coronation: false, treaty: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
   level: 1, xp: 0, catches: 0,
   pm: null, pmDays: 1, dayIdx: undefined,
@@ -4597,7 +4566,7 @@ const G = {
   mischief: new Set(), napKind: null, radT: 0, knocks: [],
   stam: 100, stamShown: -1,
   fish: 5, larder: 0,
-  summons: null, summonsCD: 75, chefCD: 0,
+  chefCD: 0,
   dream: null, dreamT: 0, dreamDone: false, dreamCD: 0,
   ownPortrait: 0, lives: 0,
 };
@@ -4658,7 +4627,7 @@ function save() {
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
       donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0, raceBest: G.raceBest || 0,
       gauntletOpen: !!G.gauntletOpen, protocolOpen: !!G.protocolOpen, gauntletBest: G.gauntletBest || 0, protocolBest: G.protocolBest || 0, climbBest: G.climbBest || 0,
-      underroadWins: G.underroadWins || 0, coronation: !!G.coronation, treaty: !!G.treaty, gullsReady: !!G.gullsReady,
+      underroadWins: G.underroadWins || 0, coronation: !!G.coronation, treaty: !!G.treaty,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -4753,7 +4722,6 @@ function updateDayHUD() {
   if (!DAY || G.daily || G.intro.phase !== 'done') { el.classList.add('hidden'); return; }
   const done = DAY.goals.filter(g => g.prog >= g.n).length;
   let txt = DAY.doneAll ? '📦 ✓ day well governed · 🔥 ' + DAY.streak : '📦 Red Box ' + done + '/3';
-  if (G.summons) txt += '\n📸 photo-op: ' + G.summons.region + (G.summons.att > 0.5 ? ' — hold still…' : '');
   el.textContent = txt;
   el.classList.remove('hidden');
 }
@@ -4902,7 +4870,6 @@ function inputEnd(id, cx, cy) {
   if (!joy.active || id !== joy.id) return;
   // a quick press that never dragged = "walk here" (or a chin-scritch meow on Larry)
   if (!joy.moved && performance.now() - joy.t0 < 350 && G.running && !G.paused) {
-    if (miniTakesInput()) { miniTap(); resetStick(); return; } // tap games take the tap; movement games keep tap-to-walk
     const wx = clamp(G.camX + cx * DPR / ZOOM, TILE, (curMap().w - 1) * TILE);
     const wy = clamp(G.camY + cy * DPR / ZOOM, TILE, (curMap().h - 1) * TILE);
     if (dist(wx, wy, G.larry.x, G.larry.y) < 16 && !G.napping) {
@@ -5100,7 +5067,7 @@ function interactPoi(p) {
   if (p.type === 'gulls') {
     if (G.mini) return;
     if (G.daily) { toast('🥪 The gulls respect the sortie. Nothing else, but the sortie, yes.'); sClick(); return; }
-    if (!G.gullsReady) { toast('🥪 The terrace is clear. The gulls only come when a reception leaves something worth stealing.'); sClick(); return; }
+    if (G.gullsCD > 0) { toast('🥪 The terrace is clear. Catering will lay another reception before long.'); sClick(); return; }
     showChoice('THE TERRACE', 'The Gull Affair',
       'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
       '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
@@ -5448,7 +5415,6 @@ const POUNCE_SPD = 265;
 // stray tap on another input can't detonate someone else's wind-up
 function chargeStart(src) {
   const L = G.larry;
-  if (miniTakesInput()) { miniTap(); return false; } // tap games take the pounce; movement games keep the real one
   if (!G.running || G.paused || L.charging) return false;
   L.charging = true;
   L.chargeSrc = src;
@@ -6570,128 +6536,11 @@ sceneEl.wrap.addEventListener('pointerdown', e => {
 });
 
 /* ---------- The photo-op, staged: the PM arrives, nerves and all ---------- */
-const PM_NERVES = [
-  'Does he need anything? A mark? Should I have brought a treat? Is it too late for the treat?',
-  'Is he looking at me? Why is he looking at me. What does he KNOW.',
-  'Just act natural. Shoulders down. WHY are my arms like this.',
-  'The last one warned me the cat outranks me. They were joking. …Were they joking?',
-  'He has done more of these than I have. He is visibly aware of it.',
-];
-function photoOpScene(S) {
-  const L = G.larry;
-  const tx = Math.floor(L.x / TILE), ty = Math.floor(L.y / TILE);
-  G.sceneNpcs = [];
-  sceneGuest(P_VISITOR, tx - 2, ty, false);      // the PM, ushered in
-  sceneGuest(P_PRESS, tx + 2, ty + 1, true);     // the photographer
-  sceneGuest(P_AIDE, tx + 2, ty - 1, true);      // the aide, hovering
-  // the first shoot gets the full ceremony; veterans go straight to work
-  const first = !G.met.has('event:photoop');
-  if (first) G.met.add('event:photoop');
-  const steps = first ? [
-    { who: 'THE PHOTOGRAPHER', text: 'Right — ' + S.why + '. Chief Mouser front and centre, please. Everyone else, do your best to look elected.', do: () => tone(1900, 1200, 0.04, 'square', 0.04) },
-    { who: 'THE PM', text: pick(PM_NERVES) },
-    { who: 'THE AIDE', text: 'The cat knows what he is doing, Prime Minister. The cat always knows what he is doing.' },
-    { who: 'THE PHOTOGRAPHER', text: 'Now — HOLD the pose. I watch the tail: when the tail settles, I shoot. Three frames. Make them count.' },
-  ] : [
-    { who: 'THE PHOTOGRAPHER', text: 'Right — ' + S.why + '. You know the drill, Chief Mouser: watch the tail, hold the pose, three frames. ' + pick(PM_NERVES_SHORT), do: () => tone(1900, 1200, 0.04, 'square', 0.04) },
-  ];
-  playScene(steps, () => startPhotoShoot(S), true); // the cast stays for the shoot
-}
-const PM_NERVES_SHORT = [
-  'The PM is already sweating.', 'The PM practises a wave. At nobody.',
-  'The PM asks if THEY should also hold a pose. No one answers.',
-  'The PM stands very straight, like a person being judged. Correct.',
-];
 
 /* ---- HOLD THE POSE: the photo-op mini game. Larry's tail is the needle —
    tap when it settles in the gold to lock each of the three frames. It
    swings faster every shot, and a red dot turns up to test your soul. ---- */
-function startPhotoShoot(S) {
-  G.mini = { type: 'photo', S, shot: 1, shots: 3, phase: Math.random() * 6, speed: 2.4, waitT: 0, autoT: 6, pts: 0, done: false };
-  toast('🎬 HOLD THE POSE — tap / SPACE when the tail settles in the gold. Three shots.');
-}
 const photoNeedle = () => Math.sin(G.mini.phase);
-function updatePhotoShoot(dt) {
-  const M = G.mini;
-  if (!M || M.type !== 'photo') return;
-  if (M.waitT > 0) {
-    M.waitT -= dt;
-    if (M.waitT <= 0) {
-      if (M.done) { finishPhotoShoot(); return; }
-      M.shot++; M.speed += 1.0; M.autoT = 6; M.phase = Math.random() * 6;
-      addFloat(G.larry.x, G.larry.y - 24, 'again!', '#e8e2d2');
-      tone(1900, 1200, 0.03, 'square', 0.03);
-    }
-    return;
-  }
-  M.phase += M.speed * dt;
-  M.autoT -= dt;
-  if (M.autoT <= 0) photoTap(); // held too long: the photographer fires anyway
-}
-function photoTap() {
-  const M = G.mini;
-  if (!M || M.type !== 'photo' || M.waitT > 0) return;
-  const n = Math.abs(photoNeedle());
-  const pts = n < 0.22 ? 2 : n < 0.55 ? 1 : 0;
-  M.pts += pts;
-  const L = G.larry;
-  pressFlashes(L.x, L.y - 6, pts ? 4 : 2);
-  addFloat(L.x, L.y - 24, pts === 2 ? 'PERFECT!' : pts === 1 ? 'good' : 'blurry…', pts === 2 ? '#ffd98a' : pts === 1 ? '#e8e2d2' : '#b9b2a2');
-  tone(pts === 2 ? 1047 : pts === 1 ? 784 : 300, pts === 2 ? 1319 : pts === 1 ? 900 : 220, 0.1, 'triangle', 0.07);
-  if (M.shot >= M.shots) M.done = true;
-  M.waitT = 0.9;
-}
-function finishPhotoShoot() {
-  const M = G.mini;
-  G.mini = null;
-  const pts = M.pts;
-  G.summons = null;
-  G.summonsCD = 110 + Math.random() * 70;
-  const tier = pts >= 5 ? 2 : pts >= 3 ? 1 : 0;
-  const fish = [2, 4, 6][tier], appr = [2, 4, 6][tier];
-  G.fish += fish;
-  G.approval = Math.min(100, G.approval + appr);
-  G.xp += 15;
-  if (pts >= 6) earnHonour('steady');
-  if (DAY) { DAY.stats.ops = (DAY.stats.ops || 0) + 1; saveDay(); }
-  goalEvent('summons');
-  const closer = [
-    [{ who: 'THE PHOTOGRAPHER', text: '…we can fix some of it in the edit. The nation does love a candid.' },
-    { who: 'THE PM', text: 'He moved. Did he move? I FELT him move.' }],
-    [{ who: 'THE PHOTOGRAPHER', text: 'Good. GOOD. One usable frame in every batch — better odds than I get from the Cabinet.' },
-    { who: 'THE AIDE', text: 'The morning papers will be kind. To the cat.' }],
-    [{ who: 'THE PHOTOGRAPHER', text: 'Three for three. THREE FOR THREE. I have photographed ROYALTY with worse discipline.' },
-    { who: 'THE PM', text: 'He didn\'t blink once. I blinked forty times. They\'ll print his.' }],
-  ][tier];
-  playScene(closer, () => {
-    toast('📸 Photo-op: ' + pts + '/6 composure. +' + fish + ' 🐟 +15 XP');
-    [659, 784, 988].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
-    while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
-    if (M.S && M.S.region === 'The Garden') { // the reception leaves its platters out
-      G.gullsReady = true;
-      save();
-      toast('🥪 The reception left the platters on the terrace. The gulls have noticed.');
-    }
-    updateHUD();
-  }); // the cast disperses when the verdict lands
-}
-function drawPhotoShoot() {
-  const M = G.mini, L = G.larry;
-  const bx = L.x, by = L.y - 30;
-  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(bx - 27, by - 13, 54, 22);
-  ctx.fillStyle = '#3a3630'; ctx.fillRect(bx - 22, by, 44, 5);
-  ctx.fillStyle = '#c9a227'; ctx.fillRect(bx - 5, by, 10, 5);          // the gold: composure
-  ctx.fillStyle = '#efe9dc';
-  const nx = bx + photoNeedle() * 20;
-  ctx.fillRect(nx - 1, by - 2, 2, 9);                                   // the tail-tip needle
-  ctx.font = '7px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffe8b8';
-  ctx.fillText('SHOT ' + Math.min(M.shot, M.shots) + '/' + M.shots, bx, by - 5);
-  if (M.shot >= 2 && M.waitT <= 0) {                                    // the red dot of temptation
-    const a = M.phase * 1.7;
-    ctx.fillStyle = '#ff4040';
-    ctx.beginPath(); ctx.arc(L.x + Math.cos(a) * 26, L.y + Math.sin(a) * 12, 2.2, 0, 7); ctx.fill();
-  }
-}
 
 /* ---------- The herald: King Rat sends terms (the level-7 beat) ---------- */
 function heraldScene(onDone) {
@@ -7131,7 +6980,6 @@ function switchMap(id, x, y) {
   G.larry.x = x; G.larry.y = y;
   unstickLarry();
   G.mice = []; G.laser = null; G.boxes = []; tapTarget = null; G.napping = false; G.napPos = null;
-  if (G.mini && G.mini.type === 'photo') { G.summons = null; G.summonsCD = 90; } // walking out mid-shoot ends the op
   G.mini = null; // an abandoned mini game forfeits the round
   G.sceneNpcs = []; // any lingering cast disperses
   if (G.press.active && id !== 'ground') { // the pack disperses if you slip away
@@ -7308,20 +7156,6 @@ function update(dt) {
   }
 
   // a SUMMONS: politics interrupts, attendance is not optional
-  if (G.intro.phase === 'done' && !G.daily && !G.summons && !G.press.active) {
-    G.summonsCD -= dt;
-    if (G.summonsCD <= 0) startSummons();
-  }
-  if (G.summons) {
-    const S = G.summons;
-    if (G.mapId === S.mapId && G.region === S.region) {
-      S.att += dt;
-      // you've arrived and settled: the PM, the photographer and an aide
-      // assemble around you and the photo-op plays out as a scene
-      if (S.att >= 1.4 && !S.fired && !SCENE && !G.mini) { S.fired = true; photoOpScene(S); }
-    } else if (!S.fired) S.att = Math.max(0, S.att - dt * 2); // wandered off before it began
-    updateSummonsHUD();
-  }
 
   // the Red Box delivers the NEXT task only once the current one is done —
   // objectives never time out or get reshuffled; you finish before you move on.
@@ -7643,7 +7477,6 @@ function update(dt) {
   for (const c of G.rivals) updateRival(c, dt);
   updateKnocks(dt);
   updatePostWatch(dt);
-  updatePhotoShoot(dt);
   updateSupper(dt);
   updateDog(dt);
   updateTape(dt);
@@ -7953,7 +7786,6 @@ function draw() {
 
   drawTape();
   if (G.mini && G.mini.type === 'post') drawPostWatch();
-  if (G.mini && G.mini.type === 'photo') drawPhotoShoot();
   if (G.mini && G.mini.type === 'supper') drawSupper();
   if (G.mini && G.mini.type === 'race') drawRace();
   if (G.mini && G.mini.type === 'agm') drawAGM();
@@ -8328,7 +8160,6 @@ function startGame(fresh) {
     G.underroadWins = s.underroadWins || 0;
     G.coronation = !!s.coronation;
     G.treaty = !!s.treaty;
-    G.gullsReady = !!s.gullsReady;
     // saves from before the flatter XP curve can bank xp above the new,
     // lower thresholds — clamp so one catch doesn't fire a burst of level-ups
     G.xp = Math.min(G.xp, Math.max(0, xpNeed(G.level) - 1));
@@ -8688,7 +8519,6 @@ function abandonMini() {
   document.getElementById('menuWrap').classList.add('hidden');
   menuOpen = false; G.paused = false;
   if (MINI_CD[t]) G[MINI_CD[t]] = 45;   // a pause, so quitting is not a way to reroll
-  if (t === 'photo') { G.summons = null; G.summonsCD = 90; }
   const home = POCKET_HOME[G.mapId];
   if (home) startFade(() => switchMap(home[0], home[1] * TILE, home[2] * TILE));
   toast('🏳️ Left it there. It will keep.');

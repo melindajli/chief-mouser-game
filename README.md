@@ -5,8 +5,8 @@
 A cosy top-down pixel-art game about the real Larry: from a Battersea shelter
 to No. 10 Downing Street, complete with his Union Jack bow tie. Prime Ministers
 (numbered, anonymous, ever-changing) come and go — you remain: catching mice,
-holding photo-op poses, attacking the post, and collecting increasingly silly
-government honours.
+facing down the press pack, attacking the post, and collecting increasingly
+silly government honours.
 
 | The famous door | The Cabinet, in session |
 | --- | --- |
@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Seventeen mini games — and the Red Box asks for every one
+## Sixteen mini games — and the Red Box asks for every one
 
 - **Post Watch** — the eleven o'clock delivery fires across the Entrance
   Hall: get under each item and POUNCE. Bills fly low and fast, parcels
@@ -57,8 +57,6 @@ the front door having no outside handle:
   cat caught mid-blink is tomorrow's unflattering front page. Stay out of
   their flashes; when the photographer who asks properly frames a shot, get
   in it and hold still
-- **Hold the Pose** — photo-ops are a composure meter: tap when the tail
-  settles in the gold, three frames, faster each shot
 - **Kitchen Suppers** — the PM cooks, scraps fall from the flat's supper
   table, and the floor is the enemy
 - **The Canapé Line** — a state reception is being plated unsupervised.
@@ -106,7 +104,7 @@ statute. No further questions.)
   biggest escalations delivered by a breathless aide, in person
 - **The Morning Red Box & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
-- 41 honours on a proper honours board, a List of Mischief, hidden secrets,
+- 40 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won
