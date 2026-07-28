@@ -1690,6 +1690,22 @@ MAPS.stairs = makeMap('stairs', 13, 72, (m, set, rect) => {
 // was a smudge and the fish were four pixels. Its own arena fits the screen
 // exactly: the whole bank is visible at once, so working out where to stand is
 // a thing you do with your eyes instead of a thing the banner has to tell you.
+// The service corridor the reception is plated in: the trolley runs the length
+// of it and there is nothing else in the room, which is the point.
+MAPS.canapeline = makeMap('canapeline', 20, 11, (m, set, rect) => {
+  rect(1, 1, 18, 9, '.');
+  for (let x = 1; x <= 18; x++) set(x, 0, 'w');   // the wall the trolley runs along
+  m.regions = [[1, 1, 18, 9, 'The Service Corridor']];
+  m.mouseCap = () => 0;
+});
+// ...and the underside of the supper table, which is a room as far as a cat
+// is concerned, and the only room that matters during supper.
+MAPS.suppertable = makeMap('suppertable', 15, 11, (m, set, rect) => {
+  rect(1, 1, 13, 9, '.');
+  for (let x = 1; x <= 13; x++) set(x, 0, 'w');
+  m.regions = [[1, 1, 13, 9, 'Under the Table']];
+  m.mouseCap = () => 0;
+});
 MAPS.pondside = makeMap('pondside', 17, 12, (m, set, rect) => {
   rect(1, 1, 15, 10, 'g');                       // the lawn, all the way round
   rect(5, 3, 11, 7, 'q');                        // and the water in the middle of it
@@ -2664,6 +2680,7 @@ const CANAPE_Y = 6.4, CANAPE_X0 = 2.2, CANAPE_X1 = 17.2;
 const CANAPE_STEAL = [['🍣', 'the salmon'], ['🍤', 'the prawn'], ['🧀', 'the cheese']];
 const CANAPE_LEAVE = [['🥒', 'cucumber'], ['🧅', 'onion'], ['🍇', 'grapes']];
 function startCanape() {
+  switchMap('canapeline', 9.5 * TILE, 7.6 * TILE);
   G.mini = { type: 'canape', t: 0, next: 0.7, spawned: 0, total: 14, items: [], right: 0, wrong: 0, msg: null, endT: 0 };
   toast('🥂 Take the salmon. Leave the cucumber — and the onion.', 'now');
   tone(700, 900, 0.12, 'triangle', 0.06);
@@ -2732,6 +2749,7 @@ function finishCanape() {
   [659, 784, r >= 11 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   save();
+  startFade(() => switchMap('first', 12.5 * TILE, 8.5 * TILE));
   updateHUD();
 }
 function drawCanape() {
@@ -3933,10 +3951,13 @@ function drawNip() {
 /* ---------- KITCHEN SUPPERS: the PM cooks; gravity does the rest ----------
    Scraps drop from the supper table. Be underneath each one when it falls —
    walk, or pounce for a longer lunge. The floor gets whatever you miss. */
+// the table, in its own room's coordinates
+const SUP_X0 = 4.4, SUP_W = 6.2, SUP_CX = 7.5;
 function startSupper() {
+  switchMap('suppertable', SUP_CX * TILE, 8.0 * TILE);
   G.mini = { type: 'supper', t: 0, next: 1.4, spawned: 0, total: 10, scraps: [], caught: 0 };
   // the PM takes the hob; the cast of one stays for the duration
-  G.sceneNpcs.push({ spr: P_VISITOR, x: 21.5 * TILE, y: 2.6 * TILE, animT: Math.random() * 9, flip: false });
+  G.sceneNpcs.push({ spr: P_VISITOR, x: SUP_CX * TILE, y: 2.6 * TILE, animT: Math.random() * 9, flip: false });
   toast('🍝 Scraps incoming — be under each before it lands!', 'now');
   tone(523, 659, 0.15, 'triangle', 0.06);
 }
@@ -3957,7 +3978,7 @@ function updateSupper(dt) {
       M.spawned++;
       M.next = Math.max(0.55, 1.15 - M.spawned * 0.06) + Math.random() * 0.5;
       M.scraps.push({
-        x: (21.4 + Math.random() * 6.2) * TILE, y: 5.2 * TILE,
+        x: (SUP_X0 + Math.random() * SUP_W) * TILE, y: 5.2 * TILE,
         vy: 44 + Math.random() * 40, kind: (Math.random() * SCRAP_KINDS.length) | 0,
         landed: false, caught: false,
       });
@@ -4000,6 +4021,8 @@ function finishSupper() {
       : '🍝 ' + c + '/10. The floor dined well tonight. There is always another supper. +' + fish + ' 🐟' + (c ? ' +' + c * 2 + ' XP' : ''));
   [659, 784, c >= 6 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
+  save();
+  startFade(() => switchMap('flat', 24.5 * TILE, 8.5 * TILE));
   updateHUD();
 }
 function drawSupper() {
@@ -4016,9 +4039,9 @@ function drawSupper() {
   }
   ctx.font = '8px monospace'; ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(12,10,20,0.65)';
-  ctx.fillRect(24 * TILE - 18, 4.2 * TILE, 36, 11);
+  ctx.fillRect(SUP_CX * TILE - 18, 4.2 * TILE, 36, 11);
   ctx.fillStyle = '#ffe8b8';
-  ctx.fillText(M.caught + '/' + M.total, 24 * TILE, 4.2 * TILE + 9);
+  ctx.fillText(M.caught + '/' + M.total, SUP_CX * TILE, 4.2 * TILE + 9);
 }
 // four things come through that flap, and they do not fly alike: bills go
 // low and long, parcels drop like parcels, circulars dawdle — and one of
@@ -4571,7 +4594,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'nipdream' || G.mapId === 'pondside' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'square');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'nipdream' || G.mapId === 'pondside' || G.mapId === 'canapeline' || G.mapId === 'suppertable' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'square');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -5068,7 +5091,7 @@ function interactPoi(p) {
     if (G.canapeCD > 0) { toast('🥂 The line is clear. The chef has hidden the cucumber, in any case.'); sClick(); return; }
     miniChoice('canape', 'THE KITCHEN COUNTER', 'The Canapé Line',
       'A state reception is being plated along the trolley, and nobody is watching the trolley.\n\n🐾 TAKE — salmon 🍣, prawn 🍤, cheese 🧀\n✋ LEAVE — cucumber 🥒, onion 🧅, grapes 🍇\n\nStand under an item and pounce. A ring round one means it is in reach.',
-      '🥂 Help yourself', '🚶 Let them keep it', which => { if (which === 'a') startCanape(); });
+      '🥂 Help yourself', '🚶 Let them keep it', which => { if (which === 'a') startFade(() => startCanape()); });
     return;
   }
   if (p.type === 'sled') {
@@ -5166,7 +5189,7 @@ function interactPoi(p) {
     if (G.supperCD > 0) { toast(pick(p.texts)); sClick(); return; } // between suppers, the table is just a table
     miniChoice('supper', 'THE FLAT KITCHEN', 'Kitchen Supper',
       'The PM is cooking. Personally. The kitchen smells of ambition and burnt garlic.\n\nSit under the table; be beneath each scrap before it lands.',
-      '🍝 Assume the position', '🚶 Let the floor have it', which => { if (which === 'a') startSupper(); });
+      '🍝 Assume the position', '🚶 Let the floor have it', which => { if (which === 'a') startFade(() => startSupper()); });
     return;
   }
   if (p.type === 'audit') {
@@ -8570,11 +8593,12 @@ bindBtn(document.getElementById('mischiefClose'), () => {
 // Maps with no exits of their own. Anything that PLACES the player must send
 // them somewhere real instead — a save, a save code, or a dev URL param that
 // lands here would otherwise strand a career with no way out but a reload.
-const POCKET_MAPS = new Set(['shelter', 'underroad', 'dreamvoid', 'nipdream', 'pondside', 'heights', 'stairs', 'marble', 'square', 'market']);
+const POCKET_MAPS = new Set(['shelter', 'underroad', 'dreamvoid', 'nipdream', 'pondside', 'canapeline', 'suppertable', 'heights', 'stairs', 'marble', 'square', 'market']);
 const POCKET_HOME = {
   marble: ['ground', 26.5, 29.5], stairs: ['ground', 5.5, 15.5],
   square: ['street', 10.5, 6.5],
   underroad: ['basement', 26.5, 16.5], dreamvoid: ['ground', 15.5, 23.5], nipdream: ['ground', 13.5, 6.5], pondside: ['ground', 40.5, 7.5],
+  canapeline: ['first', 12.5, 8.5], suppertable: ['flat', 24.5, 8.5],
   heights: ['ground', 5.5, 19.5],
 };
 const MINI_CD = {

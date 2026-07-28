@@ -48,6 +48,16 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
+## The shape of it
+
+No. 10 is a **hub**: walkable, cosy, full of mice, and where the story happens.
+Almost every game is a **room you enter** — the invitation card explains the
+rules, the screen fades, and you arrive somewhere built for that one game and
+nothing else. Ten of the twelve work that way. The exceptions are deliberate:
+**The Midnight Zoomies** is a lap of the actual ground floor (it is the hub's
+own game), and **the Doorstep Scrum** and **the Fox Incident** both happen out
+front on Downing Street, which is already a small stage of its own.
+
 ## Twelve mini games — and the Brief asks for every one
 
 - **The Doorstep Scrum** — the press pack fires at anything that moves and a
