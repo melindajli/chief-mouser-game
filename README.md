@@ -62,17 +62,19 @@ the front door having no outside handle:
   and nobody needs a cucumber). A ring tells you what is in reach
 - **The Midnight Zoomies** — ten paw-print gates around the whole ground
   floor at ludicrous speed; gold pace earns The 3 A.M. Protocol
-- **The Pond** — ornamental fish, bought at public expense, in a pond you
-  are technically responsible for. They run deep and surface for about a
-  second: hold still until the ripple, then commit. Leap at nothing and you
-  go in — and everything down there stays down a while afterwards
+- **The Pond** — ornamental fish, bought at public expense, in a pond you are
+  technically responsible for. You cannot swim and cannot reach across the
+  water, so the job is being in the right place on the bank at the right
+  moment: a ripple is a starting gun, not a cue to stand still. Leap with
+  nothing up and you go in, and every fish stays down a while afterwards
 - **The Fox Incident** — the real story: past midnight on the Street,
   something long, low, and amber. Advance while it paces; when it lunges,
   DO NOT MOVE. Hold three stands and it blinks first
-- **The Catnip Incident** — a bed nobody admits to planting. For forty-five
-  seconds the steering is not entirely yours and every so often Larry simply
-  goes over, legs up. The moths find this riveting, which is the only reason
-  it is winnable. The one game in the house that plays you back
+- **The Catnip Dream** — a bed nobody admits to planting drops you somewhere
+  else entirely. Larry sits down and does not move for the whole game; things
+  that are not there drift in out of the dark toward a glowing ring, and the
+  only verb is POUNCE and the only question is WHEN. Swipe at nothing and your
+  paw is committed while the dream keeps coming. The one timing game in the house
 - **The Under-Road** — Act Two of the war: a smuggling tunnel below the
   Cellar, six lanes of rat patrol, one stolen larder (unlocked by deposing
   the Rat King)

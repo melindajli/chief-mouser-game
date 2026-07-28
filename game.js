@@ -647,7 +647,7 @@ function wallStyle(grid, x, y, mapId) {
   if (mapId === 'shelter') return 'block';
   if (mapId === 'street') return 'georgian';
   if (mapId === 'basement' || mapId === 'underroad') return 'stone';
-  if (mapId === 'dreamvoid') return 'block';
+  if (mapId === 'dreamvoid' || mapId === 'nipdream') return 'block';
   if (mapId === 'ground') {
     if (y >= 34) return 'brick';
     const n = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]];
@@ -1692,6 +1692,11 @@ MAPS.stairs = makeMap('stairs', 13, 72, (m, set, rect) => {
 });
 
 // --- The dream void: MI-Paw's training construct (a nap, weaponized) ---
+MAPS.nipdream = makeMap('nipdream', 15, 11, (m, set, rect) => {
+  rect(1, 1, 13, 9, 'z');
+  m.regions = [[1, 1, 13, 9, 'The Catnip Dream']];
+  m.mouseCap = () => 0;   // nothing real in here at all
+});
 MAPS.dreamvoid = makeMap('dreamvoid', 15, 11, (m, set, rect) => {
   rect(1, 1, 13, 9, 'z');
   m.regions = [[1, 1, 13, 9, 'The Protocol']];
@@ -1792,7 +1797,7 @@ const HONOURS = [
   { id: 'gravy', name: 'Not One Pea Lost', hint: 'A perfect Kitchen Supper: catch every falling scrap.' },
   { id: 'zoomgold', name: 'The 3 A.M. Protocol', hint: 'Run the Zoomies course at full tilt. Gold pace.' },
   { id: 'pond', name: 'Managed Fishery', hint: 'Take six fish from the garden pond in one sitting.' },
-  { id: 'nip', name: 'No Notes', hint: 'Take eighteen moths during a single Catnip Incident.' },
+  { id: 'nip', name: 'No Notes', hint: 'Catch twenty-two things that are not there, in one Catnip Dream.' },
   { id: 'underroad', name: 'Keeper of the Under-Road', hint: 'Reclaim the larder from the tunnel in under 20 seconds.' },
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
@@ -1930,7 +1935,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, pond: 1, catnip: 1, gauntlet: 1, dot: 1, climb: 1, summit: 1, fox: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1, scrum: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, pond: 1, nip: 1, gauntlet: 1, dot: 1, climb: 1, summit: 1, fox: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1, scrum: 1 };
 
 /* ---------- THE MIDNIGHT ZOOMIES: the whole house is the racetrack ----------
    Every cat knows the moment: the legs decide before the brain does. A course
@@ -2043,7 +2048,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { race: '💨', pond: '🐟', catnip: '🌿', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', traf: '🕊', scrum: '⚡' };
+const GAME_MARKS = { race: '💨', pond: '🐟', nip: '🌿', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', traf: '🕊', scrum: '⚡' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -2667,7 +2672,8 @@ function updateCanape(dt) {
   M.t += dt;
   if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
   if (M.spawned < M.total) {
-    M.next -= dt;
+    M.lockT = Math.max(0, M.lockT - dt);
+  M.next -= dt;
     if (M.next <= 0) {
       M.spawned++;
       const steal = Math.random() < 0.5;
@@ -3782,7 +3788,7 @@ function startPond() {
     fish.push({ x: sp.x, y: sp.y, tx: sp.x, ty: sp.y, state: 'deep', t: 1.2 + Math.random() * 2.6, hue: i });
   }
   G.mini = { type: 'pond', t: 0, T: FISH_TIME, caught: 0, misses: 0, soakT: 0, landed: false, fish };
-  toast('🐟 Wait for the ripple. Leap early and you are IN the pond.', 'now');
+  toast('🐟 Ripple = run to it. Pounce only when it is inside your ring.', 'now');
   tone(420, 620, 0.14, 'sine', 0.05);
 }
 function nearPond(L) {
@@ -3808,12 +3814,12 @@ function updatePond(dt) {
       f.y += (f.ty - f.y) * Math.min(1, dt * 0.9);
       if (f.t <= 0) {
         const sp = pondSpot();
-        f.tx = sp.x; f.ty = sp.y; f.state = 'rise'; f.t = 0.7;
+        f.tx = sp.x; f.ty = sp.y; f.state = 'rise'; f.t = 0.95;
       }
     } else if (f.state === 'rise') {
       f.x += (f.tx - f.x) * Math.min(1, dt * 5);
       f.y += (f.ty - f.y) * Math.min(1, dt * 5);
-      if (f.t <= 0) { f.state = 'up'; f.t = 1.0; tone(880, 1100, 0.05, 'sine', 0.03); }
+      if (f.t <= 0) { f.state = 'up'; f.t = 1.25; tone(880, 1100, 0.05, 'sine', 0.03); }
     } else if (f.state === 'up') {
       if (f.t <= 0) { pondDive(f, 1.6 + Math.random() * 2.4); }
     }
@@ -3836,12 +3842,21 @@ function updatePond(dt) {
     const hitWater = L.x > POND.x0 * TILE - 4 && L.x < POND.x1 * TILE + 4
       && L.y > POND.y0 * TILE - 4 && L.y < POND.y1 * TILE + 4;
     const got = M.fish.some(f => f.state === 'up' && dist(f.x, f.y, L.x, L.y) <= 20);
+    const anyUp = M.fish.some(f => f.state === 'up');
     if (!got && (hitWater || nearPond(L))) {
-      M.misses++; M.soakT = 2.2;
-      addFloat(L.x, L.y - 20, pick(POND_SOAK), '#8fc4e8');
-      for (let i = 0; i < 14; i++) addParticle(L.x, L.y, '#8fc4e8', 4, 40);
-      tone(240, 120, 0.26, 'sawtooth', 0.06);
-      for (const f of M.fish) pondDive(f, 2.4 + Math.random() * 2.2);   // every fish gone, and slow to return
+      if (anyUp) {
+        // there WAS a fish and you were simply not next to it. Teaching distance
+        // should not cost the whole pond, or the miss reads as arbitrary.
+        addFloat(L.x, L.y - 20, 'TOO FAR — get beside it', '#f0c890');
+        tone(320, 240, 0.12, 'triangle', 0.05);
+        for (const f of M.fish) if (f.state === 'up') pondDive(f, 1.4 + Math.random() * 1.4);
+      } else {
+        M.misses++; M.soakT = 2.2;
+        addFloat(L.x, L.y - 20, pick(POND_SOAK), '#8fc4e8');
+        for (let i = 0; i < 14; i++) addParticle(L.x, L.y, '#8fc4e8', 4, 40);
+        tone(240, 120, 0.26, 'sawtooth', 0.06);
+        for (const f of M.fish) pondDive(f, 2.4 + Math.random() * 2.2);   // every fish gone, slow to return
+      }
     }
   } else if (L.landT <= 0 && L.pounceT <= 0) M.landed = false;
   if ((M.T -= dt) <= 0) finishPond();
@@ -3874,7 +3889,7 @@ function drawPond() {
       ctx.fillStyle = 'rgba(18,40,62,0.42)';
       ctx.beginPath(); ctx.ellipse(f.x, f.y, 5, 2.4, 0, 0, 7); ctx.fill();
     } else if (f.state === 'rise') {                // the tell: rings, widening
-      const k = 1 - f.t / 0.7;
+      const k = 1 - f.t / 0.95;
       ctx.strokeStyle = 'rgba(200,232,255,' + (0.75 - k * 0.45) + ')';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(f.x, f.y, 2 + k * 9, 0, 7); ctx.stroke();
@@ -3890,174 +3905,235 @@ function drawPond() {
       ctx.beginPath(); ctx.arc(f.x, f.y, 8, 0, 7); ctx.stroke();
     }
   }
+  // your reach, drawn: the canapé line already teaches this ring, and the
+  // whole difficulty here is knowing whether you are close enough yet
+  const anyUp = M.fish.some(f => f.state === 'up');
+  ctx.strokeStyle = anyUp ? 'rgba(159,232,160,0.5)' : 'rgba(200,232,255,0.22)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(L.x, L.y, 20, 0, 7); ctx.stroke();
+  // and a line to the fish you should be running at
+  const tgt = M.fish.find(f => f.state === 'up') || M.fish.find(f => f.state === 'rise');
+  if (tgt && dist(tgt.x, tgt.y, L.x, L.y) > 20) {
+    ctx.strokeStyle = 'rgba(255,232,184,0.35)';
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath(); ctx.moveTo(L.x, L.y); ctx.lineTo(tgt.x, tgt.y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const cx = canvas.width / 2, u = DPR;
   ctx.font = Math.round(9 * u) + 'px "Press Start 2P", monospace';
   ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(cx - 116 * u, MINI_HUD_Y * u, 232 * u, 36 * u);
+  ctx.fillRect(cx - 150 * u, MINI_HUD_Y * u, 300 * u, 36 * u);
   ctx.fillStyle = '#8fd4e8';
   ctx.fillText('🐟 ' + M.caught + '/' + FISH_GOLD + '   ' + Math.ceil(M.T) + 's', cx, (MINI_HUD_Y + 16) * u);
-  ctx.fillStyle = M.soakT > 0 ? '#8fc4e8' : 'rgba(200,232,255,0.85)';
-  ctx.fillText(M.soakT > 0 ? 'SOAKED' : (M.fish.some(f => f.state === 'up') ? 'NOW' : 'WAIT'), cx, (MINI_HUD_Y + 30) * u);
+  let state, col;
+  const up = M.fish.filter(f => f.state === 'up');
+  const near = up.find(f => dist(f.x, f.y, L.x, L.y) <= 20);
+  const rising = M.fish.find(f => f.state === 'rise');
+  if (M.soakT > 0) { state = 'SOAKED'; col = '#8fc4e8'; }
+  else if (near) { state = 'NOW — POUNCE'; col = '#9fe8a0'; }
+  else if (up.length) { state = 'TOO FAR — GET BESIDE IT'; col = '#f0c890'; }
+  else if (rising) { state = 'RIPPLE — RUN TO IT'; col = '#ffe8b8'; }
+  else { state = 'WATCH THE WATER'; col = 'rgba(200,232,255,0.85)'; }
+  ctx.fillStyle = col;
+  ctx.fillText(state, cx, (MINI_HUD_Y + 30) * u);
   ctx.restore();
 }
 
-/* ---------- THE CATNIP INCIDENT: the one game that plays you back ----------
-   A bed of catnip nobody admits to planting. For forty-five seconds the
-   controls belong to the plant: the walk drifts off true, and every so often
-   Larry simply goes over — legs up, dignity elsewhere. Moths find a cat in
-   that state riveting, which is the only reason this is winnable at all.
-   Nothing else in the house takes the steering away from you. */
-// clear of the mute/map/menu buttons, which own the top of the screen
+// Shared by every mini-game banner (pond, climb, fox, the dream): far enough
+// down to clear the mute/map/menu buttons, which own the top of the screen.
 const MINI_HUD_Y = 62;
-const NIP_BED = { x: 13.5, y: 5.2 };                   // the bed, in the garden
-const NIP_PEN = { x0: 6, x1: 24, y0: 2.0, y1: 7.2 };   // the moths keep to the lawn
-// 8 was a formality: a bot that re-aims every frame took 28. A player who
-// has to commit to a heading and then watch it bend does far worse, so gold
-// sits between the two — a real ask, not a participation medal.
-const NIP_TIME = 45, NIP_GOLD = 18;
-const NIP_FLOPS = ['*flop*', '*rolls*', 'ekekek!', '*legs up*', 'mrrp!', '*no notes*', '*thud*'];
-function startCatnip() {
-  G.mini = { type: 'catnip', t: 0, T: NIP_TIME, caught: 0, high: 0.4, flopT: 0, flopCD: 3.4, flops: 0, landed: false, moths: [] };
-  for (let i = 0; i < 4; i++) nipSpawnMoth();
-  toast('🌿 The steering belongs to the catnip now. Pounce the moths anyway.', 'now');
+/* ---------- THE CATNIP DREAM: you do not move, you only time ----------
+   The first version of this scrambled your steering and flopped you over,
+   which was funny once and confusing every time after. A cat on catnip does
+   not really stagger around a herb bed — it goes somewhere else. So this is a
+   pop-up now: the bed drops you into a dream, Larry sits down, and things that
+   are not there come at him out of the dark. The only verb is POUNCE, and the
+   only question is WHEN. Nothing else in the house is a timing game. */
+const NIP_TIME = 45, NIP_GOLD = 22;
+const NIP_RING = 26;                      // the strike ring, in px from the cat
+const NIP_HIT = 12;                       // how far off the ring still connects
+const NIP_PERFECT = 5;                    // ...and how close to it is exactly right
+// A bad swipe has to cost something or the whole game is "hold pounce": miss,
+// and the paw is committed for half a second while the dream keeps coming.
+const NIP_LOCK = 0.5;
+const NIP_SEEN = ['🦋', '🐟', '🐭', '🕊', '🍃', '🦋', '🐟'];
+const NIP_NICE = ['PURR', 'YES', 'GOT IT', 'MINE', 'DREAMY', 'EXQUISITE'];
+function startNip() {
+  switchMap('nipdream', 7.5 * TILE, 5.5 * TILE);
+  G.mini = {
+    type: 'nip', t: 0, T: NIP_TIME, hits: 0, perfect: 0, misses: 0,
+    combo: 0, best: 0, visitors: [], next: 1.0, wasPouncing: false, msg: null, hue: 0, lockT: 0,
+  };
+  toast('🌿 Sit still. Pounce each one as it crosses the ring.', 'now');
   sTrill();
 }
-function nipSpawnMoth() {
-  G.mini.moths.push({
-    x: (NIP_PEN.x0 + Math.random() * (NIP_PEN.x1 - NIP_PEN.x0)) * TILE,
-    y: (NIP_PEN.y0 + Math.random() * (NIP_PEN.y1 - NIP_PEN.y0)) * TILE,
-    ph: Math.random() * 7, sp: 15 + Math.random() * 13, dir: Math.random() * 7, flee: 0,
-  });
+function nipSpawn() {
+  const M = G.mini;
+  const a = Math.random() * Math.PI * 2;
+  // they always take the same time to arrive, so the rhythm stays honest even
+  // as the dream speeds up — later ones simply start further out and fly harder
+  const travel = Math.max(0.85, 1.9 - M.t * 0.022);
+  const r0 = 108;
+  M.visitors.push({ a, r: r0, sp: (r0 - NIP_RING) / travel, em: pick(NIP_SEEN), spin: Math.random() * 7, dead: false });
 }
-function nipFlop(M) {
-  M.flopT = 0.95; M.flops++; M.flopCD = 3.2 + Math.random() * 2.4;
-  G.larry.cvx = 0; G.larry.cvy = 0;
-  addFloat(G.larry.x, G.larry.y - 20, pick(NIP_FLOPS), '#d6bce0');
-  for (let i = 0; i < 8; i++) addParticle(G.larry.x, G.larry.y + 4, '#9fd08a', 2, 22);
-  purr(0.7, 0.05);
-}
-function updateCatnip(dt) {
+function nipCentre() { return { x: 7.5 * TILE, y: 5.5 * TILE }; }
+function nipSay(text, c) { G.mini.msg = { text, c, t: 0.65 }; }
+function updateNip(dt) {
   if (G.catnipCD > 0) G.catnipCD -= dt;
   const M = G.mini;
-  if (!M || M.type !== 'catnip') return;
-  const L = G.larry;
-  M.t += dt;
-  // the high ebbs on its own and every moth tops it back up, so a good run gets
-  // steadily harder to steer: the reward and the handicap are the same thing
-  M.high = clamp(M.high - dt * 0.05, 0.25, 1);
-  if (M.flopT > 0) {
-    M.flopT -= dt;
-    L.cvx = 0; L.cvy = 0;
-    if (Math.random() < dt * 14) addParticle(L.x + (Math.random() - 0.5) * 12, L.y, '#e8c4f0', 1, 16);
-  } else if ((M.flopCD -= dt * (0.6 + M.high)) <= 0) nipFlop(M);
-  for (const mo of M.moths) {
-    mo.ph += dt * 2.2;
-    if (M.flopT > 0) {
-      // a cat on its back with its legs in the air is, to a moth, fascinating —
-      // so the least dignified moment is also the only reliable way to score
-      const a = Math.atan2(L.y - mo.y, L.x - mo.x);
-      mo.x += Math.cos(a) * 36 * dt; mo.y += Math.sin(a) * 36 * dt;
-    } else if (mo.flee > 0) {
-      mo.flee -= dt;
-      const a = Math.atan2(mo.y - L.y, mo.x - L.x);
-      mo.x += Math.cos(a) * mo.sp * 2.1 * dt;
-      mo.y += Math.sin(a) * mo.sp * 2.1 * dt;
+  if (!M || M.type !== 'nip') return;
+  const L = G.larry, C = nipCentre();
+  M.t += dt; M.hue += dt * 26;
+  if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
+  // he is sitting down. He is not going anywhere. That is the whole point.
+  L.x = C.x; L.y = C.y; L.cvx = 0; L.cvy = 0;
+  L.pounceCD = 0;                            // a rhythm game may never eat your input
+  M.next -= dt;
+  if (M.next <= 0) { nipSpawn(); M.next = Math.max(0.42, 1.0 - M.t * 0.012); }
+  for (const v of M.visitors) {
+    if (v.dead) continue;
+    v.r -= v.sp * dt;
+    v.spin += dt * 3;
+    if (v.r <= 6) {                          // it got all the way to your nose
+      v.dead = true;
+      M.misses++; M.combo = 0;
+      nipSay('…on your nose', '#ff8080');
+      tone(240, 150, 0.14, 'square', 0.05);
+    }
+  }
+  // the press: one pounce, one visitor, the one nearest the ring
+  const pouncing = L.pounceT > 0;
+  if (pouncing && !M.wasPouncing && M.lockT <= 0) {
+    let best = null, bd = 1e9;
+    for (const v of M.visitors) {
+      if (v.dead) continue;
+      const d = Math.abs(v.r - NIP_RING);
+      if (d < bd) { bd = d; best = v; }
+    }
+    if (best && bd <= NIP_HIT) {
+      best.dead = true;
+      M.hits++; M.combo++; M.best = Math.max(M.best, M.combo);
+      const perfect = bd <= NIP_PERFECT;
+      if (perfect) M.perfect++;
+      nipSay(perfect ? pick(NIP_NICE) : 'ok', perfect ? '#9fe8a0' : '#ffe8b8');
+      const cx = C.x + Math.cos(best.a) * best.r, cy = C.y + Math.sin(best.a) * best.r;
+      addParticle(cx, cy, perfect ? '#9fd08a' : '#cfc8b8', perfect ? 9 : 5, 34);
+      tone(620 + Math.min(10, M.combo) * 45, 1000 + Math.min(10, M.combo) * 45, 0.08, 'triangle', 0.055);
+      if (M.combo > 0 && M.combo % 5 === 0) { purr(0.5, 0.05); nipSay('PURRING', '#d6bce0'); }
     } else {
-      mo.dir += (Math.random() - 0.5) * dt * 5;
-      mo.x += Math.cos(mo.dir) * mo.sp * dt;
-      mo.y += Math.sin(mo.dir) * mo.sp * dt + Math.sin(mo.ph) * 9 * dt;
-    }
-    mo.x = clamp(mo.x, NIP_PEN.x0 * TILE, NIP_PEN.x1 * TILE);
-    mo.y = clamp(mo.y, NIP_PEN.y0 * TILE, NIP_PEN.y1 * TILE);
-  }
-  // a forgiving catch radius, because you are not really in charge of where
-  // the pounce lands — the joke stops being funny if it also cheats you
-  const pouncing = L.pounceT > 0 || L.landT > 0;
-  // ...but a miss has to cost something, or the whole game is "hold pounce".
-  // Land on nothing and every moth in sight scatters, so the drift punishes
-  // you exactly where it should: when you commit to a leap you cannot steer.
-  if (L.landT > 0 && !M.landed) {
-    M.landed = true;
-    if (!M.moths.some(mo => dist(mo.x, mo.y, L.x, L.y) <= 16)) {
-      let spooked = 0;
-      for (const mo of M.moths) if (dist(mo.x, mo.y, L.x, L.y) < 52) { mo.flee = 1.1; spooked++; }
-      if (spooked) { addFloat(L.x, L.y - 16, '*scatter*', '#b9b2a2'); tone(300, 200, 0.08, 'triangle', 0.04); }
-    }
-  } else if (L.landT <= 0 && L.pounceT <= 0) M.landed = false;
-  if (pouncing) {
-    for (let i = M.moths.length - 1; i >= 0; i--) {
-      if (dist(M.moths[i].x, M.moths[i].y, L.x, L.y) > 16) continue;
-      addParticle(M.moths[i].x, M.moths[i].y, '#f0e6c8', 6, 26);
-      M.moths.splice(i, 1);
-      M.caught++;
-      M.high = clamp(M.high + 0.11, 0, 1);
-      addFloat(L.x, L.y - 22, '+1 🦋', '#f0e6c8');
-      tone(700 + M.caught * 20, 1100, 0.09, 'triangle', 0.05);
-      nipSpawnMoth();
+      M.combo = 0;
+      M.lockT = NIP_LOCK;
+      nipSay('swiped at nothing', '#f0c890');
+      tone(300, 200, 0.09, 'triangle', 0.04);
     }
   }
-  if ((M.T -= dt) <= 0) finishCatnip();
+  M.wasPouncing = pouncing;
+  M.visitors = M.visitors.filter(v => !v.dead || false);
+  if (M.visitors.length > 40) M.visitors = M.visitors.slice(-40);
+  if ((M.T -= dt) <= 0) finishNip();
 }
-function finishCatnip() {
-  const M = G.mini, c = M.caught, flops = M.flops;
+function finishNip() {
+  const M = G.mini, h = M.hits, p = M.perfect, best = M.best;
   G.mini = null;
   G.catnipCD = 100 + Math.random() * 60;
-  const gold = c >= NIP_GOLD;
-  const fish = Math.max(1, Math.round(c / 2));
-  G.fish += fish; G.xp += c * 4;
+  const gold = h >= NIP_GOLD;
+  const fish = Math.max(1, Math.round(h / 4));
+  G.fish += fish; G.xp += h * 3;
   if (gold) earnHonour('nip');
-  for (let i = 0; i < c; i++) briefEvent('nip');
-  miniResult('THE CATNIP INCIDENT',
-    (gold ? '🌿 ' + c + ' moths, ' + flops + ' undignified episodes, and no surviving witnesses. The bed is hereby reclassified as a SECURITY FEATURE. '
-      : c >= 4 ? '🌿 ' + c + ' moths and ' + flops + ' episodes. The gardener saw some of it. The gardener will say nothing. '
-        : '🌿 ' + c + ' moths. Mostly you lay in the herbs and looked at the sky — which was, in fairness, the point. ')
-    + '+' + fish + ' 🐟 +' + c * 4 + ' XP');
+  for (let i = 0; i < h; i++) briefEvent('nip');
+  miniResult('THE CATNIP DREAM',
+    (gold ? '🌿 ' + h + ' of them, ' + p + ' of those exactly right, best run ' + best + '. You have never been more awake, and none of it happened. '
+      : h >= 12 ? '🌿 ' + h + ' caught (' + p + ' clean), best run ' + best + '. The garden has not moved. You have been extremely busy. '
+        : '🌿 ' + h + ' caught. Mostly you sat in the herbs with your pupils enormous, and the sky did the rest. ')
+    + '+' + fish + ' 🐟 +' + h * 3 + ' XP');
   [659, 784, gold ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
-  updateHUD(); save();
+  save();
+  startFade(() => switchMap('ground', 13.5 * TILE, 6.5 * TILE));   // back to the bed, blinking
+  updateHUD();
 }
-// drawn every frame in the garden, not just mid-game: the bed is a place,
-// and a place you can only see while using it is not a place
+// the bed is still a place in the garden even when you are not in it
 function drawNipBed() {
   for (let i = 0; i < 22; i++) {
     const a = i * 1.7, r = 3 + (i % 5) * 3.4;
     const bx = NIP_BED.x * TILE + Math.cos(a) * r, by = NIP_BED.y * TILE + Math.sin(a) * r * 0.62;
     const sway = Math.sin(G.time * 2.4 + i) * 0.8;
-    ctx.fillStyle = i % 3 ? '#8ea88c' : '#a6bda0';        // grey-green, against the lawn
+    ctx.fillStyle = i % 3 ? '#8ea88c' : '#a6bda0';
     ctx.fillRect(bx | 0, (by + sway) | 0, 3, 5);
-    if (i % 4 === 1) { ctx.fillStyle = '#b49ad0'; ctx.fillRect(bx | 0, (by + sway - 2) | 0, 2, 2); }  // the flowers
+    if (i % 4 === 1) { ctx.fillStyle = '#b49ad0'; ctx.fillRect(bx | 0, (by + sway - 2) | 0, 2, 2); }
   }
 }
-function drawCatnip() {
-  const M = G.mini, L = G.larry;
-  for (const mo of M.moths) {
-    const w = Math.abs(Math.sin(mo.ph * 4)) * 2.2 + 1;
-    ctx.fillStyle = 'rgba(242,236,216,0.75)';
-    ctx.fillRect(mo.x - 1 - w, mo.y - 2, w, 3);
-    ctx.fillRect(mo.x + 1, mo.y - 2, w, 3);
-    ctx.fillStyle = '#f2ecd8'; ctx.fillRect(mo.x - 1, mo.y - 1, 2, 3);
+const NIP_BED = { x: 13.5, y: 5.2 };
+function drawNip() {
+  const M = G.mini, C = nipCentre(), L = G.larry;
+  ctx.setTransform(ZOOM, 0, 0, ZOOM, -(C.x - VW / 2) * ZOOM, -(C.y - VH / 2) * ZOOM);
+  // the dream itself: slow colour, no strobing — this is a nap, not a nightclub
+  const g = ctx.createRadialGradient(C.x, C.y, 8, C.x, C.y, 150);
+  g.addColorStop(0, 'hsla(' + (M.hue % 360) + ',45%,26%,0.95)');
+  g.addColorStop(1, 'hsla(' + ((M.hue + 90) % 360) + ',40%,7%,0.98)');
+  ctx.fillStyle = g;
+  ctx.fillRect(C.x - 200, C.y - 200, 400, 400);
+  for (let i = 0; i < 26; i++) {           // leaves, going past
+    const a = i * 0.94 + G.time * 0.28, r = 34 + ((i * 37) % 110);
+    ctx.fillStyle = 'rgba(159,208,138,' + (0.10 + (i % 3) * 0.05) + ')';
+    ctx.fillRect((C.x + Math.cos(a) * r) | 0, (C.y + Math.sin(a) * r * 0.8) | 0, 3, 4);
   }
-  // the high, made visible: a ring of drifting green motes that thickens as
-  // the steering gets worse, so you can see the handicap you are earning
-  for (let i = 0; i < 7; i++) {
-    const a = G.time * 1.1 + i * 0.9, r = 13 + Math.sin(G.time * 2 + i) * 4;
-    ctx.fillStyle = 'rgba(159,208,138,' + (0.18 + M.high * 0.42) + ')';
-    ctx.fillRect((L.x + Math.cos(a) * r) | 0, (L.y - 4 + Math.sin(a) * r * 0.5) | 0, 2, 2);
+  // the strike ring: the single thing you are reading
+  const pulse = 0.6 + Math.sin(G.time * 5) * 0.25;
+  ctx.strokeStyle = M.lockT > 0 ? 'rgba(255,140,110,0.75)' : 'rgba(255,232,184,' + pulse + ')';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(C.x, C.y, NIP_RING, 0, 7); ctx.stroke();
+  ctx.strokeStyle = M.lockT > 0 ? 'rgba(255,140,110,0.14)' : 'rgba(159,232,160,0.22)';
+  ctx.lineWidth = NIP_HIT * 2;
+  ctx.beginPath(); ctx.arc(C.x, C.y, NIP_RING, 0, 7); ctx.stroke();
+  ctx.lineWidth = 1;
+  drawLarry(L);          // sitting in the middle of it, entirely still
+  for (const v of M.visitors) {
+    if (v.dead) continue;
+    const x = C.x + Math.cos(v.a) * v.r, y = C.y + Math.sin(v.a) * v.r;
+    const k = 1 - Math.min(1, (v.r - NIP_RING) / 90);        // looms as it closes
+    ctx.globalAlpha = 0.35 + k * 0.65;
+    ctx.font = Math.round(9 + k * 6) + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(v.em, x, y + 4 + Math.sin(v.spin) * 1.5);
+    ctx.globalAlpha = 1;
   }
+  if (M.msg) {
+    ctx.font = '7px "Press Start 2P", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = M.msg.c;
+    ctx.fillText(M.msg.text, C.x, C.y - 40);
+  }
+  // particles and floats are drawn inline by the main pass, which this frame
+  // skipped entirely — so the dream renders its own
+  for (const p of G.particles) {
+    ctx.globalAlpha = Math.min(1, p.t * 2);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x | 0, p.y | 0, 2, 2);
+  }
+  ctx.globalAlpha = 1;
+  ctx.font = 'bold 6px monospace';
+  ctx.textAlign = 'center';
+  for (const f of G.floats) {
+    ctx.globalAlpha = Math.min(1, f.t);
+    ctx.fillStyle = '#000'; ctx.fillText(f.text, f.x + 0.5, f.y + 0.5);
+    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const cx = canvas.width / 2, u = DPR;
   ctx.font = Math.round(9 * u) + 'px "Press Start 2P", monospace';
   ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(cx - 116 * u, MINI_HUD_Y * u, 232 * u, 36 * u);
-  ctx.fillStyle = '#f0e6c8';
-  ctx.fillText('🦋 ' + M.caught + '/' + NIP_GOLD + '   ' + Math.ceil(M.T) + 's', cx, (MINI_HUD_Y + 16) * u);
-  ctx.fillStyle = M.flopT > 0 ? '#d6bce0' : 'rgba(159,208,138,0.9)';
-  ctx.fillText(M.flopT > 0 ? 'NO NOTES' : 'HIGH ' + Math.round(M.high * 100) + '%', cx, (MINI_HUD_Y + 30) * u);
+  ctx.fillRect(cx - 130 * u, MINI_HUD_Y * u, 260 * u, 36 * u);
+  ctx.fillStyle = '#9fd08a';
+  ctx.fillText('🐾 ' + M.hits + '/' + NIP_GOLD + '   ' + Math.ceil(M.T) + 's', cx, (MINI_HUD_Y + 16) * u);
+  ctx.fillStyle = M.lockT > 0 ? '#ff9a8a' : M.combo >= 5 ? '#d6bce0' : 'rgba(255,232,184,0.85)';
+  ctx.fillText(M.lockT > 0 ? 'PAW COMMITTED…' : M.combo >= 2 ? 'RUN OF ' + M.combo : 'POUNCE ON THE RING', cx, (MINI_HUD_Y + 30) * u);
   ctx.restore();
 }
 
@@ -4268,7 +4344,7 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', pond: 'pond', nip: 'catnip', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', traf: 'traf', scrum: 'scrum' };
+const BRIEF_POI = { scrap: 'supper', pond: 'pond', nip: 'nip', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', traf: 'traf', scrum: 'scrum' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
@@ -4694,7 +4770,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus' || G.mapId === 'square');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'nipdream' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus' || G.mapId === 'square');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -5278,18 +5354,18 @@ function interactPoi(p) {
     if (G.dog) { toast('🐟 There is a DOG in the garden. The fish have gone to the bottom and so, frankly, would you.'); sClick(); return; }
     if (G.pondCD > 0) { toast('🐟 The pond has had enough of you for one day. The fish are sulking under the lily pads.'); sClick(); return; }
     miniChoice('pond', 'THE GARDEN POND', 'Ornamental, Allegedly',
-      'Fish, bought at public expense, in a pond you are technically responsible for.\n\nThey run deep and surface for about a second. Hold still until the ripple, then go. Leap at nothing and you go in — and everything down there stays down for a while afterwards.',
+      'Fish, bought at public expense, in a pond you are technically responsible for.\n\nYou cannot swim and you cannot reach across the water, so the whole job is being in the right place on the bank at the right moment.',
       '🐟 Take up position', '🚶 Stay dry', which => { if (which === 'a') startPond(); });
     return;
   }
   if (p.type === 'catnip') {
     if (G.mini) return;
     if (G.daily) { toast('🌿 Not on a sortie. You are on duty, and the bed knows it.'); sClick(); return; }
-    if (G.dog) { toast('🌿 There is a DOG in the garden. This is the worst possible moment to be unable to walk straight.'); sClick(); return; }
+    if (G.dog) { toast('🌿 There is a DOG in the garden. Whatever this bed does to you, it can wait.'); sClick(); return; }
     if (G.catnipCD > 0) { toast('🌿 The bed is flattened and you have had quite enough. Give it an hour.'); sClick(); return; }
-    miniChoice('catnip', 'THE GARDEN', 'The Catnip Incident',
-      'Nobody planted this. Nobody will admit to watering it.\n\nGet into it and the steering stops being entirely yours — and every so often you will simply go over. Pounce the moths regardless. They are, unaccountably, drawn to the spectacle.',
-      '🌿 Get into the bed', '🚶 Maintain composure', which => { if (which === 'a') startCatnip(); });
+    miniChoice('catnip', 'THE GARDEN', 'The Catnip Dream',
+      'Nobody planted this. Nobody will admit to watering it.\n\nGet into it and you will not be in the garden any more. You will be sitting perfectly still with your eyes enormous, somewhere much more interesting, while things that are not there come and introduce themselves.',
+      '🌿 Get into the bed', '🚶 Maintain composure', which => { if (which === 'a') startFade(() => startNip()); });
     return;
   }
   if (p.type === 'supper') {
@@ -6904,10 +6980,10 @@ const MINI_RULES = {
               goal: 'Reach the perch at the top before the clock runs out. Falling costs you time, not lives.' },
   protocol: { how: 'POUNCE at the dot. Only a LANDED pounce counts — walking into it does nothing. It relocates faster every time you touch it.',
               goal: 'Eight catches in forty-five seconds.' },
-  pond:     { how: 'WAIT. Fish run deep as shadows, then a RIPPLE spreads where one is about to surface. It is up for about a second — POUNCE then. The banner reads WAIT or NOW.',
-              goal: 'Six fish. Leap at nothing and you go in: every fish dives and stays down a while.' },
-  catnip:   { how: 'Your steering DRIFTS — the stronger the high, the more your walk bends away from where you pointed. Every few seconds you flop over and cannot move at all. POUNCE the moths regardless.',
-              goal: 'Eighteen moths. Moths crowd a flopped cat, so the flop is your best chance — but a pounce that lands on nothing scatters them.' },
+  pond:     { how: 'Fish run deep as shadows. When one is about to come up, a RIPPLE spreads — RUN AROUND THE BANK TO IT, because you can only take a fish you are standing next to. The ring around you is your reach. POUNCE once the fish is inside it.',
+              goal: 'Six fish. The banner tells you which of the four things is true: WATCH, RUN, TOO FAR, or POUNCE. Leaping when nothing is up puts you in the pond.' },
+  catnip:   { how: 'You do not move at all — Larry sits down and the dream comes to him. Things drift in out of the dark toward the glowing RING around you. POUNCE the moment one crosses that ring: on it is perfect, early is a miss, and anything that reaches your nose is gone.',
+              goal: 'Consecutive hits build a run, and the dream gets quicker the longer it lasts. Swipe at nothing and your paw is committed for half a second while everything keeps coming — this cannot be played by mashing.' },
   supper:   { how: 'Scraps fall from the table above. Get UNDERNEATH each one before it lands — the floor is the enemy, not the clock.',
               goal: 'Catch four before they hit the tiles.' },
   gauntlet: { how: 'Six lanes of rat patrol between you and the stolen larder. Move when a lane is clear; POUNCE to cross a gap in one go.',
@@ -7441,15 +7517,7 @@ function update(dt) {
   let sp = (has('zoomies') ? 78 : 70) + (G.zoomiesT > 0 ? 55 : 0) + (G.dream && G.dream.buff === 'zoom' ? 8 : 0);
   if (G.stam < 25) sp *= 0.86; // a puffed cat trudges
   let mx = v.x, my = v.y;
-  // the catnip has the wheel: the walk drifts off true, and a flop takes it entirely
-  if (G.mini && G.mini.type === 'catnip') {
-    if (G.mini.flopT > 0) { mx = 0; my = 0; }
-    else if (mx || my) {
-      const a = (Math.sin(G.time * 1.7) * 1.05 + Math.sin(G.time * 0.63 + 1.9) * 0.55) * G.mini.high;
-      const co = Math.cos(a), si = Math.sin(a);
-      const nx = mx * co - my * si; my = mx * si + my * co; mx = nx;
-    }
-  }
+  if (G.mini && G.mini.type === 'nip') { mx = 0; my = 0; }   // he is sitting down
   if (L.charging && L.pounceT <= 0 && !G.napping) {
     L.chargeT += dt;
     sp *= 0.32; // creep while winding up
@@ -7598,7 +7666,7 @@ function update(dt) {
   updateDog(dt);
   updateRace(dt);
   updatePond(dt);
-  updateCatnip(dt);
+  updateNip(dt);
   updateGauntlet(dt);
   updateProtocol(dt);
   updateClimb(dt);
@@ -7682,6 +7750,7 @@ function draw() {
   ctx.fillStyle = '#0b0b10';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (G.mini && G.mini.type === 'sled') { drawSled(); return; } // the Descent draws its own world
+  if (G.mini && G.mini.type === 'nip') { drawNip(); return; }   // and so does the dream
   if (G.mini && G.mini.type === 'bus') { drawBus(); return; }   // so does the 11
 
   ctx.setTransform(ZOOM, 0, 0, ZOOM, -camX * ZOOM, -camY * ZOOM);
@@ -7907,7 +7976,6 @@ function draw() {
   if (G.mini && G.mini.type === 'pond') drawPond();
   if (G.mini && G.mini.type === 'climb') drawClimbHud();
   if (G.mini && G.mini.type === 'fox') drawFoxHud();
-  if (G.mini && G.mini.type === 'catnip') drawCatnip();
   if (G.mini && G.mini.type === 'gauntlet') drawGauntlet();
   if (G.mini && G.mini.type === 'dot') drawProtocol();
   if (G.mini && G.mini.type === 'climb') drawClimb();
@@ -8091,11 +8159,6 @@ function drawLarry(L) {
   ctx.save();
   ctx.translate(px2, py2);
   ctx.scale(sqx, sqy);
-  // mid-flop he is simply upside down, which no other state in the game does
-  if (G.mini && G.mini.type === 'catnip' && G.mini.flopT > 0) {
-    const k = Math.sin((1 - G.mini.flopT / 0.95) * Math.PI);   // over, and back again
-    ctx.rotate(Math.PI * k * (G.mini.flops % 2 ? 1 : -1));
-  }
   ctx.translate(-px2, -py2);
   if (has('cape') && !G.napping) {
     ctx.fillStyle = '#7c2d3e';
@@ -8696,16 +8759,16 @@ bindBtn(document.getElementById('mischiefClose'), () => {
 // Maps with no exits of their own. Anything that PLACES the player must send
 // them somewhere real instead — a save, a save code, or a dev URL param that
 // lands here would otherwise strand a career with no way out but a reload.
-const POCKET_MAPS = new Set(['shelter', 'underroad', 'dreamvoid', 'heights', 'stairs', 'marble', 'bus', 'square', 'market']);
+const POCKET_MAPS = new Set(['shelter', 'underroad', 'dreamvoid', 'nipdream', 'heights', 'stairs', 'marble', 'bus', 'square', 'market']);
 const POCKET_HOME = {
   marble: ['ground', 26.5, 29.5], stairs: ['ground', 5.5, 15.5],
   bus: ['street', 10.5, 6.5], square: ['street', 10.5, 6.5],
-  underroad: ['basement', 26.5, 16.5], dreamvoid: ['ground', 15.5, 23.5],
+  underroad: ['basement', 26.5, 16.5], dreamvoid: ['ground', 15.5, 23.5], nipdream: ['ground', 13.5, 6.5],
   heights: ['ground', 5.5, 19.5],
 };
 const MINI_CD = {
   marble: 'marbleCD', sled: 'sledCD', bus: 'busCD', traf: 'trafCD', canape: 'canapeCD',
- supper: 'supperCD', race: 'raceCD', pond: 'pondCD', catnip: 'catnipCD',
+ supper: 'supperCD', race: 'raceCD', pond: 'pondCD', nip: 'catnipCD',
   climb: 'climbCD', scrum: 'scrumCD',
 };
 function abandonMini() {
