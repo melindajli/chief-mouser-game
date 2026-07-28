@@ -4645,7 +4645,6 @@ const DAY_GOALS = [
   { id: 'night', text: 'Catch {n} mice after dark', n: 2, kind: 'catch', night: true },
   { id: 'briefs', text: 'Clear {n} briefs from the Red Box', n: 2, kind: 'brief' },
   { id: 'naps', text: 'Take {n} dignified naps', n: 2, kind: 'nap' },
-  { id: 'summons', text: 'Sit beautifully for a photo-op', n: 1, kind: 'summons', min: 3 },
   { id: 'press', text: 'Send the press home happy', n: 1, kind: 'press', min: 3 },
   { id: 'swift', text: 'Catch {n} swift brown mice', n: 2, kind: 'catch', type: 'swift', min: 3 },
   { id: 'trick', text: 'Catch a trickster (tap, don\'t wind up)', n: 1, kind: 'catch', type: 'trick', min: 5 },
@@ -4774,7 +4773,6 @@ function eveningPaper() {
     '🐭 ' + s.catch + ' caught · 💨 ' + s.escape + ' escaped\n' +
     '📕 ' + s.brief + ' briefs cleared · 🐟 ' + s.fish + ' kippers banked\n' +
     '📊 Approval ' + (apd >= 0 ? '+' : '') + apd + '% on the day' +
-    (s.ops ? '\n📸 ' + s.ops + ' photo-op' + (s.ops === 1 ? '' : 's') + ' attended, beautifully' : '') +
     (s.palm ? '\n🎩 Palmerston: ' + s.palm + ' mice poached. Noted. Filed. Unforgiven.' : '') +
     (G.brief ? '\n\n📕 Tomorrow\'s Red Box, already on the desk: "' + G.brief.def.text + '"' : '') +
     '\n\n🔥 Streak: ' + DAY.streak + ' day' + (DAY.streak === 1 ? '' : 's') + ' with the box cleared.' +
@@ -6406,7 +6404,7 @@ function queueBeat(level) {
     earnHonour('garter');
     G.cardQueue.push({
       level, title: 'You Remain',
-      body: 'PMs will come. Vans will go. Portraits will climb the staircase until the staircase surrenders. But the file is stamped PERMANENT, the radiator is warm, and the whole grand, mouse-riddled house is YOURS.\n\nThank you for playing. Larry remains on duty — the mice, the honours, the mischief and the Daily Sortie continue for as long as you do. 🐾\n\n(And when you are ready: cats get NINE lives. A New Life awaits in the pause menu — the climb begins again, and everything you earned comes with you.)',
+      body: 'PMs will come. Vans will go. Portraits will climb the staircase until the staircase surrenders. But the file is stamped PERMANENT, the radiator is warm, and the whole grand, mouse-riddled house is YOURS.\n\nThank you for playing. Larry remains on duty — the mice, the honours and the mischief continue for as long as you do. 🐾\n\n(And when you are ready: cats get NINE lives. A New Life awaits in the pause menu — the climb begins again, and everything you earned comes with you.)',
     });
   }
   maybeShowCard();
@@ -6534,13 +6532,6 @@ sceneEl.wrap.addEventListener('pointerdown', e => {
   e.preventDefault();
   sceneAdvance();
 });
-
-/* ---------- The photo-op, staged: the PM arrives, nerves and all ---------- */
-
-/* ---- HOLD THE POSE: the photo-op mini game. Larry's tail is the needle —
-   tap when it settles in the gold to lock each of the three frames. It
-   swings faster every shot, and a red dot turns up to test your soul. ---- */
-const photoNeedle = () => Math.sin(G.mini.phase);
 
 /* ---------- The herald: King Rat sends terms (the level-7 beat) ---------- */
 function heraldScene(onDone) {
@@ -7095,21 +7086,6 @@ function update(dt) {
     G.raining = !G.snowing && r < snowP + rainP;
     if (G.snowing && !wasSnow) toast('❄️ Snow over Westminster. The garden goes quiet.');
     G.rainT = 25 + Math.random() * 30;
-  }
-
-  // Daily Sortie: the clock is the whole game
-  if (G.daily && !G.daily.over) {
-    G.daily.t -= dt;
-    const secs = Math.max(0, Math.ceil(G.daily.t));
-    if (secs <= 3 && secs > 0 && secs !== G.daily.lastTick) { // heartbeat ticks, immune to score refreshes
-      G.daily.lastTick = secs;
-      tone(1100, 1100, 0.07, 'square', 0.06);
-    }
-    if (secs !== G.daily.shown) {
-      G.daily.shown = secs;
-      document.getElementById('pmline').textContent = '📅 DAILY SORTIE';
-      document.getElementById('pmday').textContent = '⏱ ' + secs + 's · ' + G.daily.score;
-    }
   }
 
   // approval: the nation is always keeping score — but it also forgets.
@@ -8114,7 +8090,7 @@ function bootWorld() {
   sMeow();
 }
 
-// ---------- Daily Sortie: one seeded 120-second run per day, same for everyone ----------
+// ---------- Seeded randomness: the same day rolls the same way for everyone ----------
 function mulberry32(a) {
   return function () {
     a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -8510,7 +8486,7 @@ const POCKET_HOME = {
 const MINI_CD = {
   marble: 'marbleCD', sled: 'sledCD', bus: 'busCD', traf: 'trafCD', canape: 'canapeCD',
   post: 'postCD', supper: 'supperCD', race: 'raceCD', agm: 'agmCD', moles: 'molesCD',
-  climb: 'climbCD', gulls: 'gullsCD',
+  climb: 'climbCD', gulls: 'gullsCD', scrum: 'scrumCD',
 };
 function abandonMini() {
   if (!G.mini) return;
@@ -8519,6 +8495,9 @@ function abandonMini() {
   document.getElementById('menuWrap').classList.add('hidden');
   menuOpen = false; G.paused = false;
   if (MINI_CD[t]) G[MINI_CD[t]] = 45;   // a pause, so quitting is not a way to reroll
+  // the fox is not POI-triggered — it re-arms on proximity every frame, so
+  // without this the Incident restarts the instant you walk away from it
+  if (t === 'fox') G.foxTonight = true;
   const home = POCKET_HOME[G.mapId];
   if (home) startFade(() => switchMap(home[0], home[1] * TILE, home[2] * TILE));
   toast('🏳️ Left it there. It will keep.');
@@ -8600,9 +8579,6 @@ bindBtn(document.getElementById('photoClose'), () => {
   G.paused = false;
 });
 
-// ---------- Daily Sortie buttons ----------
-// plain click, not pointerdown: navigator.share needs the transient user
-// activation that touch pointerdown doesn't grant
 document.getElementById('titleCat').textContent = '🐈';
 const existingSave = loadSave();
 if (existingSave && existingSave.introDone) document.getElementById('btnContinue').classList.remove('hidden');
