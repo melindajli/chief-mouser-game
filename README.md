@@ -56,9 +56,10 @@ the front door having no outside handle:
   in it and hold still
 - **Kitchen Suppers** — the PM cooks, scraps fall from the flat's supper
   table, and the floor is the enemy
-- **The Canapé Line** — a state reception is being plated unsupervised.
-  Salmon, prawn and cheese may pass; cucumber, onion and grapes may not.
-  The rule stays on screen and a ring tells you what is in reach
+- **The Canapé Line** — a state reception is being plated along a trolley,
+  and nobody is watching the trolley. TAKE the salmon, prawn and cheese;
+  LEAVE the cucumber, onion and grapes (two of those are poison to a cat,
+  and nobody needs a cucumber). A ring tells you what is in reach
 - **The Midnight Zoomies** — ten paw-print gates around the whole ground
   floor at ludicrous speed; gold pace earns The 3 A.M. Protocol
 - **The Pond** — ornamental fish, bought at public expense, in a pond you
@@ -90,8 +91,8 @@ the front door having no outside handle:
   commits to a direction is going that way until something stops them.
   Three rooms, generated fresh and machine-checked solvable; stop on the rug
 - **The Heights** — pounce ledge to ledge up the tallest bookcase in
-  government; wobbly shelves tip, the air does not hold cats, and the
-  highest perch in the house has never held one. Officially.
+  government, against a clock; wobbly shelves tip, the air does not hold
+  cats, and the highest perch in the house has never held one. Officially.
 
 (There is also something behind the garden hedge. It is protected by
 statute. No further questions.)
@@ -110,6 +111,9 @@ statute. No further questions.)
   so the game also points at the real charity — from the pause menu, and once
   in the story, after the fifth parcel goes home. The game is not affiliated
   with Battersea and speaks only for itself.
+- Every mini game opens with the same card: the flavour, then **HOW** (which
+  button does what) and **GOAL** (what counts as winning). Kippers explain
+  themselves too — tap the 🐟 counter, or the pause menu, for what they buy.
 
 ## Play locally
 

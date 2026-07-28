@@ -45,6 +45,17 @@ const PHOTOG_NAME = () => PARTNER.live && PARTNER.name ? PARTNER.name : 'THE PHO
 // Larry really was a Battersea cat. This game is not affiliated with them —
 // but they are real, and they are still doing it.
 const BATTERSEA_URL = 'https://donate.battersea.org.uk/appeals/default/';
+function openLink(url) {
+  if (!url) return;
+  let w = null;
+  try { w = window.open(url, '_blank', 'noopener'); } catch (e) { w = null; }
+  if (w) return;
+  try {                       // blocked: a real anchor click carries the gesture further
+    const a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    document.body.appendChild(a); a.click(); a.remove();
+  } catch (e) { location.href = url; }
+}
 // The government keeps its own history of this house, and Larry has a section
 // of it. Everything in this game is invented; that page is not.
 const RECORD_URL = 'https://www.gov.uk/government/history/10-downing-street#larry-chief-mouser-to-the-cabinet-office';
@@ -1789,7 +1800,7 @@ const HONOURS = [
   { id: 'square', name: 'The Square Is Clear', hint: 'Put up every last pigeon in Trafalgar Square.' },
   { id: 'conductor', name: 'No Fare, No Bother', hint: 'Ride the 11 the whole way without touching a thing.' },
   { id: 'polished', name: 'The Polished Floor', hint: 'Cross all three Marble Hall rooms in par.' },
-  { id: 'quality', name: 'Quality Control', hint: 'A perfect Canapé Line: every cucumber stopped, every salmon spared.' },
+  { id: 'quality', name: 'Quality Control', hint: 'A perfect Canapé Line: every salmon taken, every onion left alone.' },
   { id: 'sledder', name: 'The Descent', hint: 'Ride your cushion down the Grand Staircase without touching a soul.' },
   { id: 'presspass', name: 'Patron of the Press', hint: PARTNER.live ? 'Redeem a code from the photographer\'s shop.' : '[AWAITING ACCREDITATION]' },
   { id: 'perch', name: 'The Highest Authority', hint: 'Reach the perch atop the tallest bookcase in government.' },
@@ -2080,7 +2091,12 @@ function maybeFox() {
 }
 function startFox() {
   if (G.mapId !== 'street') return;   // it happened on the Street. It happens ONLY on the Street.
-  G.mini = { type: 'fox', t: 0, fx: FOX_START, stands: 0, phase: 'pace', phT: 0, lx: G.larry.x, ly: G.larry.y, lungeFrom: 0 };
+  // Past midnight the Street is EMPTY. The officer, the press pack and the
+  // photographer all went home hours ago — and the whole point of the Incident
+  // is that there is one cat between the fox and the door, with no witnesses.
+  G.npcs = [];
+  G.nearChat = null; G.nearPoi = null;
+  G.mini = { type: 'fox', t: 0, fx: FOX_START, stands: 0, phase: 'pace', phT: 0, lx: G.larry.x, ly: G.larry.y, lungeFrom: 0, shove: null };
   tone(300, 180, 0.2, 'sawtooth', 0.04); // something low, at the edge of hearing
   if (!G.met.has('event:fox')) {
     G.met.add('event:fox'); save();
@@ -2088,7 +2104,11 @@ function startFox() {
       { who: 'THE STREET', text: '(Past midnight. The cameras are off. At the west end: something long, low, and amber. It is on no guest list.)' },
       { who: 'THE FOX', text: '(It looks at you the way you look at mice.)' },
       { who: 'LARRY', text: '(One cat between the fox and the door. It is enough. It will have to be.)' },
-    ], () => toast('🦊 Advance while it paces. When it lunges — DO NOT MOVE.', 'now'));
+    ], () => showCard('THE STREET, PAST MIDNIGHT', 'The Fox Incident',
+      'It will not be chased off. It is bigger than you and it knows it. The only thing it has never met is something that refuses to move.'
+      + '\n\n▸ HOW — While the banner reads ADVANCE, walk at it. The moment it rears and the banner turns red, STOP: no walking, no pouncing, nothing, until it backs off. A ring round you means hold still.'
+      + '\n\n▸ GOAL — Hold your ground three times and it breaks. Move during a lunge and you lose ground instead — you cannot win this by attacking it.',
+      null, null));
   } else {
     toast('🦊 The fox is back. It remembers. So do you.', 'now');
   }
@@ -2101,6 +2121,13 @@ function updateFox(dt) {
   const L = G.larry;
   const moved = dist(L.x, L.y, M.lx, M.ly) / Math.max(dt, 0.001); // px/s this frame
   M.lx = L.x; M.ly = L.y;
+  if (M.shove) {                       // pushed back, not relocated
+    const k = Math.min(1, dt / M.shove.t);
+    L.x += (M.shove.to - L.x) * k;
+    M.shove.t -= dt;
+    if (M.shove.t <= 0) { L.x = M.shove.to; M.shove = null; }
+    M.lx = L.x; M.ly = L.y;            // being shoved is not flinching
+  }
   M.phT -= dt;
   if (M.phase === 'pace') {
     if (dist(L.x, L.y, M.fx, FOX_Y) < 44) {
@@ -2116,13 +2143,15 @@ function updateFox(dt) {
       M.phase = 'pace'; M.phT = 0;
       M.stands = Math.max(0, M.stands - 1);
       M.fx = Math.min(FOX_START, M.fx + FOX_STEP);
-      L.x = Math.min(L.x + 42, 20 * TILE);
-      addFloat(L.x, L.y - 14, 'FLINCHED', '#ff8080');
+      // it used to TELEPORT you 42px east, which read as a bug rather than as
+      // losing ground. You get shoved back over a third of a second instead.
+      M.shove = { t: 0.34, to: Math.min(L.x + 42, 20 * TILE) };
+      addFloat(L.x, L.y - 14, 'YOU MOVED — hold still next time', '#ff8080');
       addParticle(L.x, L.y, '#b3aa99', 5, 30);
       tone(340, 170, 0.14, 'square', 0.06);
     } else if (M.phT <= 0) { // held. It blinks first.
       M.stands++;
-      addFloat(M.fx, FOX_Y - 14, M.stands >= 3 ? 'IT BREAKS' : 'it blinks first · ' + M.stands + '/3', '#ffe8b8');
+      addFloat(M.fx, FOX_Y - 14, M.stands >= 3 ? 'IT BREAKS' : 'IT BLINKS FIRST · ' + M.stands + '/3', '#ffe8b8');
       tone(700, 950, 0.1, 'triangle', 0.07);
       if (M.stands >= 3) { M.phase = 'flee'; M.phT = 2.2; }
       else { M.phase = 'pace'; M.phT = 0; M.fx -= FOX_STEP; }
@@ -2133,13 +2162,39 @@ function updateFox(dt) {
     if (M.fx < -2 * TILE || M.phT <= 0) finishFox();
   }
 }
+// The whole game is one binary — advance, or freeze — and it was only ever
+// communicated by a toast at the start and a floating word after you got it
+// wrong. It is now on screen the entire time, in the two colours.
+function drawFoxHud() {
+  const M = G.mini, L = G.larry;
+  const freeze = M.phase === 'tell' || M.phase === 'lunge';
+  if (freeze) {                        // a ring on the cat himself: hold still
+    const p = 0.5 + Math.sin(G.time * 14) * 0.5;
+    ctx.strokeStyle = 'rgba(255,140,110,' + (0.55 + p * 0.4) + ')';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(L.x, L.y, 15 + p * 3, 0, 7); ctx.stroke();
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const cx = canvas.width / 2, u = DPR;
+  ctx.font = Math.round(9 * u) + 'px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = freeze ? 'rgba(70,10,10,0.72)' : 'rgba(0,0,0,0.5)';
+  ctx.fillRect(cx - 130 * u, MINI_HUD_Y * u, 260 * u, 36 * u);
+  ctx.fillStyle = freeze ? '#ff9a8a' : '#9fe8a0';
+  ctx.fillText(freeze ? 'FREEZE — DO NOT MOVE' : 'ADVANCE ON IT', cx, (MINI_HUD_Y + 16) * u);
+  ctx.fillStyle = 'rgba(255,232,184,0.9)';
+  ctx.fillText('HELD ' + M.stands + '/3', cx, (MINI_HUD_Y + 30) * u);
+  ctx.restore();
+}
 function finishFox() {
   G.mini = null;
   G.foxTonight = true; // one Incident per night is plenty
   G.fish += 4; G.xp += 14;
   earnHonour('fox');
   briefEvent('fox');
-  miniResult('THE FOX INCIDENT','📰 "LARRY SEES OFF FOX" — tomorrow\'s front page. The officer saw everything. +4 🐟 +14 XP');
+  setupNpcs();          // dawn, and the Street fills back up
+  miniResult('THE FOX INCIDENT','📰 "LARRY SEES OFF FOX" — tomorrow\'s front page. There were no witnesses at all, which has stopped nobody from describing it in detail. +4 🐟 +14 XP');
   [523, 659, 880].forEach((f, i) => tone(f, f, 0.12, 'triangle', 0.06, i * 0.09));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   save();
@@ -2193,10 +2248,14 @@ const CLIMB_LEDGES = [
   { x0: 1, x1: 2, y: 8, wob: true }, { x0: 6, x1: 8, y: 8 },
   { x0: 4, x1: 7, y: 4, perch: true },     // THE PERCH
 ];
+// A climb with no failure state is not a climb: falling used to be a free
+// retry, so the whole thing could be walked at a stroll. The clock is the
+// stake, and above the halfway shelf nothing holds you for long.
+const CLIMB_TIME = 32;
 function startClimb() {
   switchMap('heights', 5.5 * TILE, 23.5 * TILE);
-  G.mini = { type: 'climb', t: 0, stand: new Map(), gone: new Map() };
-  toast('📚 Pounce ledge to ledge. Wobbly shelves tip. Reach the perch.', 'now');
+  G.mini = { type: 'climb', t: 0, T: CLIMB_TIME, stand: new Map(), gone: new Map() };
+  toast('📚 Pounce ledge to ledge. Wobbly shelves tip. Reach the perch before the clock.', 'now');
   tone(392, 523, 0.2, 'triangle', 0.06);
 }
 function climbLedgeAt(x, y) {
@@ -2222,8 +2281,12 @@ function updateClimb(dt) {
     if (l.wob) {
       const st = (M.stand.get(li) || 0) + dt;
       M.stand.set(li, st);
-      if (st > 0.35 && Math.random() < dt * 8) addParticle(L.x, (l.y + 0.5) * TILE, '#c9a26a', 1, 8); // creaking dust
-      if (st > 0.75) {
+      // The higher the shelf, the less it wants you on it. A full pounce needs
+      // 0.53s to wind up, so nothing here may drop below that: an urgent window
+      // is difficulty, a window shorter than the charge is just a broken game.
+      const tip = l.y <= 12 ? 0.68 : 0.85;
+      if (st > tip * 0.45 && Math.random() < dt * 8) addParticle(L.x, (l.y + 0.5) * TILE, '#c9a26a', 1, 8); // creaking dust
+      if (st > tip) {
         M.gone.set(li, 3);
         M.stand.delete(li);
         addFloat(L.x, L.y - 12, 'TIP!', '#ff8080');
@@ -2233,10 +2296,21 @@ function updateClimb(dt) {
   } else {
     for (const k of [...M.stand.keys()]) if (k !== li) M.stand.delete(k);
     if (L.pounceT <= 0) { // the air does not hold cats
-      const ny = L.y + 95 * dt;
+      const ny = L.y + 118 * dt;
       if (circleFreeOn(curMap(), L.x, ny, 5)) L.y = ny;
     }
   }
+  if ((M.T -= dt) <= 0) climbFail();
+}
+function climbFail() {
+  const M = G.mini;
+  G.mini = null;
+  G.climbCD = 45 + Math.random() * 30;
+  const tiers = Math.max(0, Math.round((24 - G.larry.y / TILE) / 4));
+  miniResult('THE HEIGHTS',
+    '📚 The clock beat you — ' + tiers + ' of 5 shelves. You come down the way every cat comes down: slowly, and as though it were always the plan. The perch is still up there.');
+  tone(300, 160, 0.24, 'square', 0.06);
+  updateHUD();
 }
 function finishClimb() {
   const M = G.mini;
@@ -2255,6 +2329,21 @@ function finishClimb() {
   save();
   startFade(() => switchMap('ground', 5.5 * TILE, 19.5 * TILE)); // beside the bookcase, not inside the armchair
   updateHUD();
+}
+function drawClimbHud() {
+  const M = G.mini;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const cx = canvas.width / 2, u = DPR;
+  ctx.font = Math.round(9 * u) + 'px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(cx - 116 * u, MINI_HUD_Y * u, 232 * u, 36 * u);
+  ctx.fillStyle = M.T < 8 ? '#ff9a8a' : '#e9c46a';
+  ctx.fillText(Math.ceil(M.T) + 's', cx, (MINI_HUD_Y + 16) * u);
+  ctx.fillStyle = 'rgba(233,196,106,0.85)';
+  ctx.fillText('SHELF ' + Math.max(0, Math.round((24 - G.larry.y / TILE) / 4)) + '/5', cx, (MINI_HUD_Y + 30) * u);
+  ctx.restore();
 }
 function drawClimb() {
   const M = G.mini;
@@ -2302,7 +2391,12 @@ function buildSledTrack() {
     const gap = 3 + ((Math.random() * 7) | 0);
     for (const x of SLED_LANES) {
       if (Math.abs(x - gap) <= 1) continue;
-      if (Math.random() < 0.6) hz.push({ x, y, kind: pick(SLED_HAZARDS), hit: false, t: Math.random() * 9 });
+      if (Math.random() >= 0.6) continue;
+      // about a third of them shift about — the hoover never does, it is busy
+      const kind = pick(SLED_HAZARDS);
+      const mover = kind !== 'hoover' && Math.random() < 0.34;
+      hz.push({ x, y, kind, hit: false, t: Math.random() * 9,
+        sway: mover ? 5 + Math.random() * 4 : 0, rate: 1.1 + Math.random() * 1.1, ph: Math.random() * 7 });
     }
     if (Math.random() < 0.55) pk.push({ x: gap, y: y - 1, got: false });
   }
@@ -2311,17 +2405,39 @@ function buildSledTrack() {
 function startSled() {
   const tr = buildSledTrack();
   switchMap('stairs', 6.5 * TILE, 2.5 * TILE);
-  G.mini = { type: 'sled', t: 0, spd: 98, hz: tr.hz, pk: tr.pk, kippers: 0, bumps: 0, hops: 0, spin: 0 };
+  G.mini = { type: 'sled', t: 0, spd: 98, hz: tr.hz, pk: tr.pk, kippers: 0, bumps: 0, hops: 0, chain: 0, spin: 0 };
   toast('🛋️ Steer. POUNCE to hop. Mind the humans.', 'now');
   tone(300, 500, 0.2, 'triangle', 0.06);
 }
-const SLED_OOF = { minister: 'SORRY, MINISTER', press: 'NO COMMENT', fan: 'NOT NOW', hoover: 'THE HOOVER!!' };
+// The stairs used to have four canned reactions. Everyone on them now has a
+// mouth: the line belongs to the person you hit, not to the cat.
+const SLED_QUIPS = {
+  minister: ['MINISTER: "That was the CAT."', 'MINISTER: "I was NOT briefed on a cat."',
+    'MINISTER: "Nobody films this."', 'MINISTER: "I have a statement at four."',
+    'MINISTER: "This is a resigning matter. For him."', 'MINISTER: "Was that in the brief?"',
+    'MINISTER: "I am fine. The trousers are not."', 'MINISTER: "Carry on. Obviously."'],
+  press: ['PRESS: "GOT IT."', 'PRESS: "Can he do that again?"', 'PRESS: "That is the front page."',
+    'PRESS: "Any comment from the cat?"', 'PRESS: "CAT DOWN. CAT DOWN."',
+    'PRESS: "Hold the fold, he\'s moving."'],
+  fan: ['VISITOR: "IT\'S HIM!"', 'VISITOR: "I flew here for this."', 'VISITOR: "Worth every penny."',
+    'VISITOR: "He TOUCHED me."', 'VISITOR: "Nobody at home will believe this."'],
+  hoover: ['THE HOOVER: WWWWRRRRRRR', '(the hoover does not negotiate)',
+    '(the hoover wins. the hoover always wins.)', 'THE HOOVER: — and it is still going —'],
+};
+// a clean hop reads better if it escalates: three in a row is a run, not a fluke
+const SLED_HOPS = ['OVER!', 'AGAIN!', 'CLEAN x3', 'UNTOUCHED x4', 'DIPLOMATIC x5', 'STATE VISIT x6'];
+// hazards drift a little now, so a line you read two rows ago is not a promise.
+// Sway is capped under a tile so the guaranteed three-lane gap stays passable.
+function sledHX(h) {
+  return (h.x + 0.5) * TILE + (h.sway ? Math.sin(G.mini.t * h.rate + h.ph) * h.sway : 0);
+}
 function sledBump(h) {
   const M = G.mini, L = G.larry;
   M.bumps++;
   M.spd = Math.max(86, M.spd * 0.55);
   M.spin = 0.75;
-  M.msg = { text: SLED_OOF[h.kind] || 'OOF', t: 0.8, c: '#ff8080' };
+  M.chain = 0;
+  M.msg = { text: pick(SLED_QUIPS[h.kind] || ['OOF']), t: 1.1, c: '#ff8080' };
   addParticle(L.x, L.y, '#cfc8b8', 8, 40);
   tone(260, 150, 0.16, 'square', 0.06);
 }
@@ -2341,13 +2457,14 @@ function updateSled(dt) {
   const hopping = L.pounceT > 0;
   for (const h of M.hz) {
     if (h.hit) continue;
-    const hx = (h.x + 0.5) * TILE, hy = (h.y + 0.5) * TILE;
+    const hx = sledHX(h), hy = (h.y + 0.5) * TILE;
     if (Math.abs(hy - L.y) > 10 || Math.abs(hx - L.x) > 11) continue;
     h.hit = true;
     if (hopping) {                              // clean over the top of the civil service
-      M.hops++;
-      M.msg = { text: 'OVER!', t: 0.6, c: '#9fe8a0' };
-      tone(700, 1050, 0.07, 'triangle', 0.05);
+      M.hops++; M.chain++;
+      M.msg = { text: SLED_HOPS[Math.min(SLED_HOPS.length - 1, M.chain - 1)], t: 0.7, c: M.chain >= 3 ? '#ffd98a' : '#9fe8a0' };
+      tone(700 + Math.min(6, M.chain) * 60, 1050 + Math.min(6, M.chain) * 60, 0.07, 'triangle', 0.05);
+      if (M.chain >= 3) addParticle(L.x, L.y, '#ffd98a', 4, 26);
     } else sledBump(h);
   }
   for (const q of M.pk) {
@@ -2457,7 +2574,7 @@ function drawSled() {
   for (const q of M.pk) if (!q.got && q.y * TILE > L.y - 20 && q.y * TILE < L.y + FAR) things.push({ o: q, kind: 'kipper' });
   things.sort((a, b) => b.o.y - a.o.y);
   for (const th of things) {
-    const o = th.o, pr2 = proj((o.x + 0.5) * TILE, (o.y + 0.5) * TILE);
+    const o = th.o, pr2 = proj(sledHX(o), (o.y + 0.5) * TILE);
     if (pr2.y < hor) continue;
     const k = pr2.s * 2.3;
     ctx.globalAlpha = Math.min(1, pr2.s * 3.2);
@@ -2534,11 +2651,11 @@ function drawSled() {
    through to the Pillared Room; cucumber, onion and grapes do not leave this
    kitchen alive. Be under the offending item and POUNCE it off the counter. */
 const CANAPE_Y = 6.4, CANAPE_X0 = 2.2, CANAPE_X1 = 17.2;
-const CANAPE_GOOD = [['🍣', 'the salmon'], ['🍤', 'the prawn'], ['🧀', 'the cheese']];
-const CANAPE_BAD = [['🥒', 'cucumber'], ['🧅', 'onion'], ['🍇', 'grapes']];
+const CANAPE_STEAL = [['🍣', 'the salmon'], ['🍤', 'the prawn'], ['🧀', 'the cheese']];
+const CANAPE_LEAVE = [['🥒', 'cucumber'], ['🧅', 'onion'], ['🍇', 'grapes']];
 function startCanape() {
   G.mini = { type: 'canape', t: 0, next: 0.7, spawned: 0, total: 14, items: [], right: 0, wrong: 0, msg: null, endT: 0 };
-  toast('🥂 Pounce the cucumber. Let the salmon through.', 'now');
+  toast('🥂 Take the salmon. Leave the cucumber — and the onion.', 'now');
   tone(700, 900, 0.12, 'triangle', 0.06);
 }
 function canapeSay(text, c, M) { M.msg = { text, c, t: 0.9 }; }
@@ -2553,9 +2670,9 @@ function updateCanape(dt) {
     M.next -= dt;
     if (M.next <= 0) {
       M.spawned++;
-      const bad = Math.random() < 0.5;
-      const [em, name] = pick(bad ? CANAPE_BAD : CANAPE_GOOD);
-      M.items.push({ x: CANAPE_X0 * TILE, em, name, bad, gone: false, spd: 21 + M.spawned * 1.5, bob: Math.random() * 9 });
+      const steal = Math.random() < 0.5;
+      const [em, name] = pick(steal ? CANAPE_STEAL : CANAPE_LEAVE);
+      M.items.push({ x: CANAPE_X0 * TILE, em, name, steal, gone: false, spd: 21 + M.spawned * 1.5, bob: Math.random() * 9 });
       M.next = 1.45 + Math.random() * 0.5;
       tone(520, 620, 0.05, 'sine', 0.03);   // the tray goes down
     }
@@ -2566,10 +2683,10 @@ function updateCanape(dt) {
     // a pounce under the counter takes the item off it
     if (L.pounceT > 0 && Math.abs(it.x - L.x) < 13 && Math.abs(CANAPE_Y * TILE - L.y) < 26) {
       it.gone = true; it.batted = true;
-      addParticle(it.x, CANAPE_Y * TILE + 4, it.bad ? '#8fbf6a' : '#e8c86a', 6, 30);
-      if (it.bad) {
+      addParticle(it.x, CANAPE_Y * TILE + 4, it.steal ? '#e8c86a' : '#8fbf6a', 6, 30);
+      if (it.steal) {
         M.right++;
-        canapeSay('NOT THE ' + it.name.toUpperCase(), '#9fe8a0', M);
+        canapeSay(it.name.toUpperCase() + ' — MINE', '#9fe8a0', M);
         tone(900, 1300, 0.07, 'triangle', 0.07);
       } else {
         M.wrong++;
@@ -2580,8 +2697,8 @@ function updateCanape(dt) {
     }
     if (it.x > CANAPE_X1 * TILE) {   // it has left for the Pillared Room, for better or worse
       it.gone = true;
-      if (it.bad) { M.wrong++; canapeSay(it.name + ' got through', '#ff8080', M); tone(300, 200, 0.1, 'square', 0.05); }
-      else { M.right++; tone(760, 880, 0.05, 'sine', 0.04); }
+      if (it.steal) { M.wrong++; canapeSay(it.name + ' got away', '#ff8080', M); tone(300, 200, 0.1, 'square', 0.05); }
+      else { M.right++; tone(760, 880, 0.05, 'sine', 0.04); }   // correctly declined
     }
   }
   if (M.spawned >= M.total && M.items.every(it => it.gone)) {
@@ -2598,9 +2715,9 @@ function finishCanape() {
   G.fish += fish; G.xp += r * 2;
   if (r >= 14) earnHonour('quality');
   briefEvent('canape');
-  miniResult('THE CANAPÉ LINE',r >= 14 ? '🥂 FOURTEEN FOR FOURTEEN. Not one cucumber reached the Pillared Room. +' + fish + ' 🐟 +' + r * 2 + ' XP'
-    : r >= 10 ? '🥂 ' + r + '/14 vetted. The reception is broadly safe. +' + fish + ' 🐟 +' + r * 2 + ' XP'
-      : '🥂 ' + r + '/14. Somewhere upstairs, a diplomat is eating cucumber. +' + fish + ' 🐟' + (r ? ' +' + r * 2 + ' XP' : ''));
+  miniResult('THE CANAPÉ LINE',r >= 14 ? '🥂 FOURTEEN FOR FOURTEEN. Every salmon intercepted, every onion declined. The reception will be served bread. +' + fish + ' 🐟 +' + r * 2 + ' XP'
+    : r >= 10 ? '🥂 ' + r + '/14. The trolley reaches the Pillared Room noticeably lighter. +' + fish + ' 🐟 +' + r * 2 + ' XP'
+      : '🥂 ' + r + '/14. Somewhere upstairs a diplomat is eating YOUR prawn. +' + fish + ' 🐟' + (r ? ' +' + r * 2 + ' XP' : ''));
   [659, 784, r >= 11 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   save();
@@ -2618,7 +2735,7 @@ function drawCanape() {
   ctx.textAlign = 'center';
   // the rule, standing, above the line — the whole game is knowing which is which
   ctx.font = '7px monospace'; ctx.textAlign = 'center';
-  const legend = '✓ PASS 🍣🍤🧀      ✕ POUNCE 🥒🧅🍇';
+  const legend = '🐾 TAKE 🍣🍤🧀      ✋ LEAVE 🥒🧅🍇';
   const lw = ctx.measureText(legend).width + 12;
   ctx.fillStyle = 'rgba(12,10,20,0.78)';
   ctx.fillRect(bx + bw / 2 - lw / 2, CANAPE_Y * TILE - 26, lw, 12);
@@ -2630,7 +2747,7 @@ function drawCanape() {
     // in reach? say so, so the pounce window is never a guess
     const reach = Math.abs(it.x - L.x) < 13 && Math.abs(CANAPE_Y * TILE - L.y) < 26;
     if (reach) {
-      ctx.strokeStyle = it.bad ? 'rgba(255,128,128,0.9)' : 'rgba(159,232,160,0.9)';
+      ctx.strokeStyle = it.steal ? 'rgba(159,232,160,0.9)' : 'rgba(255,128,128,0.9)';
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.arc(it.x, y, 10 + Math.sin(M.t * 12) * 1.2, 0, 7); ctx.stroke();
     }
@@ -3327,7 +3444,7 @@ function finishScrum() {
       who: PHOTOG_NAME(),
       text: 'They go up on the shop tonight — calendars, mugs, the lot. Have a look if you like. Bring the cat.',
       choice: [
-        ['📷 See the shop', () => window.open(PARTNER.kofi, '_blank', 'noopener')],
+        ['📷 See the shop', () => openLink(PARTNER.kofi)],
         ['🐾 Back to work', () => { }],
       ],
     });
@@ -4508,7 +4625,7 @@ const G = {
   laser: null,
   toolCD: {}, zoomiesT: 0, sonarT: 0, sonarRingT: -1, nv: false, superArmed: false, shake: 0,
   press: { active: false, t: 0, cd: 35, catches: 0, bads: 0 }, paps: [],
-  nearPoi: null, nearChat: null, napping: false, approvalExplained: false, napPos: null, catAnim: null, idleAnim: null,
+  nearPoi: null, nearChat: null, napping: false, approvalExplained: false, tinExplained: false, napPos: null, catAnim: null, idleAnim: null,
   secretsFound: new Set(), brief: null, briefCD: 14, lastBrief: null, briefStage: 0, catchTimes: [], isNight: false,
   honours: new Set(), nightCatches: 0, briefsDone: 0, ratKingCD: 45, hitstop: 0, flash: 0,
   escapes: 0, snowing: false,
@@ -4592,7 +4709,7 @@ function save() {
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
       donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0, raceBest: G.raceBest || 0,
       gauntletOpen: !!G.gauntletOpen, protocolOpen: !!G.protocolOpen, gauntletBest: G.gauntletBest || 0, protocolBest: G.protocolBest || 0, climbBest: G.climbBest || 0,
-      underroadWins: G.underroadWins || 0, coronation: !!G.coronation, treaty: !!G.treaty, approvalExplained: !!G.approvalExplained,
+      underroadWins: G.underroadWins || 0, coronation: !!G.coronation, treaty: !!G.treaty, approvalExplained: !!G.approvalExplained, tinExplained: !!G.tinExplained,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -4947,12 +5064,12 @@ window.addEventListener('gamepadconnected', () => {
 function interactPoi(p) {
   // ---- the kipper economy's proper sinks: intel and vanity ----
   if (p.type === 'chefdeal') {
-    if (G.fish < 4) { toast('🤝 The chef eyes your tin. "Four kippers and the pantry door swings open. You\'re short." He returns to the soup.'); sClick(); return; }
+    if (G.fish < TIN.chef) { toast('🤝 The chef eyes your tin. "Four kippers and the pantry door swings open. You\'re short." He returns to the soup.'); sClick(); return; }
     showChoice('THE KITCHEN — OFF THE RECORD', 'The Chef\'s Arrangement',
       'The chef wipes his hands and leans in. "Four kippers, and the pantry door stays open for half a minute. What runs out of it is your department. I was never here. I am ALWAYS here — it\'s my kitchen. But you understand."',
       '🤝 Pay 4 🐟', '🚶 Another time', which => {
         if (which !== 'a') return;
-        G.fish -= 4;
+        G.fish -= TIN.chef;
         const n = spawnMouseNear([[29, 4], [24, 8], [19, 6]], 3);
         G.sonarT = 8;
         toast('🚪 The pantry door swings. ' + n + ' mice bolt for the Kitchen — and your whiskers know EXACTLY where they are.');
@@ -4962,12 +5079,12 @@ function interactPoi(p) {
     return;
   }
   if (p.type === 'gardendeal') {
-    if (G.fish < 3) { toast('🤝 The gardener tips his hat. "Three kippers and I\'ll show you where they\'re digging. Come back when you\'re flush."'); sClick(); return; }
+    if (G.fish < TIN.gardener) { toast('🤝 The gardener tips his hat. "Three kippers and I\'ll show you where they\'re digging. Come back when you\'re flush."'); sClick(); return; }
     showChoice('THE GARDEN — A QUIET WORD', 'The Gardener\'s Tip',
       'The gardener leans on his rake. "Three kippers and I\'ll give the far burrow a poke with this. What comes out, comes out fast. The begonias saw nothing."',
       '🤝 Pay 3 🐟', '🚶 Another time', which => {
         if (which !== 'a') return;
-        G.fish -= 3;
+        G.fish -= TIN.gardener;
         const n = spawnMouseNear([[10, 1], [33, 6]], 2);
         G.sonarT = 8;
         toast('🌱 The rake goes in. ' + n + ' mice erupt from the burrow — the garden is suddenly very busy.');
@@ -4977,7 +5094,7 @@ function interactPoi(p) {
     return;
   }
   if (p.type === 'commission') {
-    const PRICES = [25, 60, 120];
+    const PRICES = TIN.portrait;
     const tier = G.ownPortrait || 0;
     if (tier >= 3) { toast('🖼️ Your portrait dominates the Grand Staircase. The wall can structurally support no further ambition. You inspect it anyway. Magnificent.'); sClick(); return; }
     const price = PRICES[tier];
@@ -5027,7 +5144,7 @@ function interactPoi(p) {
     if (G.mini) return;
     if (G.daily) { toast('💨 The zoomies respect the sortie clock. Barely.'); sClick(); return; }
     if (G.raceCD > 0) { toast('💨 The zoomies have passed. For now. You can feel them out there, circling.'); sClick(); return; }
-    showChoice('SOMETHING STIRS IN YOUR LEGS', 'THE ZOOMIES',
+    miniChoice('race', 'SOMETHING STIRS IN YOUR LEGS', 'THE ZOOMIES',
       'It begins as a tingle in the back paws. The corridor stretches out, impossibly runnable.\n\nPaw-print gates, the full ground floor, ludicrous speed. Pounce to dash.'
       + (G.raceBest ? '\n\n🏁 Your record: ' + G.raceBest.toFixed(1) + 's' : ''),
       '💨 LET THEM TAKE YOU', '🧘 Resist. This time.', which => { if (which === 'a') startRace(); });
@@ -5037,7 +5154,7 @@ function interactPoi(p) {
     if (G.mini) return;
     if (G.daily) { toast('⚡ Not on sortie day.'); sClick(); return; }
     if (G.scrumCD > 0) { toast('⚡ The pack has filed for the day. They will be back at six.'); sClick(); return; }
-    showChoice('THE PAVEMENT', 'The Doorstep Scrum',
+    miniChoice('scrum', 'THE PAVEMENT', 'The Doorstep Scrum',
       'The press are three deep and firing at anything that moves.\n\n✕ RED RINGS are flashes about to go off — be somewhere else.\n✓ The GOLD FRAME is his shot — stand in it and hold still until it fills.\n\nAvoid everybody. Pose for him.',
       '⚡ Give them nothing', '🚶 Use the back door', which => { if (which === 'a') startScrum(); });
     return;
@@ -5046,7 +5163,7 @@ function interactPoi(p) {
     if (G.mini) return;
     if (G.daily) { toast('🕊 Not on sortie day. The pigeons will keep.'); sClick(); return; }
     if (G.trafCD > 0) { toast('🕊 The square has settled again. Give them an hour to forget.'); sClick(); return; }
-    showChoice('THE TOUR COACH', 'Trafalgar Square',
+    miniChoice('traf', 'THE TOUR COACH', 'Trafalgar Square',
       'A coach leaves for the square hourly and nobody counts the cats.\n\nSixty birds who have never been meaningfully challenged. Panic is contagious — pounce into a cluster and the fright spreads bird to bird.\n\nOne good leap can empty the whole square.',
       '🕊 Get on the coach', '🚶 Let them have it', which => { if (which === 'a') startTrafalgar(); });
     return;
@@ -5055,7 +5172,7 @@ function interactPoi(p) {
     if (G.mini) return;
     if (G.daily) { toast('🚌 Not on sortie day. The 11 will come round again.'); sClick(); return; }
     if (G.busCD > 0) { toast('🚌 You have just missed one. There will be three along shortly.'); sClick(); return; }
-    showChoice('THE STOP, END OF THE STREET', 'The 11 Bus',
+    miniChoice('bus', 'THE STOP, END OF THE STREET', 'The 11 Bus',
       'The 11 idles at the stop with its engine running and nobody watching the roof.\n\nPOUNCE to leap what is up there with you. HOLD the pounce to flatten under the low bridges.\n\nNo fare is payable by the Chief Mouser.',
       '🚌 Get on the roof', '🚶 Wait for a taxi', which => { if (which === 'a') startBus(); });
     return;
@@ -5065,14 +5182,14 @@ function interactPoi(p) {
     showChoice('THE REFERENCE SHELF', 'The Official Record',
       'You are not, strictly speaking, fictional.\n\nThe government keeps a history of this house, and it gives you a section of your own: in residence since 15 February 2011, recruited from Battersea for your mousing credentials, duties including greeting guests, inspecting the security defences, and testing the antique furniture for napping quality.\n\nOn the matter of the mice, it records that your solution remains "in the tactical planning stage".\n\nEverything else in this game is invented. That page is not.',
       '📖 Read the official record', '🐾 Back to work',
-      which => { if (which === 'a') window.open(RECORD_URL, '_blank', 'noopener'); });
+      which => { if (which === 'a') openLink(RECORD_URL); });
     return;
   }
   if (p.type === 'marble') {
     if (G.mini) return;
     if (G.daily) { toast('✨ Not on sortie day. The floor will still be slippery tomorrow.'); sClick(); return; }
     if (G.marbleCD > 0) { toast('✨ Somebody has put the mats down. Give it an hour.'); sClick(); return; }
-    showChoice('THE ENTRANCE HALL', 'Freshly Polished',
+    miniChoice('marble', 'THE ENTRANCE HALL', 'Freshly Polished',
       'They have done the floor again. A cat who commits to a direction on this surface is going that way until something stops them.\n\nThree rooms. Nudge a direction, slide until you hit something, and stop on the rug.\n\nThink first. Genuinely.',
       '✨ Take the floor on', '🚶 Walk around the edge', which => { if (which === 'a') startMarble(); });
     return;
@@ -5081,16 +5198,16 @@ function interactPoi(p) {
     if (G.mini) return;
     if (G.daily) { toast('🥂 No inspections on sortie day.'); sClick(); return; }
     if (G.canapeCD > 0) { toast('🥂 The line is clear. The chef has hidden the cucumber, in any case.'); sClick(); return; }
-    showChoice('THE KITCHEN COUNTER', 'The Canapé Line',
-      'A reception is being plated along the trolley, and nobody has thought to have it checked.\n\n✓ LET PASS — salmon 🍣, prawn 🍤, cheese 🧀\n✕ POUNCE OFF — cucumber 🥒, onion 🧅, grapes 🍇\n\nStand under the offending item and pounce. A ring round an item means it is in reach.',
-      '🥂 Assume quality control', '🚶 Let them poison themselves', which => { if (which === 'a') startCanape(); });
+    miniChoice('canape', 'THE KITCHEN COUNTER', 'The Canapé Line',
+      'A state reception is being plated along the trolley, and nobody is watching the trolley.\n\n🐾 TAKE — salmon 🍣, prawn 🍤, cheese 🧀\n✋ LEAVE — cucumber 🥒, onion 🧅, grapes 🍇\n\nStand under an item and pounce. A ring round one means it is in reach.',
+      '🥂 Help yourself', '🚶 Let them keep it', which => { if (which === 'a') startCanape(); });
     return;
   }
   if (p.type === 'sled') {
     if (G.mini) return;
     if (G.daily) { toast('🛋️ No joyriding on sortie day. The cushion stays put.'); sClick(); return; }
     if (G.sledCD > 0) { toast('🛋️ The cushion has been confiscated and plumped. Give it an hour.'); sClick(); return; }
-    showChoice('THE GRAND STAIRCASE', 'Your Cushion, At The Top',
+    miniChoice('sled', 'THE GRAND STAIRCASE', 'Your Cushion, At The Top',
       'Your cushion has been left at the top of the flight. Below: seventy steps, a golden runner, the government, the press pack, and a school tour who have all come to see you.\n\nThey will move. Probably.\n\nSteer. Pounce to hop. There is no brake.',
       '🛋️ Take the stairs', '🚶 Behave, for once', which => { if (which === 'a') startSled(); });
     return;
@@ -5099,7 +5216,7 @@ function interactPoi(p) {
     if (G.mini) return;
     if (G.daily) { toast('📚 The Heights will keep. The clock will not.'); sClick(); return; }
     if ((G.climbCD || 0) > 0) { toast('📚 The bookcase is being re-shelved after your last ascent. The books have filed a complaint.'); sClick(); return; }
-    showChoice('THE STUDY', 'The Heights',
+    miniChoice('climb', 'THE STUDY', 'The Heights',
       'The tallest bookcase in government; above it, the HIGHEST PERCH IN THE HOUSE. No cat has sat it. Officially.\n\nHOLD the pounce to charge — the shelves are too far apart for a flick — then release. Off a ledge you slide, and wobbly shelves tip if you linger. The perch waits.'
       + (G.climbBest ? '\n\n🏁 Best ascent: ' + G.climbBest.toFixed(1) + 's' : ''),
       '🐾 Begin the ascent', '🚶 Respect gravity today', which => {
@@ -5132,7 +5249,7 @@ function interactPoi(p) {
       return;
     }
     if ((G.gauntletCD || 0) > 0) { toast('🕳️ The tunnel patrols have doubled since your last visit. Give them a moment to get complacent again.'); sClick(); return; }
-    showChoice('THE CRACK IN THE CELLAR WALL', G.treaty ? 'The Under-Road (Joint Exercises)' : 'The Under-Road',
+    miniChoice('gauntlet', 'THE CRACK IN THE CELLAR WALL', G.treaty ? 'The Under-Road (Joint Exercises)' : 'The Under-Road',
       (G.treaty
         ? 'Treaty Article 4: joint exercises. The patrols pursue with enthusiasm and no malice. The cheese remains the trophy.'
         : 'The heirs\' smuggling tunnel, with the STOLEN LARDER at the far end. Six patrol lanes between.\n\nTime the gaps. Five seizures and the tunnel spits you out. Speed is glory.')
@@ -5147,7 +5264,7 @@ function interactPoi(p) {
     if (!G.protocolOpen) { toast('🔴 A matte-black terminal, unpowered. A brass plate reads: MI-PAW — AUTHORIZED PAWS ONLY. It has not decided about you yet.'); sClick(); return; }
     if (G.daily) { toast('🔴 No training on sortie day. Perform instead.'); sClick(); return; }
     if ((G.protocolCD || 0) > 0) { toast('🔴 The terminal is recompiling the dot. It says this is normal.'); sClick(); return; }
-    showChoice('THE STUDY — MI-PAW TERMINAL', 'The Red Dot Protocol',
+    miniChoice('protocol', 'THE STUDY — MI-PAW TERMINAL', 'The Red Dot Protocol',
       'The terminal hums awake. "SUBJECT: THE DOT. DURATION: 45 SECONDS. EXPECTED: DOUBLE DIGITS."\n\nThe dot relocates faster every time you touch it. Catch it anyway.'
       + (G.protocolBest ? '\n\n🏁 Best: ' + G.protocolBest + ' catches' : ''),
       '🔴 Enter the Protocol', '🚶 Remain in reality', which => {
@@ -5160,7 +5277,7 @@ function interactPoi(p) {
     if (G.daily) { toast('🐟 Not on a sortie. The fish will keep. They always keep.'); sClick(); return; }
     if (G.dog) { toast('🐟 There is a DOG in the garden. The fish have gone to the bottom and so, frankly, would you.'); sClick(); return; }
     if (G.pondCD > 0) { toast('🐟 The pond has had enough of you for one day. The fish are sulking under the lily pads.'); sClick(); return; }
-    showChoice('THE GARDEN POND', 'Ornamental, Allegedly',
+    miniChoice('pond', 'THE GARDEN POND', 'Ornamental, Allegedly',
       'Fish, bought at public expense, in a pond you are technically responsible for.\n\nThey run deep and surface for about a second. Hold still until the ripple, then go. Leap at nothing and you go in — and everything down there stays down for a while afterwards.',
       '🐟 Take up position', '🚶 Stay dry', which => { if (which === 'a') startPond(); });
     return;
@@ -5170,7 +5287,7 @@ function interactPoi(p) {
     if (G.daily) { toast('🌿 Not on a sortie. You are on duty, and the bed knows it.'); sClick(); return; }
     if (G.dog) { toast('🌿 There is a DOG in the garden. This is the worst possible moment to be unable to walk straight.'); sClick(); return; }
     if (G.catnipCD > 0) { toast('🌿 The bed is flattened and you have had quite enough. Give it an hour.'); sClick(); return; }
-    showChoice('THE GARDEN', 'The Catnip Incident',
+    miniChoice('catnip', 'THE GARDEN', 'The Catnip Incident',
       'Nobody planted this. Nobody will admit to watering it.\n\nGet into it and the steering stops being entirely yours — and every so often you will simply go over. Pounce the moths regardless. They are, unaccountably, drawn to the spectacle.',
       '🌿 Get into the bed', '🚶 Maintain composure', which => { if (which === 'a') startCatnip(); });
     return;
@@ -5179,7 +5296,7 @@ function interactPoi(p) {
     if (G.mini) return;
     if (G.daily) { toast('🍝 No suppers on sortie day. Focus, Chief Mouser.'); sClick(); return; }
     if (G.supperCD > 0) { toast(pick(p.texts)); sClick(); return; } // between suppers, the table is just a table
-    showChoice('THE FLAT KITCHEN', 'Kitchen Supper',
+    miniChoice('supper', 'THE FLAT KITCHEN', 'Kitchen Supper',
       'The PM is cooking. Personally. The kitchen smells of ambition and burnt garlic.\n\nSit under the table; be beneath each scrap before it lands.',
       '🍝 Assume the position', '🚶 Let the floor have it', which => { if (which === 'a') startSupper(); });
     return;
@@ -5240,12 +5357,12 @@ function interactPoi(p) {
     return;
   }
   if (p.type === 'donate') {
-    if (G.fish < 10) { toast('🎁 The Battersea tin. Ten kippers posts a parcel home. You are, at present, ' + (10 - G.fish) + ' short — the mice can fix that.'); sClick(); return; }
+    if (G.fish < TIN.battersea) { toast('🎁 The Battersea tin. Ten kippers posts a parcel home. You are, at present, ' + (TIN.battersea - G.fish) + ' short — the mice can fix that.'); sClick(); return; }
     showChoice('THE ENTRANCE HALL', 'The Battersea Tin',
       'The red tin by the door: BATTERSEA DOGS & CATS HOME. You came from there on merit; some are still waiting on theirs.\n\nPost 10 🐟 home?',
       '🎁 Donate 10 🐟', '🚶 Another time', which => {
         if (which !== 'a') return;
-        G.fish -= 10;
+        G.fish -= TIN.battersea;
         G.donated = (G.donated || 0) + 1;
         bumpApproval(3);
         toast(pick(TXT_DONATE) + ' (+3% approval)');
@@ -5258,7 +5375,7 @@ function interactPoi(p) {
             {
               who: 'BATTERSEA', text: 'The kippers in this game are imaginary. Battersea is not — Larry came through their doors in 2011, and they are still doing it for thousands more.',
               choice: [
-                ['🏠 Open their donation page', () => window.open(BATTERSEA_URL, '_blank', 'noopener')],
+                ['🏠 Open their donation page', () => openLink(BATTERSEA_URL)],
                 ['🐾 Back to work', () => { }],
               ],
             },
@@ -5423,6 +5540,9 @@ function doLaser() {
 }
 
 // ---------- Gadgets are tools: tap to use ----------
+// Every kipper price in one place. The guide reads from this and from TOOLS,
+// so what the tin says it costs is always what it actually costs.
+const TIN = { chef: 4, gardener: 3, battersea: 10, portrait: [25, 60, 120] };
 const TOOLS = [
   { key: 'zoomies', emoji: '👟', cd: 10, cost: 2, use: () => { G.zoomiesT = 3; addParticle(G.larry.x, G.larry.y + 4, '#e9c46a', 8, 40); tone(300, 900, 0.25, 'sawtooth', 0.06); } },
   { key: 'whiskers', emoji: '📡', cd: 12, cost: 2, use: () => { G.sonarT = 5; G.sonarRingT = 0; tone(900, 1500, 0.2, 'sine', 0.07); tone(900, 1500, 0.2, 'sine', 0.04, 0.25); } },
@@ -6610,7 +6730,7 @@ const MEETINGS = {
         who: PHOTOG_NAME(),
         text: 'Fifteen years of you are on my shelves, if you ever want to see how you\'ve aged. Which is: not at all.',
         choice: [
-          ['📷 See his photographs', () => window.open(PARTNER.kofi, '_blank', 'noopener')],
+          ['📷 See his photographs', () => openLink(PARTNER.kofi)],
           ['🐾 Back to work', () => { }],
         ],
       });
@@ -6759,6 +6879,47 @@ function maybeShowCard() {
 }
 
 // a story card with two choices — same card, second button
+/* ---------- EVERY GAME EXPLAINS ITSELF, IN THE SAME SHAPE ----------
+   The invitation cards had drifted: some spelled out the controls, some were
+   pure atmosphere and left you to work the verbs out mid-game. The flavour
+   stays — it is the best writing in the house — but HOW and GOAL are now
+   appended in an identical block to every single one, so a player always
+   knows which button does what before the clock starts. */
+const MINI_RULES = {
+  race:     { how: 'Run through the paw-print gates IN ORDER. POUNCE to dash between them.',
+              goal: 'All ten gates before the clock runs out. Gold pace earns The 3 A.M. Protocol.' },
+  scrum:    { how: 'Stay OUT of the red rings — those are flashes about to go off. When the GOLD FRAME appears, stand inside it and hold still until it fills.',
+              goal: 'Fill the frame three times without being caught by a flash.' },
+  traf:     { how: 'Walk into the flock and POUNCE. Panic is contagious: a leap into a cluster spreads bird to bird.',
+              goal: 'Clear the square. One well-placed pounce can empty most of it at once.' },
+  bus:      { how: 'POUNCE to leap whatever is up on the roof with you. HOLD the pounce button to FLATTEN and pass under the low bridges.',
+              goal: 'Ride to the end of the route without being swept off.' },
+  marble:   { how: 'Nudge a direction and you SLIDE until something stops you — the floor has just been polished, so there is no steering mid-slide.',
+              goal: 'Come to rest on the rug. Three rooms, each generated fresh.' },
+  canape:   { how: 'POUNCE the salmon, prawn and cheese off the trolley — those are yours. LET the cucumber, onion and grapes go past: onion and grapes are poison to a cat, and nobody needs a cucumber.',
+              goal: 'Fourteen correct calls. Taking the wrong thing counts against you, and so does letting good fish escape.' },
+  sled:     { how: 'Steer LEFT and RIGHT across the stair runner. POUNCE to hop whatever is in the way.',
+              goal: 'Reach the bottom. Kippers sit on the good line — take them on the way past.' },
+  climb:    { how: 'HOLD the pounce button to CHARGE, then release — the shelves are too far apart for a flick, and a full charge clears two of them at once. Wobbly shelves tip if you linger.',
+              goal: 'Reach the perch at the top before the clock runs out. Falling costs you time, not lives.' },
+  protocol: { how: 'POUNCE at the dot. Only a LANDED pounce counts — walking into it does nothing. It relocates faster every time you touch it.',
+              goal: 'Eight catches in forty-five seconds.' },
+  pond:     { how: 'WAIT. Fish run deep as shadows, then a RIPPLE spreads where one is about to surface. It is up for about a second — POUNCE then. The banner reads WAIT or NOW.',
+              goal: 'Six fish. Leap at nothing and you go in: every fish dives and stays down a while.' },
+  catnip:   { how: 'Your steering DRIFTS — the stronger the high, the more your walk bends away from where you pointed. Every few seconds you flop over and cannot move at all. POUNCE the moths regardless.',
+              goal: 'Eighteen moths. Moths crowd a flopped cat, so the flop is your best chance — but a pounce that lands on nothing scatters them.' },
+  supper:   { how: 'Scraps fall from the table above. Get UNDERNEATH each one before it lands — the floor is the enemy, not the clock.',
+              goal: 'Catch four before they hit the tiles.' },
+  gauntlet: { how: 'Six lanes of rat patrol between you and the stolen larder. Move when a lane is clear; POUNCE to cross a gap in one go.',
+              goal: 'Reach the larder at the far end. Five seizures and the tunnel throws you out.' },
+};
+function miniChoice(type, kicker, title, flavour, aLabel, bLabel, cb) {
+  const r = MINI_RULES[type];
+  // pre-line collapses runs of spaces, so the labels need a real separator
+  const body = flavour + (r ? '\n\n▸ HOW — ' + r.how + '\n\n▸ GOAL — ' + r.goal : '');
+  showChoice(kicker, title, body, aLabel, bLabel, cb);
+}
+
 function showChoice(kicker, title, body, aLabel, bLabel, cb) {
   const btn = document.getElementById('cardBtn'), b2 = document.getElementById('cardBtn2');
   const done = which => {
@@ -7034,6 +7195,12 @@ function update(dt) {
   if (G.intro.phase === 'done' && !G.daily) {
     // the number had been sliding all game with nothing ever explaining it, and
     // no consequence at the bottom — so say what it is, once, when it first dips
+    // the tin starts counting from the first mouse and never said what it was
+    // counting toward — so explain it the moment the number first matters
+    if (G.fish > 0 && !G.tinExplained && storyClear() && !G.cardQueue.length) {
+      G.tinExplained = true; save();
+      kipperGuide();
+    }
     if (G.approval < 42 && !G.approvalExplained && !SCENE && !G.mini && !G.paused && !G.cardQueue.length) {
       G.approvalExplained = true; save();
       showCard('THE POLLING', 'A Word About Approval',
@@ -7738,6 +7905,8 @@ function draw() {
   if (G.mini && G.mini.type === 'supper') drawSupper();
   if (G.mini && G.mini.type === 'race') drawRace();
   if (G.mini && G.mini.type === 'pond') drawPond();
+  if (G.mini && G.mini.type === 'climb') drawClimbHud();
+  if (G.mini && G.mini.type === 'fox') drawFoxHud();
   if (G.mini && G.mini.type === 'catnip') drawCatnip();
   if (G.mini && G.mini.type === 'gauntlet') drawGauntlet();
   if (G.mini && G.mini.type === 'dot') drawProtocol();
@@ -8100,6 +8269,7 @@ function startGame(fresh) {
     G.briefStage = s.briefStage || 0;
     G.approval = s.approval != null ? s.approval : 72;
     G.approvalExplained = !!s.approvalExplained;
+    G.tinExplained = !!s.tinExplained;
     G.diff = DIFFS[s.diff] ? s.diff : 'mouser';
     G.tie = TIES.some(t => t.id === s.tie) ? s.tie : 'union';
     G.mischief = new Set(s.mischief || []);
@@ -8279,6 +8449,39 @@ function openHonours() {
   document.getElementById('honoursWrap').classList.remove('hidden');
   sClick();
 }
+/* ---------- WHAT THE KIPPERS ARE FOR ----------
+   The 🐟 counter sat in the corner from the first hour without ever saying
+   what it was counting toward. Costs are read from TIN and TOOLS rather than
+   retyped, so this page cannot quietly go out of date. */
+function kipperGuide() {
+  const gadgets = TOOLS.filter(t => t.cost && GADGETS[t.key])
+    .sort((a, b) => a.cost - b.cost)
+    .map(t => '   • ' + GADGETS[t.key].name + ' — ' + t.cost + ' each use')
+    .join('\n');
+  showCard('THE TIN', 'What Kippers Are For',
+    'Kippers (🐟) are the only currency in this house. Everything you are paid, and everything you can buy, is counted in fish.\n\n'
+    + 'YOU EARN THEM BY\n'
+    + '   • Catching mice — 1 each, 2 for a rat, more for whatever is bigger\n'
+    + '   • Every mini game pays out, and pays out more the better you do\n'
+    + '   • Fishing the garden pond — one kipper per fish, straight into the tin\n'
+    + '   • Prime Ministers tip on arrival. All of them. None of them know why\n\n'
+    + 'YOU SPEND THEM ON\n'
+    + gadgets + '\n'
+    + '   • The chef — ' + TIN.chef + ', and the pantry door stays open\n'
+    + '   • The gardener — ' + TIN.gardener + ', and he shows you where they are digging\n'
+    + '   • Your portrait on the Grand Staircase — ' + TIN.portrait.join(', then ') + '\n'
+    + '   • The Battersea tin — ' + TIN.battersea + ' posts a parcel home to the shelter you came from\n\n'
+    + 'You have ' + G.fish + ' 🐟 right now.\n\n'
+    + 'Tap the 🐟 in the corner whenever you want this again.',
+    null, null);
+}
+const fishHud = document.getElementById('fish');
+if (fishHud) bindBtn(fishHud, () => { if (!G.mini && !SCENE) kipperGuide(); });
+bindBtn(document.getElementById('menuKippers'), () => {
+  document.getElementById('menuWrap').classList.add('hidden');
+  menuOpen = false;
+  kipperGuide();
+});
 bindBtn(document.getElementById('menuHonours'), openHonours);
 bindBtn(document.getElementById('honoursClose'), () => {
   document.getElementById('honoursWrap').classList.add('hidden');
@@ -8453,17 +8656,18 @@ for (const id of DISMISSABLE) {
 }
 bindBtn(document.getElementById('menuSave'), openSaveBox);
 bindBtn(document.getElementById('menuBattersea'), () => {
+  closeOverlay('menuWrap');   // the menu outranks the card: get out of its way first
   showChoice('BATTERSEA DOGS & CATS HOME', 'The Real One',
     'Larry was a stray who came through Battersea in 2011, and they are still doing that for thousands of dogs and cats a year.\n\nThis game has nothing to do with them and speaks only for itself — but they are real, and the kippers in here are not.',
     '🏠 Open their donation page', '🐾 Back to work',
-    which => { if (which === 'a') window.open(BATTERSEA_URL, '_blank', 'noopener'); });
+    which => { if (which === 'a') openLink(BATTERSEA_URL); });
 });
 
 // the support button appears only once the partnership is live
 if (PARTNER.live) {
   const mb = document.getElementById('menuSupport');
   mb.classList.remove('hidden');
-  mb.addEventListener('click', () => { window.open(PARTNER.kofi, '_blank', 'noopener'); sClick(); });
+  mb.addEventListener('click', () => { openLink(PARTNER.kofi); sClick(); });
 }
 // plain click for clipboard access (needs real user activation on mobile)
 document.getElementById('saveCopy').addEventListener('click', () => {
@@ -8513,7 +8717,7 @@ function abandonMini() {
   if (MINI_CD[t]) G[MINI_CD[t]] = 45;   // a pause, so quitting is not a way to reroll
   // the fox is not POI-triggered — it re-arms on proximity every frame, so
   // without this the Incident restarts the instant you walk away from it
-  if (t === 'fox') G.foxTonight = true;
+  if (t === 'fox') { G.foxTonight = true; setupNpcs(); }   // and the Street repopulates
   const home = POCKET_HOME[G.mapId];
   if (home) startFade(() => switchMap(home[0], home[1] * TILE, home[2] * TILE));
   toast('🏳️ Left it there. It will keep.');
