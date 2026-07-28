@@ -180,3 +180,11 @@ body.scene #gadgets, body.scene #btns, body.scene #stick, body.scene #daybox { d
   #btnMap  { top:calc(132px + env(safe-area-inset-top)); }
   #btnMenu { top:calc(172px + env(safe-area-inset-top)); }
 }
+
+/* A close control that is always reachable. The honours board grew past a
+   screenful, which pushed its 'Back to work' button below the fold and made
+   the panel feel inescapable. */
+.xclose { position:sticky; top:0; float:right; z-index:3; margin:-6px -4px 0 8px;
+  width:30px; height:30px; border-radius:9px; font-size:12px; line-height:1;
+  color:#ffe8b8; background:rgba(20,16,32,.92); border:2px solid rgba(255,215,150,.45); }
+.xclose:active { background:rgba(233,196,106,.35); }

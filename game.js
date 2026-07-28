@@ -45,6 +45,9 @@ const PHOTOG_NAME = () => PARTNER.live && PARTNER.name ? PARTNER.name : 'THE PHO
 // Larry really was a Battersea cat. This game is not affiliated with them —
 // but they are real, and they are still doing it.
 const BATTERSEA_URL = 'https://donate.battersea.org.uk/appeals/default/';
+// The government keeps its own history of this house, and Larry has a section
+// of it. Everything in this game is invented; that page is not.
+const RECORD_URL = 'https://www.gov.uk/government/history/10-downing-street#larry-chief-mouser-to-the-cabinet-office';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 // pick a random entry, never the same one twice in a row — repeated lines
@@ -1296,6 +1299,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   set(20, 21, 'v'); set(20, 22, 'v');
   m.pois.push({ x: 15, y: 23, emoji: '🔴', type: 'protocol' }); // MI-Paw's training terminal, by the Study desk
   m.pois.push({ x: 5, y: 19, emoji: '📚', type: 'climb' });     // the Study bookcase — government's tallest
+  m.pois.push({ x: 12, y: 20, emoji: '📖', type: 'record' });   // the reference shelf: the parts that are true
   // Entrance Hall (the checkerboard floor and the black door)
   rect(13, 26, 30, 33, 'c');
   set(21, 34, 'D'); set(22, 34, 'D');
@@ -2905,8 +2909,11 @@ function drawMarble() {
 const BUS_LANES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
 function buildBusRoute() {
   const hz = [], pk = [];
-  for (let y = 10; y <= 62; y += 3) {
-    const overhead = Math.random() < 0.42;   // the duck is the new verb; ask for it often
+  let lastOver = false;
+  for (let y = 10; y <= 62; y += 5) {   // five tiles between rows: time to READ the next one
+    // never two overheads running — the cost here is switching verb, not reacting
+    const overhead = !lastOver && Math.random() < 0.34;
+    lastOver = overhead;
     if (overhead) {                                   // a bridge, a bough, a signal gantry: DUCK
       hz.push({ y, over: true, kind: pick(['bridge', 'bough', 'gantry']), hit: false });
       continue;
@@ -2923,7 +2930,7 @@ function buildBusRoute() {
 function startBus() {
   const r = buildBusRoute();
   switchMap('bus', 6.5 * TILE, 2.5 * TILE);
-  G.mini = { type: 'bus', t: 0, spd: 104, hz: r.hz, pk: r.pk, kippers: 0, bumps: 0, clears: 0, spin: 0, msg: null };
+  G.mini = { type: 'bus', t: 0, spd: 96, hz: r.hz, pk: r.pk, kippers: 0, bumps: 0, clears: 0, spin: 0, msg: null };
   toast('🚌 POUNCE to leap. HOLD to flatten under the bridges.', 'now');
   tone(240, 400, 0.2, 'square', 0.05);
 }
@@ -2944,7 +2951,7 @@ function updateBus(dt) {
   const L = G.larry;
   M.t += dt;
   if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
-  M.spd = Math.min(238, M.spd + 12 * dt);
+  M.spd = Math.min(182, M.spd + 7 * dt);   // fast enough to thrill, slow enough to read
   if (M.spin > 0) { M.spin -= dt; L.cvx *= 0.86; }
   L.cvy = 0;
   const ny = L.y + (M.spin > 0 ? M.spd * 0.45 : M.spd) * dt;
@@ -3010,14 +3017,23 @@ function drawBus() {
   const FAR = 30 * TILE, X0 = 1.2 * TILE, X1 = 11.8 * TILE;
   // London, going past: sky, then a terrace of buildings either side
   const sky = ctx.createLinearGradient(0, 0, 0, hor + 4);
-  sky.addColorStop(0, '#2b3350'); sky.addColorStop(1, '#8a7a86');
+  sky.addColorStop(0, '#232a46'); sky.addColorStop(0.55, '#5b4f6b'); sky.addColorStop(1, '#c98d6a');
   ctx.fillStyle = sky; ctx.fillRect(0, 0, W, hor + 4);
-  for (let i = 0; i < 9; i++) {                       // a skyline that scrolls with you
-    const f = ((i * 71 - M.t * 26) % 100 + 100) % 100;
-    const bw2 = W * 0.1, bh2 = H * (0.05 + (i % 3) * 0.035);
-    const bx2 = (f / 100) * (W + 60) - 30;
-    ctx.fillStyle = i % 2 ? '#39374e' : '#2f2d42';
-    ctx.fillRect(bx2, hor - bh2, bw2, bh2);
+  // two layers of city, the far one drifting slower — and the lights are on
+  for (const [depth, tint, sp] of [[0.55, '#2a2740', 13], [1, '#332f4a', 26]]) {
+    for (let i = 0; i < 11; i++) {
+      const f = ((i * 61 - M.t * sp) % 100 + 100) % 100;
+      const bw2 = W * (0.07 + (i % 4) * 0.02), bh2 = H * (0.04 + (i % 5) * 0.028) * depth;
+      const bx2 = (f / 100) * (W + 80) - 40, by2 = hor - bh2;
+      ctx.fillStyle = tint;
+      ctx.fillRect(bx2, by2, bw2, bh2);
+      if (depth === 1) {                                  // lit windows on the near row
+        ctx.fillStyle = 'rgba(255,206,130,0.5)';
+        for (let wy = by2 + 4; wy < hor - 4; wy += 7)
+          for (let wx = bx2 + 3; wx < bx2 + bw2 - 3; wx += 6)
+            if ((wx + wy + i) % 3) ctx.fillRect(wx, wy, 2, 3);
+      }
+    }
   }
   // the roof of the 11, in red
   const far = { l: proj(X0, L.y + FAR), r: proj(X1, L.y + FAR) };
@@ -3084,7 +3100,7 @@ function drawBus() {
   }
   // an overhead is the one place HOLD means something different from everywhere
   // else in the game, so it says so, on approach, every time
-  const soon = M.hz.find(h => h.over && !h.hit && h.y * TILE > L.y && h.y * TILE - L.y < 7 * TILE);
+  const soon = M.hz.find(h => h.over && !h.hit && h.y * TILE > L.y && h.y * TILE - L.y < 10 * TILE);
   const me = proj(L.x, L.y);
   const flat = L.charging;
   ctx.save();
@@ -4839,7 +4855,7 @@ window.addEventListener('keydown', e => {
     return;
   }
   if (e.key === ' ') { e.preventDefault(); if (!e.repeat) chargeStart('key'); }
-  if (e.key === 'Escape') { houseMapOpen() ? closeHouseMap() : menuOpen ? closeMenu() : openMenu(); }
+  if (e.key === 'Escape') { if (closeTopOverlay()) return; houseMapOpen() ? closeHouseMap() : menuOpen ? closeMenu() : openMenu(); }
   if (e.key.toLowerCase() === 'm') toggleHouseMap(); // pull up the house map
   if (e.key.toLowerCase() === 'e') useTool(TOOLS[3]); // laser
   if (e.key.toLowerCase() === 'q') meowNow();
@@ -5138,6 +5154,14 @@ function interactPoi(p) {
     showChoice('THE STOP, END OF THE STREET', 'The 11 Bus',
       'The 11 idles at the stop with its engine running and nobody watching the roof.\n\nPOUNCE to leap what is up there with you. HOLD the pounce to flatten under the low bridges.\n\nNo fare is payable by the Chief Mouser.',
       '🚌 Get on the roof', '🚶 Wait for a taxi', which => { if (which === 'a') startBus(); });
+    return;
+  }
+  if (p.type === 'record') {
+    if (G.mini) return;
+    showChoice('THE REFERENCE SHELF', 'The Official Record',
+      'You are not, strictly speaking, fictional.\n\nThe government keeps a history of this house, and it gives you a section of your own: in residence since 15 February 2011, recruited from Battersea for your mousing credentials, duties including greeting guests, inspecting the security defences, and testing the antique furniture for napping quality.\n\nOn the matter of the mice, it records that your solution remains "in the tactical planning stage".\n\nEverything else in this game is invented. That page is not.',
+      '📖 Read the official record', '🐾 Back to work',
+      which => { if (which === 'a') window.open(RECORD_URL, '_blank', 'noopener'); });
     return;
   }
   if (p.type === 'marble') {
@@ -8547,6 +8571,24 @@ function openSaveBox() {
   document.getElementById('saveIn').value = '';
   document.getElementById('saveWrap').classList.remove('hidden');
   sClick();
+}
+// Any panel can be dismissed three ways now — its ✕, a click on the dark
+// backdrop, or Escape — because a long list used to bury its only way out.
+const DISMISSABLE = ['mapWrap', 'mischiefWrap', 'honoursWrap', 'saveWrap', 'photoWrap'];
+function closeOverlay(id) {
+  const el = document.getElementById(id);
+  if (!el || el.classList.contains('hidden')) return false;
+  el.classList.add('hidden');
+  G.paused = !!SCENE;          // a scene behind it keeps the world held
+  sClick();
+  return true;
+}
+function closeTopOverlay() { return DISMISSABLE.some(id => closeOverlay(id)); }
+document.querySelectorAll('.xclose').forEach(b =>
+  b.addEventListener('click', e => { e.stopPropagation(); closeOverlay(b.dataset.close); }));
+for (const id of DISMISSABLE) {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('pointerdown', e => { if (e.target === el) closeOverlay(id); });
 }
 bindBtn(document.getElementById('menuSave'), openSaveBox);
 bindBtn(document.getElementById('menuBattersea'), () => {
