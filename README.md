@@ -63,10 +63,11 @@ the front door having no outside handle:
 - **The Midnight Zoomies** — ten paw-print gates around the whole ground
   floor at ludicrous speed; gold pace earns The 3 A.M. Protocol
 - **The Pond** — ornamental fish, bought at public expense, in a pond you are
-  technically responsible for. You cannot swim and cannot reach across the
-  water, so the job is being in the right place on the bank at the right
-  moment: a ripple is a starting gun, not a cue to stand still. Leap with
-  nothing up and you go in, and every fish stays down a while afterwards
+  technically responsible for. Its own pondside, with the whole bank on screen
+  at once: you cannot swim and cannot reach across the water, so the job is
+  being in the right place at the right moment. A ripple is a starting gun,
+  not a cue to stand still. Leap with nothing up and you go in, and every fish
+  stays down a while afterwards
 - **The Fox Incident** — the real story: past midnight on the Street,
   something long, low, and amber. Advance while it paces; when it lunges,
   DO NOT MOVE. Hold three stands and it blinks first

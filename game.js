@@ -1692,6 +1692,18 @@ MAPS.stairs = makeMap('stairs', 13, 72, (m, set, rect) => {
 });
 
 // --- The dream void: MI-Paw's training construct (a nap, weaponized) ---
+// The pond used to be played in the corner of a 48x36 garden, where the water
+// was a smudge and the fish were four pixels. Its own arena fits the screen
+// exactly: the whole bank is visible at once, so working out where to stand is
+// a thing you do with your eyes instead of a thing the banner has to tell you.
+MAPS.pondside = makeMap('pondside', 17, 12, (m, set, rect) => {
+  rect(1, 1, 15, 10, 'g');                       // the lawn, all the way round
+  rect(5, 3, 11, 7, 'q');                        // and the water in the middle of it
+  [[2, 2], [14, 2], [2, 9], [14, 9], [8, 1]].forEach(([x, y]) => set(x, y, 'G'));
+  [[3, 5], [13, 6], [7, 10], [12, 2], [4, 9]].forEach(([x, y]) => set(x, y, 'f'));
+  m.regions = [[1, 1, 15, 10, 'The Pond']];
+  m.mouseCap = () => 0;                          // the mice know better than to come here
+});
 MAPS.nipdream = makeMap('nipdream', 15, 11, (m, set, rect) => {
   rect(1, 1, 13, 9, 'z');
   m.regions = [[1, 1, 13, 9, 'The Catnip Dream']];
@@ -3766,7 +3778,7 @@ function treatyScene() {
    surface where they like, and are gone in a second — so the whole game is
    holding still until the ripple, then committing. Leap early and you go in,
    which is the one thing in this house a cat genuinely regrets. */
-const POND = { x0: 38, x1: 44, y0: 3, y1: 7 };   // matches the pond rect, in tiles
+const POND = { x0: 5, x1: 12, y0: 3, y1: 8 };    // matches the water rect on the pondside map
 const FISH_TIME = 50, FISH_GOLD = 6;
 const POND_SOAK = ['*SPLASH*', '*soaked*', '(no.)', '*this is wet*', '*undignified*'];
 function pondSpot() {
@@ -3782,13 +3794,14 @@ function pondSpot() {
   return { x: x1, y: y0 + Math.random() * (y1 - y0) };
 }
 function startPond() {
+  switchMap('pondside', 8.5 * TILE, 8.5 * TILE);   // you arrive on the south bank
   const fish = [];
   for (let i = 0; i < 3; i++) {
     const sp = pondSpot();
     fish.push({ x: sp.x, y: sp.y, tx: sp.x, ty: sp.y, state: 'deep', t: 1.2 + Math.random() * 2.6, hue: i });
   }
   G.mini = { type: 'pond', t: 0, T: FISH_TIME, caught: 0, misses: 0, soakT: 0, landed: false, fish };
-  toast('🐟 Ripple = run to it. Pounce only when it is inside your ring.', 'now');
+  toast('🐟 Ripple = run round to it. Pounce only when it is inside your ring.', 'now');
   tone(420, 620, 0.14, 'sine', 0.05);
 }
 function nearPond(L) {
@@ -3880,29 +3893,44 @@ function finishPond() {
     + 'The tin is ' + c + ' 🐟 heavier. +' + c * 6 + ' XP');
   [659, 784, gold ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
-  updateHUD(); save();
+  save();
+  startFade(() => switchMap('ground', 40.5 * TILE, 7.5 * TILE));   // back to the garden pond
+  updateHUD();
 }
 function drawPond() {
   const M = G.mini, L = G.larry;
   for (const f of M.fish) {
     if (f.state === 'deep') {                       // a shadow, and nothing more
-      ctx.fillStyle = 'rgba(18,40,62,0.42)';
-      ctx.beginPath(); ctx.ellipse(f.x, f.y, 5, 2.4, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(18,40,62,0.45)';
+      ctx.beginPath(); ctx.ellipse(f.x, f.y, 7, 3.2, 0, 0, 7); ctx.fill();
     } else if (f.state === 'rise') {                // the tell: rings, widening
       const k = 1 - f.t / 0.95;
-      ctx.strokeStyle = 'rgba(200,232,255,' + (0.75 - k * 0.45) + ')';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(f.x, f.y, 2 + k * 9, 0, 7); ctx.stroke();
-      ctx.beginPath(); ctx.arc(f.x, f.y, 1 + k * 4, 0, 7); ctx.stroke();
+      ctx.strokeStyle = 'rgba(200,232,255,' + (0.85 - k * 0.45) + ')';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(f.x, f.y, 3 + k * 13, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.arc(f.x, f.y, 1 + k * 6, 0, 7); ctx.stroke();
     } else {                                        // up, and briefly yours
-      const wob = Math.sin(G.time * 18) * 1.2;
-      ctx.fillStyle = ['#e8944a', '#e8c44a', '#e86a6a'][f.hue % 3];
-      ctx.fillRect(f.x - 4, f.y - 2, 7, 4);
-      ctx.fillRect(f.x + 3, f.y - 3 + wob, 3, 6);   // the tail, flicking
-      ctx.fillStyle = '#20303c'; ctx.fillRect(f.x - 3, f.y - 1, 1, 1);
+      // an actual fish: two rectangles read as an orange box at this size
+      const wob = Math.sin(G.time * 18) * 1.6;
+      const col = ['#e8944a', '#e8c44a', '#e86a6a'][f.hue % 3];
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.ellipse(f.x, f.y, 7, 3.6, 0, 0, 7); ctx.fill();
+      ctx.beginPath();                                   // the tail, flicking
+      ctx.moveTo(f.x + 5, f.y);
+      ctx.lineTo(f.x + 11, f.y - 4 + wob);
+      ctx.lineTo(f.x + 11, f.y + 4 + wob);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();                                   // and a dorsal fin
+      ctx.moveTo(f.x - 2, f.y - 3);
+      ctx.lineTo(f.x + 1, f.y - 7);
+      ctx.lineTo(f.x + 3, f.y - 2);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillRect(f.x - 4, f.y - 2, 5, 1);
+      ctx.fillStyle = '#20303c'; ctx.fillRect(f.x - 5, f.y - 1, 2, 2);
       ctx.strokeStyle = 'rgba(255,255,255,0.7)';   // stroke, not fill: the ring is the "now"
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(f.x, f.y, 8, 0, 7); ctx.stroke();
+      ctx.beginPath(); ctx.arc(f.x, f.y, 11, 0, 7); ctx.stroke();
     }
   }
   // your reach, drawn: the canapé line already teaches this ring, and the
@@ -4770,7 +4798,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'nipdream' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus' || G.mapId === 'square');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'nipdream' || G.mapId === 'pondside' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus' || G.mapId === 'square');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -5354,8 +5382,8 @@ function interactPoi(p) {
     if (G.dog) { toast('🐟 There is a DOG in the garden. The fish have gone to the bottom and so, frankly, would you.'); sClick(); return; }
     if (G.pondCD > 0) { toast('🐟 The pond has had enough of you for one day. The fish are sulking under the lily pads.'); sClick(); return; }
     miniChoice('pond', 'THE GARDEN POND', 'Ornamental, Allegedly',
-      'Fish, bought at public expense, in a pond you are technically responsible for.\n\nYou cannot swim and you cannot reach across the water, so the whole job is being in the right place on the bank at the right moment.',
-      '🐟 Take up position', '🚶 Stay dry', which => { if (which === 'a') startPond(); });
+      'Fish, bought at public expense, in a pond you are technically responsible for.\n\nYou cannot swim and you cannot reach across the water, so the whole job is being in the right place on the bank at the right moment. Take up a position and the rest of the garden can wait.',
+      '🐟 Take up position', '🚶 Stay dry', which => { if (which === 'a') startFade(() => startPond()); });
     return;
   }
   if (p.type === 'catnip') {
@@ -6980,7 +7008,7 @@ const MINI_RULES = {
               goal: 'Reach the perch at the top before the clock runs out. Falling costs you time, not lives.' },
   protocol: { how: 'POUNCE at the dot. Only a LANDED pounce counts — walking into it does nothing. It relocates faster every time you touch it.',
               goal: 'Eight catches in forty-five seconds.' },
-  pond:     { how: 'Fish run deep as shadows. When one is about to come up, a RIPPLE spreads — RUN AROUND THE BANK TO IT, because you can only take a fish you are standing next to. The ring around you is your reach. POUNCE once the fish is inside it.',
+  pond:     { how: 'You walk the bank; the water is not walkable. Fish run deep as shadows, and a RIPPLE spreads where one is about to surface — RUN ROUND TO IT, because you can only take a fish you are standing beside. The ring around you is your reach. POUNCE once the fish is inside it.',
               goal: 'Six fish. The banner tells you which of the four things is true: WATCH, RUN, TOO FAR, or POUNCE. Leaping when nothing is up puts you in the pond.' },
   catnip:   { how: 'You do not move at all — Larry sits down and the dream comes to him. Things drift in out of the dark toward the glowing RING around you. POUNCE the moment one crosses that ring: on it is perfect, early is a miss, and anything that reaches your nose is gone.',
               goal: 'Consecutive hits build a run, and the dream gets quicker the longer it lasts. Swipe at nothing and your paw is committed for half a second while everything keeps coming — this cannot be played by mashing.' },
@@ -8759,11 +8787,11 @@ bindBtn(document.getElementById('mischiefClose'), () => {
 // Maps with no exits of their own. Anything that PLACES the player must send
 // them somewhere real instead — a save, a save code, or a dev URL param that
 // lands here would otherwise strand a career with no way out but a reload.
-const POCKET_MAPS = new Set(['shelter', 'underroad', 'dreamvoid', 'nipdream', 'heights', 'stairs', 'marble', 'bus', 'square', 'market']);
+const POCKET_MAPS = new Set(['shelter', 'underroad', 'dreamvoid', 'nipdream', 'pondside', 'heights', 'stairs', 'marble', 'bus', 'square', 'market']);
 const POCKET_HOME = {
   marble: ['ground', 26.5, 29.5], stairs: ['ground', 5.5, 15.5],
   bus: ['street', 10.5, 6.5], square: ['street', 10.5, 6.5],
-  underroad: ['basement', 26.5, 16.5], dreamvoid: ['ground', 15.5, 23.5], nipdream: ['ground', 13.5, 6.5],
+  underroad: ['basement', 26.5, 16.5], dreamvoid: ['ground', 15.5, 23.5], nipdream: ['ground', 13.5, 6.5], pondside: ['ground', 40.5, 7.5],
   heights: ['ground', 5.5, 19.5],
 };
 const MINI_CD = {
