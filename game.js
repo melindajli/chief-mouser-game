@@ -2164,16 +2164,17 @@ function drawFox() {
    A side-on shaft up the Study bookcase. Ledges hold you; the air does not —
    off a ledge you slide, and wobbly shelves tip if you linger. The perch at
    the top has never held a cat. Officially. */
+// A tap reaches 2.82 tiles; these used to sit 3 apart, which the landing
+// tolerance just barely forgave — so the whole climb could be tapped out in
+// three seconds. Four apart means the charge is not optional, and the shelves
+// stagger sideways so you must aim as well as wind up.
 const CLIMB_LEDGES = [
   { x0: 1, x1: 9, y: 24 },                 // the floor
-  { x0: 2, x1: 4, y: 21 }, { x0: 7, x1: 9, y: 21, wob: true },
-  { x0: 1, x1: 3, y: 18, wob: true }, { x0: 5, x1: 7, y: 18 },
-  { x0: 3, x1: 5, y: 15 }, { x0: 8, x1: 9, y: 15, wob: true },
-  { x0: 1, x1: 2, y: 12, wob: true }, { x0: 6, x1: 8, y: 12 },
-  { x0: 3, x1: 6, y: 9 },
-  { x0: 8, x1: 9, y: 7, wob: true },
-  { x0: 2, x1: 4, y: 5 },
-  { x0: 5, x1: 7, y: 3, perch: true },     // THE PERCH
+  { x0: 2, x1: 4, y: 20 }, { x0: 7, x1: 9, y: 20, wob: true },
+  { x0: 1, x1: 3, y: 16, wob: true }, { x0: 5, x1: 7, y: 16 },
+  { x0: 3, x1: 5, y: 12 }, { x0: 8, x1: 9, y: 12, wob: true },
+  { x0: 1, x1: 2, y: 8, wob: true }, { x0: 6, x1: 8, y: 8 },
+  { x0: 4, x1: 7, y: 4, perch: true },     // THE PERCH
 ];
 function startClimb() {
   switchMap('heights', 5.5 * TILE, 23.5 * TILE);
@@ -2668,6 +2669,29 @@ function marbleSolve(R) {
   }
   return -1;
 }
+// Solvable from the START is not enough: about one room in twenty contained a
+// state you could slide into with no path left to the rug, and nothing on
+// screen said so. A room now only ships if EVERY state reachable from the
+// start can still reach the goal — so a wrong slide costs a move, never a run.
+function marbleNoDeadEnds(R) {
+  const k = (x, y) => x + ',' + y;
+  const seen = new Set([k(R.start[0], R.start[1])]);
+  const q = [[R.start[0], R.start[1]]];
+  while (q.length) {
+    const [x, y] = q.shift();
+    if (x === R.goal[0] && y === R.goal[1]) continue;   // the rug ends the room
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const [nx, ny] = marbleSlide(x, y, dx, dy, R);
+      if ((nx === x && ny === y) || seen.has(k(nx, ny))) continue;
+      seen.add(k(nx, ny)); q.push([nx, ny]);
+    }
+  }
+  for (const key of seen) {
+    const [x, y] = key.split(',').map(Number);
+    if (marbleSolve({ ...R, start: [x, y] }) < 0) return false;
+  }
+  return true;
+}
 function buildMarbleRoom(nb, minMoves) {
   for (let a = 0; a < 400; a++) {
     const blocks = [];
@@ -2681,7 +2705,7 @@ function buildMarbleRoom(nb, minMoves) {
     if (start[0] === goal[0] && start[1] === goal[1]) continue;
     const R = { blocks, start, goal, kinds: blocks.map(() => (Math.random() * 3) | 0) };
     const d = marbleSolve(R);
-    if (d >= minMoves && d <= 7) { R.par = d; return R; }
+    if (d >= minMoves && d <= 7 && marbleNoDeadEnds(R)) { R.par = d; return R; }
   }
   return { blocks: [[6, 5]], start: [1, 1], goal: [MARBLE_W, MARBLE_H], kinds: [0], par: 2 };
 }
@@ -5111,7 +5135,7 @@ function interactPoi(p) {
     if (G.daily) { toast('📚 The Heights will keep. The clock will not.'); sClick(); return; }
     if ((G.climbCD || 0) > 0) { toast('📚 The bookcase is being re-shelved after your last ascent. The books have filed a complaint.'); sClick(); return; }
     showChoice('THE STUDY', 'The Heights',
-      'The tallest bookcase in government; above it, the HIGHEST PERCH IN THE HOUSE. No cat has sat it. Officially.\n\nPOUNCE ledge to ledge. Off a ledge you slide; wobbly shelves tip. The perch waits.'
+      'The tallest bookcase in government; above it, the HIGHEST PERCH IN THE HOUSE. No cat has sat it. Officially.\n\nHOLD the pounce to charge — the shelves are too far apart for a flick — then release. Off a ledge you slide, and wobbly shelves tip if you linger. The perch waits.'
       + (G.climbBest ? '\n\n🏁 Best ascent: ' + G.climbBest.toFixed(1) + 's' : ''),
       '🐾 Begin the ascent', '🚶 Respect gravity today', which => {
         if (which === 'a') startFade(() => startClimb());
