@@ -4697,6 +4697,8 @@ function initDay() {
     : streakLost ? 'The streak has lapsed. The nation, graciously, forgets.' : 'Finish all three and the Evening Paper prints something flattering.');
   showCard('THE MORNING LIST', 'Today at No. 10', lines.join('\n'), null, null);
 }
+let dayOpen = false;
+try { dayOpen = localStorage.getItem('larry-daylist') === 'open'; } catch (e) { }
 function updateDayHUD() {
   const el = document.getElementById('daybox');
   if (!el) return;
@@ -4706,7 +4708,12 @@ function updateDayHUD() {
   // bare x/3 look broken for anyone who had not gone looking for the list.
   let txt;
   if (DAY.doneAll) txt = '📦 ✓ day well governed · 🔥 ' + DAY.streak;
-  else txt = '📦 Today ' + done + '/3\n' + DAY.goals.map(g =>
+  else if (!dayOpen) {
+    // collapsed: the count, plus the one thing you are most likely doing next
+    const next = DAY.goals.find(g => g.prog < g.n);
+    txt = '📦 Today ' + done + '/3  ▸'
+      + (next ? '\n· ' + next.text.replace('{n}', next.n) + (next.n > 1 ? ' (' + Math.min(next.prog, next.n) + '/' + next.n + ')' : '') : '');
+  } else txt = '📦 Today ' + done + '/3  ▾\n' + DAY.goals.map(g =>
     (g.prog >= g.n ? '✓ ' : '· ') + g.text.replace('{n}', g.n) + (g.n > 1 ? ' (' + Math.min(g.prog, g.n) + '/' + g.n + ')' : '')
   ).join('\n');
   el.textContent = txt;
@@ -8372,6 +8379,12 @@ function kipperGuide() {
     + 'Tap the 🐟 in the corner whenever you want this again.',
     null, null);
 }
+const dayHud = document.getElementById('daybox');
+if (dayHud) bindBtn(dayHud, () => {
+  dayOpen = !dayOpen;
+  try { localStorage.setItem('larry-daylist', dayOpen ? 'open' : 'shut'); } catch (e) { }
+  updateDayHUD(); sClick();
+});
 const fishHud = document.getElementById('fish');
 if (fishHud) bindBtn(fishHud, () => { if (!G.mini && !SCENE) kipperGuide(); });
 bindBtn(document.getElementById('menuKippers'), () => {

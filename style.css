@@ -27,6 +27,9 @@ canvas#game { position:fixed; inset:0; width:100vw; height:100vh; image-renderin
 #daybox { margin-top:7px; font-size:8px; line-height:1.75; color:#c9b98f; max-width:200px; white-space:pre-line; }
 #hudRight { position:fixed; top:calc(10px + env(safe-area-inset-top)); right:12px; text-align:right; max-width:58vw; }
 #pmline { font-size:9px; line-height:1.5; color:#ffd9a0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* the daily list is a button now: collapsed by default, tap to open */
+#daybox { pointer-events:auto; cursor:pointer; }
+#pmrow { gap:10px; }
 
 /* Overlays */
 .overlay { position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
