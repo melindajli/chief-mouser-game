@@ -3723,6 +3723,7 @@ function drawAGM() {
 const CHOIR_NOTES = [523, 587, 659, 784, 880]; // pentatonic: it cannot sound wrong
 const CHOIR_HOME = { x: 24.5 * 16, y: 14.5 * 16 }; // the Cellar: the choir stalls nearest it
 function startMoles() {
+  if (!(curMap().holes || []).length) return;   // nothing to pop out of
   const holes = curMap().holes;
   const choir = holes.map((h, i) => i)
     .sort((a, b) => {
@@ -6992,7 +6993,12 @@ function switchMap(id, x, y) {
   G.larry.x = x; G.larry.y = y;
   unstickLarry();
   G.mice = []; G.laser = null; G.boxes = []; tapTarget = null; G.napping = false; G.napPos = null;
-  G.mini = null; // an abandoned mini game forfeits the round
+  if (G.mini) {   // walking out forfeits — and costs the same pause as giving up,
+    const cd = MINI_CD[G.mini.type];   // otherwise a doorway is a free reroll
+    if (cd) G[cd] = Math.max(G[cd] || 0, 45);
+    if (G.mini.type === 'fox') G.foxTonight = true;
+  }
+  G.mini = null;
   G.sceneNpcs = []; // any lingering cast disperses
   if (G.press.active && id !== 'ground') { // the pack disperses if you slip away
     G.press.active = false; G.press.cd = 40; G.paps = [];
@@ -8132,6 +8138,9 @@ function startGame(fresh) {
     G.intro.phase = 'done';
     G.mapId = MAPS[s.mapId] ? s.mapId : 'ground';
     G.larry.x = s.x || 21.5 * TILE; G.larry.y = s.y || 31 * TILE;
+    // save() never writes a doorless map, but a shared or hand-edited code can:
+    // trust the shape of the data, not its sanity
+    if (POCKET_MAPS.has(G.mapId)) { G.mapId = 'street'; G.larry.x = 10.5 * TILE; G.larry.y = 6.5 * TILE; }
     unstickLarry();
     G.secretsFound = new Set(s.secrets || []);
     G.honours = new Set(s.honours || []);
@@ -8195,6 +8204,7 @@ function startGame(fresh) {
     const qx = parseFloat(q.get('x')), qy = parseFloat(q.get('y'));
     G.larry.x = (isNaN(qx) ? MAPS[mapParam].w / 2 : qx + 0.5) * TILE;
     G.larry.y = (isNaN(qy) ? MAPS[mapParam].h / 2 : qy + 0.5) * TILE;
+    unstickLarry();   // a hand-typed coordinate lands in a wall more often than not
   }
 
   bootWorld();
@@ -8317,7 +8327,7 @@ function openHonours() {
 bindBtn(document.getElementById('menuHonours'), openHonours);
 bindBtn(document.getElementById('honoursClose'), () => {
   document.getElementById('honoursWrap').classList.add('hidden');
-  G.paused = false;
+  G.paused = !!SCENE;
   sClick();
 });
 function openMischief() {
@@ -8505,6 +8515,10 @@ bindBtn(document.getElementById('mischiefClose'), () => {
 /* Some mini games live on pocket maps with no doors — the Marble Hall has no
    timer either — so without this there is no way out of a run you cannot
    finish except reloading the page. Every game can now be walked away from. */
+// Maps with no exits of their own. Anything that PLACES the player must send
+// them somewhere real instead — a save, a save code, or a dev URL param that
+// lands here would otherwise strand a career with no way out but a reload.
+const POCKET_MAPS = new Set(['shelter', 'underroad', 'dreamvoid', 'heights', 'stairs', 'marble', 'bus', 'square', 'market']);
 const POCKET_HOME = {
   marble: ['ground', 26.5, 29.5], stairs: ['ground', 5.5, 15.5],
   bus: ['street', 10.5, 6.5], square: ['street', 10.5, 6.5],
