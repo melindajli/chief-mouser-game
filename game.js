@@ -2151,6 +2151,7 @@ function drawGulls() {
 const FOX_Y = 7 * TILE, FOX_START = 6 * TILE, FOX_STEP = 1.5 * TILE;
 function maybeFox() {
   if (G.mapId !== 'street' || G.mini || SCENE || G.paused || G.daily || G.foxTonight || G.intro.phase !== 'done') return;
+  if (G.fadeDir !== 0) return;   // not mid-doorway
   const task = G.brief && G.brief.def.kind === 'fox';
   const revisit = G.met.has('event:fox') && FOX_NIGHT;
   if (!task && !revisit) return;
@@ -2161,6 +2162,7 @@ function maybeFox() {
   startFox();
 }
 function startFox() {
+  if (G.mapId !== 'street') return;   // it happened on the Street. It happens ONLY on the Street.
   G.mini = { type: 'fox', t: 0, fx: FOX_START, stands: 0, phase: 'pace', phT: 0, lx: G.larry.x, ly: G.larry.y, lungeFrom: 0 };
   tone(300, 180, 0.2, 'sawtooth', 0.04); // something low, at the edge of hearing
   if (!G.met.has('event:fox')) {
@@ -2177,6 +2179,7 @@ function startFox() {
 function updateFox(dt) {
   const M = G.mini;
   if (!M || M.type !== 'fox') return;
+  if (G.mapId !== 'street') { G.mini = null; return; }   // it does not come inside
   M.t += dt;
   const L = G.larry;
   const moved = dist(L.x, L.y, M.lx, M.ly) / Math.max(dt, 0.001); // px/s this frame
