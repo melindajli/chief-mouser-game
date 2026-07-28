@@ -2005,9 +2005,19 @@ function drawRace() {
   ctx.fillStyle = '#ffd98a';
   ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3, -4); ctx.lineTo(-3, 4); ctx.closePath(); ctx.fill();
   ctx.restore();
+  // gates cleared, the clock, and what you are actually racing — without a
+  // target the timer was just a number going up
+  const medal = M.t <= 35 ? '🥇' : M.t <= 48 ? '🥈' : '🥉';
+  const txt = '⚡' + M.idx + '/' + RACE_GATES.length + '  ' + M.t.toFixed(1) + 's ' + medal;
   ctx.font = '8px monospace'; ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(12,10,20,0.65)'; ctx.fillRect(L.x - 17, L.y - 32, 34, 11);
-  ctx.fillStyle = '#ffe8b8'; ctx.fillText(M.t.toFixed(1) + 's', L.x, L.y - 23);
+  const w = ctx.measureText(txt).width + 10;
+  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - w / 2, L.y - 32, w, 11);
+  ctx.fillStyle = M.t <= 35 ? '#ffd98a' : M.t <= 48 ? '#e8e2d2' : '#b9b2a2';
+  ctx.fillText(txt, L.x, L.y - 23);
+  if (M.t < 3) {   // say the target once, at the start
+    ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 42, L.y - 45, 84, 11);
+    ctx.fillStyle = '#ffd98a'; ctx.fillText('gold pace: under 35s', L.x, L.y - 36);
+  }
 }
 
 /* ---------- Game markers: the six-plus arcade spots, visible from anywhere ----------
@@ -3072,6 +3082,9 @@ function drawBus() {
     }
     ctx.globalAlpha = 1;
   }
+  // an overhead is the one place HOLD means something different from everywhere
+  // else in the game, so it says so, on approach, every time
+  const soon = M.hz.find(h => h.over && !h.hit && h.y * TILE > L.y && h.y * TILE - L.y < 7 * TILE);
   const me = proj(L.x, L.y);
   const flat = L.charging;
   ctx.save();
@@ -3089,6 +3102,15 @@ function drawBus() {
       const sx = W / 2 + (i - 3) * W * 0.14 * (0.4 + f);
       ctx.beginPath(); ctx.moveTo(sx, hor + f * (H - hor) * 0.7); ctx.lineTo(sx, hor + f * (H - hor) * 0.7 + 10 + f * 26); ctx.stroke();
     }
+  }
+  if (soon) {
+    ctx.font = '11px monospace'; ctx.textAlign = 'center';
+    const hint = flat ? 'FLAT — hold it' : 'HOLD to flatten';
+    const hw = ctx.measureText(hint).width + 12;
+    ctx.fillStyle = flat ? 'rgba(20,60,26,0.85)' : 'rgba(60,45,10,0.85)';
+    ctx.fillRect(W / 2 - hw / 2, H * 0.52 - 11, hw, 16);
+    ctx.fillStyle = flat ? '#9fe8a0' : '#ffd98a';
+    ctx.fillText(hint, W / 2, H * 0.52);
   }
   ctx.font = '9px monospace'; ctx.textAlign = 'center';
   ctx.fillStyle = 'rgba(12,10,20,0.72)'; ctx.fillRect(W / 2 - 46, H - 16, 92, 13);
@@ -3728,16 +3750,14 @@ function drawAGM() {
    this building asks you to REMEMBER something — which is precisely why
    they chose it. */
 const CHOIR_NOTES = [523, 587, 659, 784, 880]; // pentatonic: it cannot sound wrong
-const CHOIR_HOME = { x: 24.5 * 16, y: 14.5 * 16 }; // the Cellar: the choir stalls nearest it
+// The chorus used to borrow the map's mouseholes, but those are mouse SPAWN
+// points placed out at the edges — so 'the five nearest' still spanned the
+// whole basement and the memory game turned into a sprint. The choir gets its
+// own stalls: a tight arc in the Cellar, all within a few steps of each other.
+const CHOIR_HOLES = [[21, 12], [25, 11], [27, 13], [26, 17], [22, 16]];
+const CHOIR_HOME = { x: 24.5 * 16, y: 14.5 * 16 };
 function startMoles() {
-  if (!(curMap().holes || []).length) return;   // nothing to pop out of
-  const holes = curMap().holes;
-  const choir = holes.map((h, i) => i)
-    .sort((a, b) => {
-      const [ax, ay] = molesHolePos(a), [bx, by] = molesHolePos(b);
-      return dist(ax, ay, CHOIR_HOME.x, CHOIR_HOME.y) - dist(bx, by, CHOIR_HOME.x, CHOIR_HOME.y);
-    })
-    .slice(0, 5);
+  const choir = CHOIR_HOLES.map((h, i) => i);
   G.mini = {
     type: 'moles', t: 0, choir, round: 0, rounds: 4, seq: [], step: 0,
     strikes: 0, cleared: 0, done: 0, phase: 'sing', singT: 1.1, lit: -1, onHole: -1, roundT: 0,
@@ -3746,7 +3766,7 @@ function startMoles() {
   toast('🎵 They sing a phrase. Answer it, hole by hole.', 'now');
 }
 function molesHolePos(i) {
-  const [hx, hy] = curMap().holes[i];
+  const [hx, hy] = CHOIR_HOLES[i] || CHOIR_HOLES[0];
   return [(hx + 0.5) * TILE, (hy + 0.5) * TILE];
 }
 function molesPitch(h) { return CHOIR_NOTES[Math.max(0, G.mini.choir.indexOf(h))]; }
