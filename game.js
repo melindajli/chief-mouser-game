@@ -4568,7 +4568,7 @@ const G = {
   laser: null,
   toolCD: {}, zoomiesT: 0, sonarT: 0, sonarRingT: -1, nv: false, superArmed: false, shake: 0,
   press: { active: false, t: 0, cd: 35, catches: 0, bads: 0 }, paps: [],
-  nearPoi: null, nearChat: null, napping: false, napPos: null, catAnim: null, idleAnim: null,
+  nearPoi: null, nearChat: null, napping: false, approvalExplained: false, napPos: null, catAnim: null, idleAnim: null,
   secretsFound: new Set(), brief: null, briefCD: 14, lastBrief: null, briefStage: 0, catchTimes: [], isNight: false,
   honours: new Set(), nightCatches: 0, briefsDone: 0, ratKingCD: 45, hitstop: 0, flash: 0,
   escapes: 0, snowing: false,
@@ -4643,7 +4643,7 @@ function save() {
       kingSeen: !!G.kingSeen, kingDeposed: !!G.kingDeposed,
       donated: G.donated || 0, homecoming: !!G.homecoming, auditAt: G.auditAt || 0, raceBest: G.raceBest || 0,
       gauntletOpen: !!G.gauntletOpen, protocolOpen: !!G.protocolOpen, gauntletBest: G.gauntletBest || 0, protocolBest: G.protocolBest || 0, climbBest: G.climbBest || 0,
-      underroadWins: G.underroadWins || 0, coronation: !!G.coronation, treaty: !!G.treaty,
+      underroadWins: G.underroadWins || 0, coronation: !!G.coronation, treaty: !!G.treaty, approvalExplained: !!G.approvalExplained,
       fish: G.fish, larder: G.larder,
       ownPortrait: G.ownPortrait || 0, lives: G.lives || 0,
     }));
@@ -5790,7 +5790,9 @@ function updateMouse(mo, dt, idx) {
           : STEAL_LINES[G.larder % STEAL_LINES.length].replace('{n}', G.larder));
         tone(340, 220, 0.14, 'triangle', 0.05);
       }
-      G.approval = Math.max(0, G.approval - (G.press.active && DIFF().pressPen ? 6 : 2));
+      const escPen = (G.press.active && DIFF().pressPen ? 6 : 2);
+      G.approval = Math.max(0, G.approval - escPen);
+      addFloat(G.larry.x, G.larry.y - 26, '−' + escPen + '% approval', '#ff8080');
       if (G.press.active) { G.press.bads++; }
       if (G.daily) {
         G.daily.escaped++; G.daily.combo = 0;
@@ -6275,12 +6277,12 @@ function updatePress(dt) {
     if (P.bads > 0 && !DIFF().pressPen) {
       toast('📰 The press got their photos and toddled off. No harm done. (Kitten mode is kind.)');
     } else if (P.bads > 0) {
-      toast(pick(HEADLINES_BAD));
+      toast(pick(HEADLINES_BAD) + ' (−10% approval)');
       G.xp = Math.max(0, G.xp - 15);
       G.approval = Math.max(0, G.approval - 10);
       tone(300, 150, 0.4, 'sawtooth', 0.06);
     } else if (P.catches >= 2) {
-      toast(pick(HEADLINES_GOOD));
+      toast(pick(HEADLINES_GOOD) + ' (+8% approval)');
       G.xp += 25;
       G.fish += 3;
       G.approval = Math.min(100, G.approval + 8);
@@ -7132,6 +7134,14 @@ function update(dt) {
   // Below 50, approval drifts gently back up while the press pack is away,
   // so one bad stretch can't spiral into Rat King + crisis + summons at once.
   if (G.intro.phase === 'done' && !G.daily) {
+    // the number had been sliding all game with nothing ever explaining it, and
+    // no consequence at the bottom — so say what it is, once, when it first dips
+    if (G.approval < 42 && !G.approvalExplained && !SCENE && !G.mini && !G.paused && !G.cardQueue.length) {
+      G.approvalExplained = true; save();
+      showCard('THE POLLING', 'A Word About Approval',
+        'The percentage top-right is the nation\'s opinion of you.\n\nIt FALLS when mice get away, when Palmerston out-mouses you, and when the photographers catch you asleep. It RISES with every catch, with a good press visit, and with every parcel you send to Battersea.\n\nNothing bad happens if it hits zero — you are a cat, and cats do not resign. Left alone it drifts back up to 50 on its own. It is a scoreboard, not a threat.',
+        null, null);
+    }
     if (G.approval < 50 && !G.press.active) {
       const before = Math.round(G.approval);
       G.approval = Math.min(50, G.approval + dt * 0.35);
@@ -8168,6 +8178,7 @@ function startGame(fresh) {
     G.briefsDone = s.briefsDone || 0;
     G.briefStage = s.briefStage || 0;
     G.approval = s.approval != null ? s.approval : 72;
+    G.approvalExplained = !!s.approvalExplained;
     G.diff = DIFFS[s.diff] ? s.diff : 'mouser';
     G.tie = TIES.some(t => t.id === s.tie) ? s.tie : 'union';
     G.mischief = new Set(s.mischief || []);
