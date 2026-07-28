@@ -1950,6 +1950,13 @@ function updateRace(dt) {
   // speed lines: the corridor should feel like it's streaming past
   if (Math.random() < dt * 24) addParticle(G.larry.x - G.larry.cvx * 0.06, G.larry.y - G.larry.cvy * 0.06, 'rgba(255,235,200,0.5)', 1, 8);
 }
+/* Mini-game results were toasts, and toasts get overwritten — players finished
+   a round and never saw how they did. A result is now a card: it waits, and it
+   cannot be shouted over. */
+function miniResult(title, body) {
+  showCard('RESULT', title, body, null, null);
+}
+
 function finishRace() {
   const M = G.mini;
   G.mini = null;
@@ -1963,7 +1970,7 @@ function finishRace() {
   if (isBest) G.raceBest = t;
   if (medal === 'gold') earnHonour('zoomgold');
   briefEvent('race');
-  toast((medal === 'gold' ? '🥇 ' + t.toFixed(1) + 's — FULL ZOOMIES. The portraits are still rattling.'
+  miniResult('THE MIDNIGHT ZOOMIES',(medal === 'gold' ? '🥇 ' + t.toFixed(1) + 's — FULL ZOOMIES. The portraits are still rattling.'
     : medal === 'silver' ? '🥈 ' + t.toFixed(1) + 's — a highly professional tear around the premises.'
       : '🏁 ' + t.toFixed(1) + 's — the zoomies subside, dignity intact. Mostly.')
     + (isBest ? ' NEW RECORD.' : '') + ' +' + fish + ' 🐟 +' + xp + ' XP');
@@ -2105,7 +2112,7 @@ function finishGulls() {
   G.fish += fish; G.xp += s * 2;
   if (s >= 8) earnHonour('airspace');
   if (s >= 4) briefEvent('gulls'); // the terrace counts as held if most of it survives
-  toast(s >= 8 ? '🥪 EIGHT INTERCEPTIONS. The airspace is closed; catering weeps with gratitude. +' + fish + ' 🐟 +' + s * 2 + ' XP'
+  miniResult('THE GULL AFFAIR',s >= 8 ? '🥪 EIGHT INTERCEPTIONS. The airspace is closed; catering weeps with gratitude. +' + fish + ' 🐟 +' + s * 2 + ' XP'
     : s >= 5 ? '🥪 ' + s + '/8 turned back. The reception is saved. Mostly. +' + fish + ' 🐟 +' + s * 2 + ' XP'
       : '🥪 ' + s + '/8. The gulls dine well tonight, and without remorse. +' + fish + ' 🐟' + (s ? ' +' + s * 2 + ' XP' : ''));
   [659, 784, s >= 6 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
@@ -2222,7 +2229,7 @@ function finishFox() {
   G.fish += 4; G.xp += 14;
   earnHonour('fox');
   briefEvent('fox');
-  toast('📰 "LARRY SEES OFF FOX" — tomorrow\'s front page. The officer saw everything. +4 🐟 +14 XP');
+  miniResult('THE FOX INCIDENT','📰 "LARRY SEES OFF FOX" — tomorrow\'s front page. The officer saw everything. +4 🐟 +14 XP');
   [523, 659, 880].forEach((f, i) => tone(f, f, 0.12, 'triangle', 0.06, i * 0.09));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   save();
@@ -2330,7 +2337,7 @@ function finishClimb() {
   if (isBest) G.climbBest = t;
   earnHonour('perch');
   briefEvent('climb');
-  toast('👑 THE HIGHEST PERCH — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Everything below is yours. +4 🐟 +12 XP');
+  miniResult('THE HEIGHTS','👑 THE HIGHEST PERCH — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Everything below is yours. +4 🐟 +12 XP');
   [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, 0.11, 'triangle', 0.06, i * 0.09));
   addParticle(G.larry.x, G.larry.y - 8, '#ffd98a', 14, 50);
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -2455,7 +2462,7 @@ function finishSled() {
   G.fish += fish; G.xp += 12 + M.kippers * 2;
   if (clean) earnHonour('sledder');
   briefEvent('sled');
-  toast(clean ? '🛋️ THE FULL FLIGHT, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Not one human harmed. +' + fish + ' 🐟'
+  miniResult('THE DESCENT',clean ? '🛋️ THE FULL FLIGHT, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Not one human harmed. +' + fish + ' 🐟'
     : M.bumps <= 2 ? '🛋️ Down in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Two apologies issued in transit. +' + fish + ' 🐟'
       : '🛋️ Down in ' + t.toFixed(1) + 's, via most of the guest list. The cushion is fine. It is always the cushion that is fine. +' + fish + ' 🐟');
   [523, 659, 784, clean ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
@@ -2680,7 +2687,7 @@ function finishCanape() {
   G.fish += fish; G.xp += r * 2;
   if (r >= 14) earnHonour('quality');
   briefEvent('canape');
-  toast(r >= 14 ? '🥂 FOURTEEN FOR FOURTEEN. Not one cucumber reached the Pillared Room. +' + fish + ' 🐟 +' + r * 2 + ' XP'
+  miniResult('THE CANAPÉ LINE',r >= 14 ? '🥂 FOURTEEN FOR FOURTEEN. Not one cucumber reached the Pillared Room. +' + fish + ' 🐟 +' + r * 2 + ' XP'
     : r >= 10 ? '🥂 ' + r + '/14 vetted. The reception is broadly safe. +' + fish + ' 🐟 +' + r * 2 + ' XP'
       : '🥂 ' + r + '/14. Somewhere upstairs, a diplomat is eating cucumber. +' + fish + ' 🐟' + (r ? ' +' + r * 2 + ' XP' : ''));
   [659, 784, r >= 11 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
@@ -2833,7 +2840,7 @@ function finishMarble() {
   G.fish += fish; G.xp += 14;
   if (over <= 0) earnHonour('polished');
   briefEvent('marble');
-  toast(over <= 0 ? '✨ ALL THREE ROOMS, IN PAR (' + M.total + ' slides). The floor has been solved. +' + fish + ' 🐟 +14 XP'
+  miniResult('THE MARBLE HALL',over <= 0 ? '✨ ALL THREE ROOMS, IN PAR (' + M.total + ' slides). The floor has been solved. +' + fish + ' 🐟 +14 XP'
     : '✨ Across in ' + M.total + ' slides (par ' + M.par + '). The floor remains undefeated in places. +' + fish + ' 🐟 +14 XP');
   [523, 659, 784, over <= 0 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -2970,7 +2977,7 @@ function finishBus() {
   G.fish += fish; G.xp += 12 + M.kippers * 2;
   if (clean) earnHonour('conductor');
   briefEvent('bus');
-  toast(clean ? '🚌 THE WHOLE ROUTE, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. London went under you. +' + fish + ' 🐟'
+  miniResult('THE 11 BUS',clean ? '🚌 THE WHOLE ROUTE, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. London went under you. +' + fish + ' 🐟'
     : M.bumps <= 2 ? '🚌 Rode it in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. Two low bridges disagreed. +' + fish + ' 🐟'
       : '🚌 ' + t.toFixed(1) + 's, and most of the street furniture. You have seen London. It has seen you. +' + fish + ' 🐟');
   [523, 659, 784, clean ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
@@ -3177,7 +3184,7 @@ function finishTrafalgar() {
   G.fish += fish; G.xp += Math.round(u / 2);
   if (all) earnHonour('square');
   briefEvent('traf');
-  toast(all ? '🕊 THE SQUARE IS EMPTY. Every bird in it, and the best chain was ×' + M.best + '. Nelson saw everything. +' + fish + ' 🐟'
+  miniResult('TRAFALGAR SQUARE',all ? '🕊 THE SQUARE IS EMPTY. Every bird in it, and the best chain was ×' + M.best + '. Nelson saw everything. +' + fish + ' 🐟'
     : u >= 30 ? '🕊 ' + u + '/' + M.birds.length + ' put up, best chain ×' + M.best + '. The square has been advised. +' + fish + ' 🐟'
       : '🕊 ' + u + '/' + M.birds.length + '. They have seen worse than you, and recently. +' + fish + ' 🐟');
   [523, 659, 784, all ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
@@ -3343,7 +3350,7 @@ function finishScrum() {
     });
   }
   playScene(steps, () => {
-    toast('⚡ ' + g + '/' + M.called + ' frames given' + (M.caught ? ', ' + M.caught + ' caught by the pack' : ', untouched by the pack') + '. +' + fish + ' 🐟');
+    miniResult('THE DOORSTEP SCRUM', '⚡ ' + g + '/' + M.called + ' frames given' + (M.caught ? ', ' + M.caught + ' caught by the pack' : ', untouched by the pack') + '. +' + fish + ' 🐟');
   });
 }
 function drawScrum() {
@@ -3442,7 +3449,7 @@ function finishGauntlet(win) {
     if (isBest) G.gauntletBest = t;
     if (t <= 20) earnHonour('underroad');
     briefEvent('gauntlet');
-    toast('🧀 LARDER RECLAIMED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. +4 🐟 +12 XP');
+    miniResult('THE UNDER-ROAD', '🧀 LARDER RECLAIMED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. +4 🐟 +12 XP');
     [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
     if (!G.protocolOpen) { // the first run home earns MI-Paw's full attention
@@ -3530,7 +3537,7 @@ function finishProtocol() {
   const isBest = h > (G.protocolBest || 0);
   if (isBest) G.protocolBest = h;
   if (h >= 10) earnHonour('protocol');
-  toast(h >= 10 ? '🔴 ' + h + ' CATCHES. The terminal prints a certificate it clearly did not expect to need. +' + fish + ' 🐟 +' + h + ' XP'
+  miniResult('THE RED DOT PROTOCOL',h >= 10 ? '🔴 ' + h + ' CATCHES. The terminal prints a certificate it clearly did not expect to need. +' + fish + ' 🐟 +' + h + ' XP'
     : h >= 5 ? '🔴 ' + h + ' catches. "ADEQUATE," says the terminal, warmly for a terminal. +' + fish + ' 🐟 +' + h + ' XP'
       : '🔴 ' + h + ' catches. The dot sends its regards. +' + fish + ' 🐟' + (h ? ' +' + h + ' XP' : ''));
   [659, 784, h >= 10 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
@@ -3828,7 +3835,7 @@ function finishMoles() {
   G.fish += fish; G.xp += c * 5;
   const perfect = c >= M.rounds && M.strikes === 0;
   if (perfect) earnHonour('bonk');
-  toast(perfect ? '🎵 FOUR PHRASES, NOTE PERFECT. The songbook is closed. +' + fish + ' 🐟 +' + c * 5 + ' XP'
+  miniResult('THE CELLAR CHORUS',perfect ? '🎵 FOUR PHRASES, NOTE PERFECT. The songbook is closed. +' + fish + ' 🐟 +' + c * 5 + ' XP'
     : c >= 3 ? '🎵 ' + c + '/4 phrases answered. They are running out of material. +' + fish + ' 🐟 +' + c * 5 + ' XP'
       : c >= 1 ? '🎵 ' + c + '/4. A creditable ear. The chorus reconvenes. +' + fish + ' 🐟 +' + c * 5 + ' XP'
         : '🎵 Not one phrase. They sing it again tomorrow, slower, for you. +' + fish + ' 🐟');
@@ -3931,7 +3938,7 @@ function finishSupper() {
   G.fish += fish;
   G.xp += c * 2;
   if (c >= 10) earnHonour('gravy');
-  toast(c >= 10 ? '🍝 TEN FOR TEN. Not one pea lost. The PM salutes you with a wooden spoon. +' + fish + ' 🐟 +' + c * 2 + ' XP'
+  miniResult('KITCHEN SUPPERS',c >= 10 ? '🍝 TEN FOR TEN. Not one pea lost. The PM salutes you with a wooden spoon. +' + fish + ' 🐟 +' + c * 2 + ' XP'
     : c >= 6 ? '🍝 ' + c + '/10 intercepted. The kitchen floor stays respectable. +' + fish + ' 🐟 +' + c * 2 + ' XP'
       : '🍝 ' + c + '/10. The floor dined well tonight. There is always another supper. +' + fish + ' 🐟' + (c ? ' +' + c * 2 + ' XP' : ''));
   [659, 784, c >= 6 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
@@ -4077,7 +4084,7 @@ function finishPostWatch() {
   G.fish += fish;
   G.xp += h * 2; // interception is skilled work; the Box notices
   if (h >= 8) earnHonour('post8');
-  toast(h >= 8 ? '📮 EIGHT FOR EIGHT. The Royal Mail files a complaint. +' + fish + ' 🐟 +' + h * 2 + ' XP'
+  miniResult('POST WATCH',h >= 8 ? '📮 EIGHT FOR EIGHT. The Royal Mail files a complaint. +' + fish + ' 🐟 +' + h * 2 + ' XP'
     : h >= 6 ? '📮 ' + h + '/8 batted down. The post has been thoroughly vetted. +' + fish + ' 🐟 +' + h * 2 + ' XP'
       : h >= 4 ? '📮 ' + h + '/8. A respectable interception rate. The letters will think twice. +' + fish + ' 🐟 +' + h * 2 + ' XP'
         : '📮 ' + h + '/8. The post won this round. It will not be so lucky at the next delivery. +' + fish + ' 🐟' + (h ? ' +' + h * 2 + ' XP' : ''));
