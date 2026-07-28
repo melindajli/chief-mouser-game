@@ -3295,7 +3295,7 @@ function finishScrum() {
   G.fish += fish; G.xp += g * 3;
   // catches scale, so a good run is net positive: posing REQUIRES standing still
   // and the pack fires ~70 times a round — a flat penalty punished playing well
-  G.approval = clamp(G.approval + (g >= 6 ? 6 : g >= 4 ? 4 : 1) - Math.min(5, Math.floor(M.caught / 5)), 0, 100);
+  bumpApproval((g >= 6 ? 6 : g >= 4 ? 4 : 1) - Math.min(5, Math.floor(M.caught / 5)));
   if (g >= 6 && M.caught <= 3) earnHonour('muse');
   briefEvent('scrum');
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -3324,11 +3324,17 @@ function drawScrum() {
   for (const f of M.flashes) {
     if (f.tel > 0) {                                     // where it is about to go off
       const p = 1 - f.tel / 0.72;
-      ctx.strokeStyle = 'rgba(255,255,255,' + (0.18 + p * 0.5).toFixed(2) + ')';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.4 + p * 0.6), 0, 7); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,' + (0.05 + p * 0.1).toFixed(2) + ')';
-      ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 0.3, 0, 7); ctx.fill();
+      // red, and marked ✕: this is the thing to be OUT of. The gold frame is
+      // the thing to be IN. Two shapes on the floor meaning opposite things
+      // need to look nothing like each other.
+      ctx.strokeStyle = 'rgba(255,96,96,' + (0.35 + p * 0.6).toFixed(2) + ')';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.45 + p * 0.55), 0, 7); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,96,96,' + (0.07 + p * 0.14).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 0.92, 0, 7); ctx.fill();
+      ctx.font = '9px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,140,140,' + (0.4 + p * 0.6).toFixed(2) + ')';
+      ctx.fillText('✕', f.x, f.y + 3);
     } else {
       ctx.fillStyle = 'rgba(255,255,255,' + (f.fired / 0.22 * 0.55).toFixed(2) + ')';
       ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 7); ctx.fill();
@@ -3341,6 +3347,9 @@ function drawScrum() {
     ctx.lineWidth = 1.4;
     const s = fr.r;
     ctx.strokeRect(fr.x - s, fr.y - s * 0.7, s * 2, s * 1.4);
+    ctx.font = '7px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(232,200,106,' + (0.6 + pulse * 0.4).toFixed(2) + ')';
+    ctx.fillText(fr.held > 0 ? 'HOLD STILL' : 'STAND HERE', fr.x, fr.y - s * 0.7 - 4);
     ctx.fillStyle = '#e8c86a';
     for (const [cx, cy] of [[-s, -s * 0.7], [s, -s * 0.7], [-s, s * 0.7], [s, s * 0.7]]) {
       ctx.fillRect(fr.x + cx - 2, fr.y + cy - 2, 4, 4);   // frame corners
@@ -3350,7 +3359,12 @@ function drawScrum() {
       ctx.fillStyle = '#9fe8a0'; ctx.fillRect(fr.x - 16, fr.y - s * 0.7 - 8, 32 * Math.min(1, fr.held / 0.85), 4);
     }
   }
-  ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.font = '7px monospace'; ctx.textAlign = 'center';
+  const rule = '✕ STAY OUT of the red flashes    ✓ STAND in the gold frame';
+  const rw = ctx.measureText(rule).width + 12;
+  ctx.fillStyle = 'rgba(12,10,20,0.8)'; ctx.fillRect(11 * TILE - rw / 2, 3.1 * TILE, rw, 11);
+  ctx.fillStyle = '#e8e2d2'; ctx.fillText(rule, 11 * TILE, 3.1 * TILE + 8);
+  ctx.font = '8px monospace';
   ctx.fillStyle = 'rgba(12,10,20,0.72)'; ctx.fillRect(L.x - 44, L.y + 12, 88, 11);
   ctx.fillStyle = M.caught ? '#ffd98a' : '#9fe8a0';
   ctx.fillText('📷 ' + M.good + '/' + M.called + '  ⚡' + M.caught + '  ' + Math.ceil(M.t) + 's', L.x, L.y + 21);
@@ -4592,6 +4606,15 @@ const has = g => {
 // early levels climb steeply (a career taking shape); past 10 the ladder goes
 // linear and GENTLE — the final stretch to the Garter should be a victory lap
 // with story beats, not a second job (+55/level was +95, which walled the end)
+// Approval belongs to the Chief Mouser, not to a stray in a Battersea pen:
+// before the appointment there is no nation to hold an opinion. Every change
+// routes through here, so nothing can move it — or float a number about it —
+// while Larry is still waiting to be adopted.
+function bumpApproval(delta, note, colour) {
+  if (G.intro.phase !== 'done') return;
+  G.approval = clamp(G.approval + delta, 0, 100);
+  if (note) addFloat(G.larry.x, G.larry.y - 26, note, colour || (delta < 0 ? '#ff8080' : '#9fe8a0'));
+}
 const xpNeed = l => l <= 10
   ? Math.floor(85 * Math.pow(1.24, l - 1))
   : Math.floor(85 * Math.pow(1.24, 9) + (l - 10) * 55);
@@ -5083,7 +5106,7 @@ function interactPoi(p) {
     if (G.daily) { toast('⚡ Not on sortie day.'); sClick(); return; }
     if (G.scrumCD > 0) { toast('⚡ The pack has filed for the day. They will be back at six.'); sClick(); return; }
     showChoice('THE PAVEMENT', 'The Doorstep Scrum',
-      'The press are three deep and firing at anything that moves. A cat caught mid-blink is tomorrow\'s unflattering front page.\n\nStay out of their flashes.\n\nBut when the one who has stood here fifteen years frames a shot — get in it, and HOLD STILL.',
+      'The press are three deep and firing at anything that moves.\n\n✕ RED RINGS are flashes about to go off — be somewhere else.\n✓ The GOLD FRAME is his shot — stand in it and hold still until it fills.\n\nAvoid everybody. Pose for him.',
       '⚡ Give them nothing', '🚶 Use the back door', which => { if (which === 'a') startScrum(); });
     return;
   }
@@ -5293,7 +5316,7 @@ function interactPoi(p) {
         if (which !== 'a') return;
         G.fish -= 10;
         G.donated = (G.donated || 0) + 1;
-        G.approval = Math.min(100, G.approval + 3);
+        bumpApproval(3);
         toast(pick(TXT_DONATE) + ' (+3% approval)');
         [523, 659, 784].forEach((f, i) => tone(f, f, 0.12, 'sine', 0.05, i * 0.1));
         if (G.donated >= 5) earnHonour('patron');
@@ -5791,8 +5814,7 @@ function updateMouse(mo, dt, idx) {
       // wandered off is not a failure of state. Only a theft costs you.
       if (stole) {
         const escPen = (G.press.active && DIFF().pressPen ? 4 : 2);
-        G.approval = Math.max(0, G.approval - escPen);
-        addFloat(G.larry.x, G.larry.y - 26, '−' + escPen + '% — it got away WITH something', '#ff8080');
+        bumpApproval(-escPen, '−' + escPen + '% — it got away WITH something');
       }
       if (G.press.active) { G.press.bads++; }
       if (G.daily) {
@@ -6081,7 +6103,7 @@ function updateRival(c, dt) {
         toast('📰 "FOREIGN OFFICE CAT OUT-MOUSES LARRY" — early edition');
         tone(240, 120, 0.3, 'sawtooth', 0.06);
         if (G.press.active) G.press.bads++;
-        G.approval = Math.max(0, G.approval - 2);
+        bumpApproval(-2);
         if (DAY) { DAY.stats.palm = (DAY.stats.palm || 0) + 1; saveDay(); } // the Evening Paper keeps count
         c.state = 'sit'; c.t = 5; c.huntCD = 50;
       }
@@ -6184,7 +6206,7 @@ function updatePress(dt) {
   P.t -= dt;
   if (G.napping && !P.slept) { // asleep on the job, in front of everyone
     P.slept = true; P.bads++;
-    if (DIFF().pressPen) G.approval = Math.max(0, G.approval - 3);
+    if (DIFF().pressPen) bumpApproval(-3);
     addFloat(G.larry.x, G.larry.y - 20, 'papped!', '#f0a0a0');
   }
   for (const p of G.paps) {
@@ -6207,13 +6229,13 @@ function updatePress(dt) {
     } else if (P.bads > 0) {
       toast(pick(HEADLINES_BAD) + ' (−10% approval)');
       G.xp = Math.max(0, G.xp - 15);
-      G.approval = Math.max(0, G.approval - 10);
+      bumpApproval(-10);
       tone(300, 150, 0.4, 'sawtooth', 0.06);
     } else if (P.catches >= 2) {
       toast(pick(HEADLINES_GOOD) + ' (+8% approval)');
       G.xp += 25;
       G.fish += 3;
-      G.approval = Math.min(100, G.approval + 8);
+      bumpApproval(8);
       goalEvent('press');
       sLevel();
       while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -6271,7 +6293,7 @@ function catchMouse(i) {
     G.fish += 2;
     addFloat(mo.x, mo.y - 16, 'cheese recovered! +2 🐟', '#9fe8a0');
   }
-  G.approval = Math.min(100, G.approval + 0.6);
+  bumpApproval(0.6);
   if (G.isNight) G.nightCatches++;
   if (G.press.active) G.press.catches++;
   G.hitstop = 0.05; G.flash = 0.09; // a beat of impact
