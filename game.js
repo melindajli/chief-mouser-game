@@ -421,19 +421,6 @@ function buildPigeon() {
   return sCanvas(s);
 }
 const PIGEON_SPRITE = buildPigeon();
-function buildGull() {
-  // bigger, whiter, meaner: the true menace of every British garden party
-  const s = mkS(16, 11);
-  sell(s, 7, 6, 5.2, 2.9, '#f0ece2');                   // body
-  sell(s, 12.5, 4, 2.4, 2.0, '#f0ece2');                // head
-  sp(s, 13.4, 3.2, '#2a2522');                           // the cold eye
-  srect(s, 14.6, 3.8, 2, 1, '#e0a03c');                  // that beak
-  sell(s, 5, 4.5, 3.6, 1.6, '#b9b2a2');                 // folded wing, grey mantle
-  srect(s, 1, 5.5, 2, 1, '#b9b2a2');                     // wingtip
-  soutline(s, '#2a2522'); sshade(s, '#2a2522', { '#f0ece2': '#c9c2b0' });
-  return sCanvas(s);
-}
-const GULL_SPRITE = buildGull();
 function buildFox() {
   // long, low, amber, and on no guest list whatsoever
   const s = mkS(20, 12);
@@ -1266,7 +1253,6 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   m.pois = [
     { x: 37, y: 4, emoji: '🐟', type: 'text', texts: TXT_POND },
     { x: 39, y: 7, emoji: '🐦', type: 'agm' },  // the pigeons, in session
-    { x: 32, y: 5, emoji: '🥪', type: 'gulls' }, // the reception sandwiches, under threat from above
     { x: 45, y: 2, type: 'privacy' },           // behind the hedge. No marker. Obviously.
   ];
   rect(36, 5, 37, 8, 'a');                      // stone path from the terrace
@@ -1396,7 +1382,6 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
       'Found a fresh mouse hole by the wall. Thought you\'d want first refusal.',
       'The pigeons and I have an understanding. You\'re welcome to renegotiate it.',
       'Them pigeons hold their little meeting down at the pond. Very formal. Very smug. You didn\'t hear it from me.',
-      'Every reception, same story: platters out, gulls circling. One day some hero\'ll sort them birds out.',
     ] },
   ];
   m.cats = [
@@ -1779,7 +1764,6 @@ const HONOURS = [
   { id: 'bonk', name: 'Perfect Pitch', hint: 'Answer the Cellar Chorus without one wrong note.' },
   { id: 'underroad', name: 'Keeper of the Under-Road', hint: 'Reclaim the larder from the tunnel in under 20 seconds.' },
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
-  { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
   { id: 'muse', name: 'The Photographer\'s Muse', hint: 'Give him six clean frames in one scrum, and barely a flash on you.' },
   { id: 'square', name: 'The Square Is Clear', hint: 'Put up every last pigeon in Trafalgar Square.' },
@@ -1915,7 +1899,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, gulls: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1, scrum: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1, scrum: 1 };
 
 /* ---------- THE MIDNIGHT ZOOMIES: the whole house is the racetrack ----------
    Every cat knows the moment: the legs decide before the brain does. A course
@@ -2028,7 +2012,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', gulls: '🥪', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', traf: '🕊', scrum: '⚡' };
+const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', traf: '🕊', scrum: '⚡' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -2055,114 +2039,6 @@ function drawGameMarkers() {
   }
 }
 
-/* ---------- THE GULL AFFAIR: eight raiders, three platters, zero shame ----------
-   Interception: each gull telegraphs its strafing run, then crosses the lawn
-   low and fast toward a sandwich platter. Be in its path — lead the target —
-   and it banks off in disgrace. Every miss costs the nation a sandwich. */
-const GULL_PLATTERS = [[29, 5], [32, 5], [35, 5]];
-function startGulls() {
-  G.mini = { type: 'gulls', total: 8, launched: 0, saved: 0, lost: 0, gull: null, next: 1.6, t: 0 };
-  toast('🥪 Eight gulls inbound — be in their path!', 'now');
-  tone(1500, 900, 0.15, 'square', 0.06);
-}
-function updateGulls(dt) {
-  if ((G.gullsCD || 0) > 0) G.gullsCD -= dt;
-  const M = G.mini;
-  if (!M || M.type !== 'gulls') return;
-  M.t += dt;
-  if (!M.gull && M.launched < M.total) {
-    M.next -= dt;
-    if (M.next <= 0) {
-      M.launched++;
-      const [px] = GULL_PLATTERS[(Math.random() * GULL_PLATTERS.length) | 0];
-      const fromLeft = Math.random() < 0.5;
-      M.gull = {
-        x: (fromLeft ? -1 : 48) * TILE, y: (1.5 + Math.random() * 4.5) * TILE,
-        tx: (px + 0.5) * TILE, ty: 5.5 * TILE,
-        dir: fromLeft ? 1 : -1, spd: 105 + M.launched * 9, // each raider bolder than the last
-        tel: 0.8, animT: 0,
-      };
-      addFloat(M.gull.x + M.gull.dir * 30, M.gull.y, '!', '#ffd98a');
-      tone(1700, 1100, 0.1, 'square', 0.05); // the incoming cry
-    }
-  }
-  const g = M.gull;
-  if (g) {
-    g.animT += dt;
-    if (g.tel > 0) { g.tel -= dt; } // hovering at the boundary, committing to the run
-    else {
-      // strafe: home toward the platter, then carry on past
-      const dx = g.tx - g.x, dy = g.ty - g.y;
-      const d = Math.max(1, Math.hypot(dx, dy));
-      const past = (g.dir === 1 && g.x > g.tx) || (g.dir === -1 && g.x < g.tx);
-      g.x += (past ? g.dir * g.spd : dx / d * g.spd) * dt;
-      g.y += (past ? -30 : dy / d * g.spd) * dt; // climbs away after the snatch point
-      if (!past && Math.abs(g.x - g.tx) < 8 && Math.abs(g.y - g.ty) < 10) {
-        M.lost++;
-        addFloat(g.tx, g.ty - 10, '🥪 LOST', '#ff8080');
-        tone(300, 150, 0.15, 'square', 0.06);
-        g.tx = g.x + g.dir * 900; // and away, with the goods
-      }
-      if (g.x < -2 * TILE || g.x > 50 * TILE || g.y < -2 * TILE) { M.gull = null; M.next = 1.2 + Math.random() * 1.2; }
-    }
-    // interception: be in the path (a pounce counts double-distance)
-    if (g && g.tel <= 0 && dist(G.larry.x, G.larry.y, g.x, g.y) < (G.larry.pounceT > 0 ? 17 : 12)) {
-      M.saved++;
-      addFloat(g.x, g.y - 12, 'INTERCEPTED! ' + M.saved + '/' + M.total, '#ffe8b8');
-      addParticle(g.x, g.y, '#f0ece2', 8, 40);
-      tone(880, 1320, 0.1, 'triangle', 0.08);
-      M.gull = null; M.next = 1.2 + Math.random() * 1.2;
-    }
-  }
-  if (M.launched >= M.total && !M.gull) finishGulls();
-}
-function finishGulls() {
-  const M = G.mini;
-  G.mini = null;
-  G.gullsCD = 110 + Math.random() * 50;   // catering needs time to lay another one
-  save();
-  const s = M.saved;
-  const fish = s >= 8 ? 5 : s >= 6 ? 4 : s >= 4 ? 3 : s >= 2 ? 2 : 1;
-  G.fish += fish; G.xp += s * 2;
-  if (s >= 8) earnHonour('airspace');
-  if (s >= 4) briefEvent('gulls'); // the terrace counts as held if most of it survives
-  miniResult('THE GULL AFFAIR',s >= 8 ? '🥪 EIGHT INTERCEPTIONS. The airspace is closed; catering weeps with gratitude. +' + fish + ' 🐟 +' + s * 2 + ' XP'
-    : s >= 5 ? '🥪 ' + s + '/8 turned back. The reception is saved. Mostly. +' + fish + ' 🐟 +' + s * 2 + ' XP'
-      : '🥪 ' + s + '/8. The gulls dine well tonight, and without remorse. +' + fish + ' 🐟' + (s ? ' +' + s * 2 + ' XP' : ''));
-  [659, 784, s >= 6 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
-  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
-  updateHUD();
-}
-function drawGulls() {
-  const M = G.mini;
-  for (const [px, py] of GULL_PLATTERS) { // the platters, patriotically laden
-    const x = (px + 0.5) * TILE, y = (py + 0.5) * TILE;
-    ctx.fillStyle = '#e6dcc4'; ctx.fillRect(x - 6, y - 2, 12, 4);
-    ctx.fillStyle = '#e0c084'; ctx.fillRect(x - 4, y - 4, 3, 2); ctx.fillRect(x + 1, y - 4, 3, 2);
-  }
-  const g = M.gull;
-  if (g) {
-    if (g.tel > 0) { // the telegraph: a shadow of intent at the boundary
-      ctx.globalAlpha = 0.4 + Math.sin(M.t * 14) * 0.25;
-      ctx.fillStyle = '#ffd98a';
-      const ex = g.dir === 1 ? 1.2 * TILE : 46.5 * TILE;
-      ctx.beginPath(); ctx.moveTo(ex, g.y); ctx.lineTo(ex - g.dir * 8, g.y - 5); ctx.lineTo(ex - g.dir * 8, g.y + 5); ctx.closePath(); ctx.fill();
-      ctx.globalAlpha = 1;
-    } else {
-      ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.2)';
-      ctx.beginPath(); ctx.ellipse(g.x, 7.6 * TILE, 6, 1.6, 0, 0, 7); ctx.fill(); // its shadow on the lawn
-      ctx.translate(g.x, g.y + Math.sin(g.animT * 18) * 1.5);
-      ctx.scale(g.dir === 1 ? 1 : -1, 1);
-      ctx.drawImage(GULL_SPRITE, -8, -5);
-      ctx.restore();
-    }
-  }
-  const L = G.larry;
-  ctx.font = '8px monospace'; ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 26, L.y - 32, 52, 11);
-  ctx.fillStyle = '#ffe8b8'; ctx.fillText('🕊' + M.saved + ' 🥪-' + M.lost, L.x, L.y - 23);
-}
 
 /* ---------- THE FOX INCIDENT: the real story, more or less ----------
    Past midnight on the Street, something long, low, and amber. The stealth
@@ -2658,8 +2534,8 @@ function updateCanape(dt) {
       M.spawned++;
       const bad = Math.random() < 0.5;
       const [em, name] = pick(bad ? CANAPE_BAD : CANAPE_GOOD);
-      M.items.push({ x: CANAPE_X0 * TILE, em, name, bad, gone: false, spd: 26 + M.spawned * 2.4, bob: Math.random() * 9 });
-      M.next = 1.25 + Math.random() * 0.5;
+      M.items.push({ x: CANAPE_X0 * TILE, em, name, bad, gone: false, spd: 21 + M.spawned * 1.5, bob: Math.random() * 9 });
+      M.next = 1.45 + Math.random() * 0.5;
       tone(520, 620, 0.05, 'sine', 0.03);   // the tray goes down
     }
   }
@@ -2719,13 +2595,28 @@ function drawCanape() {
   ctx.fillStyle = 'rgba(90,84,74,0.5)';
   for (let gx = bx; gx < bx + bw; gx += 8) ctx.fillRect(gx, CANAPE_Y * TILE + 3, 4, 2);
   ctx.textAlign = 'center';
+  // the rule, standing, above the line — the whole game is knowing which is which
+  ctx.font = '7px monospace'; ctx.textAlign = 'center';
+  const legend = '✓ PASS 🍣🍤🧀      ✕ POUNCE 🥒🧅🍇';
+  const lw = ctx.measureText(legend).width + 12;
+  ctx.fillStyle = 'rgba(12,10,20,0.78)';
+  ctx.fillRect(bx + bw / 2 - lw / 2, CANAPE_Y * TILE - 26, lw, 12);
+  ctx.fillStyle = '#e8e2d2';
+  ctx.fillText(legend, bx + bw / 2, CANAPE_Y * TILE - 17);
   for (const it of M.items) {
     if (it.gone) continue;
     const y = CANAPE_Y * TILE + Math.sin(M.t * 3 + it.bob) * 0.7;
+    // in reach? say so, so the pounce window is never a guess
+    const reach = Math.abs(it.x - L.x) < 13 && Math.abs(CANAPE_Y * TILE - L.y) < 26;
+    if (reach) {
+      ctx.strokeStyle = it.bad ? 'rgba(255,128,128,0.9)' : 'rgba(159,232,160,0.9)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(it.x, y, 10 + Math.sin(M.t * 12) * 1.2, 0, 7); ctx.stroke();
+    }
     ctx.fillStyle = '#d8d3ca';                                  // the little plate
-    ctx.beginPath(); ctx.ellipse(it.x, y + 4, 6, 2, 0, 0, 7); ctx.fill();
-    ctx.font = '10px serif';
-    ctx.fillText(it.em, it.x, y + 3);
+    ctx.beginPath(); ctx.ellipse(it.x, y + 5, 7, 2.2, 0, 0, 7); ctx.fill();
+    ctx.font = '13px serif'; ctx.textAlign = 'center';
+    ctx.fillText(it.em, it.x, y + 4);
   }
   ctx.font = '8px monospace';
   ctx.fillStyle = 'rgba(12,10,20,0.7)'; ctx.fillRect(L.x - 30, L.y + 12, 60, 11);
@@ -4173,8 +4064,6 @@ const CAMPAIGN = [
     why: 'Your first morning as Chief Mouser. The Cabinet Office would like proof you can, in fact, catch mice. Catch two, anywhere. Set the tone for the reign.' },
   { text: 'Clear 3 mice from the Kitchen', kind: 'catch', map: 'basement', n: 3, where: 'the Kitchen, downstairs',
     why: 'Word has gone round the skirting boards that the new cat is untested. The mice strike the Kitchen first, to see what you do. Clear three (downstairs, down the Grand Staircase).' },
-  { text: 'Cut the red tape (pounce 8 strips)', kind: 'yarn', n: 8, where: 'the ground-floor Corridor',
-    why: 'Your first true adversary at No. 10 is not a mouse. A spool of ministerial red tape has come loose and unrolled the LENGTH of the Corridor — and the mice are watching to see whether bureaucracy defeats you as it defeats everyone else. Cut through it: every strip, claws out.' },
   { text: 'Catch a swift brown mouse', kind: 'catch', type: 'swift', n: 1, where: 'anywhere in the house',
     why: 'They send a fast one — a scout, testing your speed while the rest watch from the dark. Catch the swift brown mouse and end the experiment before they draw conclusions.' },
   { text: 'Catch 2 mice in the Garden', kind: 'catch', region: 'The Garden', n: 2, where: 'the Garden',
@@ -4208,8 +4097,6 @@ const CAMPAIGN = [
     why: 'The heirs move the stolen larder through their tunnel tonight. Go under — the crack in the Cellar wall — cross the patrol lanes, and take the cheese back where they sleep. Nothing says DEPOSED like a burglary.' },
   { text: 'Run the perimeter at speed', kind: 'race', n: 1, where: 'the ground floor, all of it',
     why: 'MI-Paw wants the whole ground floor swept in one unbroken run — every doorway, every corridor, at a pace nothing below can follow. Take the paw-print gates in order. Do not stop. Stopping is how you get outflanked.' },
-  { text: 'Hold the terrace against the gulls', kind: 'gulls', n: 1, where: 'the garden terrace',
-    why: 'A reception is being laid out on the terrace, and the gulls have already circled twice. Lose the platters and the mice inherit the leftovers. Be in the path of every raider.' },
   { text: 'Face down the doorstep scrum', kind: 'scrum', n: 1, where: 'the Street, by the photographer',
     why: 'The pack is three deep on the pavement and every one of them wants you mid-blink. Go out and give them nothing — except the one who has stood there fifteen years and asks properly. Give HIM the shot.' },
   { text: 'Clear Trafalgar Square', kind: 'traf', n: 1, where: 'the Street, the tour coach',
@@ -4226,14 +4113,12 @@ const CAMPAIGN = [
     why: 'You cannot hold a house you cannot see. Get to the highest perch in government — up the Study bookcase, ledge by ledge — and take the measure of the whole floor from above. The wobbly shelves are not your friends.' },
   { text: 'Complete a Red Dot Protocol (8 catches)', kind: 'dot', n: 8, where: 'the Study terminal',
     why: 'MI-Paw requires evidence the reflexes are being MAINTAINED. Report to the Study terminal, enter the construct, and log eight catches on the dot. It has been patched since your last session. It is faster. It is smug about it.' },
-  { text: 'Cut the red tape (pounce 8 strips)', kind: 'yarn', n: 8, where: 'the ground-floor Corridor',
-    why: 'The mice have discovered PAPERWORK. Red tape spools down the Corridor again, nearly to the Cabinet Room door. Slash every strip before the government notices the mice run it better than they do.' },
   { text: 'Hold the night (catch after dark)', kind: 'catch', night: true, n: 1, where: 'anywhere, after dark',
     why: 'A coordinated night assault, floor to floor, directed by something large beneath the Cellar. Catch one after dark and send the message back up the chain: the night is still, and will remain, yours.' },
   { text: 'Hold the Garden (2 mice)', kind: 'catch', region: 'The Garden', n: 2, where: 'the Garden',
     why: 'The siege spills outdoors; every wall of the house is being tested at once. Hold the Garden — catch two — and hold the line. They will not find it undefended while you draw breath.' },
 ];
-const BRIEF_LOOP_FROM = 11; // once the campaign is done, cycle the "siege" tail forever
+const BRIEF_LOOP_FROM = 10; // once the campaign is done, cycle the "siege" tail forever
 const HOLDING_BRIEF = { holding: true, text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2, where: 'anywhere in the house',
   why: 'The picture below is still forming. Keep the pressure on while it clears — catch two more on your rounds.' };
 // swift mice spawn from lv3, tricksters lv5, Very Still Mice lv7
@@ -4250,10 +4135,10 @@ function briefPossible(d) {
 // as Red Box toasts — an aide sprinting in for every errand would wear thin.
 const BRIEF_SCENES = {
   0: 'There you are — your first brief, Chief Mouser. The Cabinet Office sends the cat orders now. No, I don\'t make the rules. Increasingly I suspect YOU make the rules.',
-  6: 'There is a FOX. On the STREET. At NIGHT. The officer won\'t say he\'s frightened, but he has texted his mum. Please.',
-  9: 'Upstairs. UPSTAIRS. They\'ve crossed onto the State Floor — where the ambassadors— where the CHANDELIERS— just. Please. Quickly.',
-  11: 'The Kitchen has fallen AGAIN. They came back in formation, Chief Mouser. In FORMATION. The chef is beside himself. Both of him are furious.',
-  12: 'They\'re in the flat. The FLAT. Downstairs was politics but this is your HOME— I need to sit down. After you catch them. Please.',
+  5: 'There is a FOX. On the STREET. At NIGHT. The officer won\'t say he\'s frightened, but he has texted his mum. Please.',
+  8: 'Upstairs. UPSTAIRS. They\'ve crossed onto the State Floor — where the ambassadors— where the CHANDELIERS— just. Please. Quickly.',
+  10: 'The Kitchen has fallen AGAIN. They came back in formation, Chief Mouser. In FORMATION. The chef is beside himself. Both of him are furious.',
+  11: 'They\'re in the flat. The FLAT. Downstairs was politics but this is your HOME— I need to sit down. After you catch them. Please.',
 };
 const LARRY_ACKS = [
   '(You stretch, once, with intent. The stretch says: consider it handled.)',
@@ -4264,7 +4149,7 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', gulls: 'gulls', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', traf: 'traf', scrum: 'scrum' };
+const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', traf: 'traf', scrum: 'scrum' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
@@ -4280,7 +4165,6 @@ const BRIEF_ARM = {
   post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
   bonk: () => { G.molesCD = 0; },
-  gulls: () => { G.gullsCD = 0; },
 };
 function newBrief() {
   const len = CAMPAIGN.length;
@@ -4309,7 +4193,6 @@ function newBrief() {
     toast('📕 NEW BRIEF: ' + def.text + briefWhere(def));
     tone(500, 700, 0.15, 'triangle', 0.06);
   }
-  syncTape(); // red-tape tasks lay their strips down the Corridor immediately
   updateHUD();
 }
 function briefEvent(kind, info = {}) {
@@ -4591,7 +4474,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, trafCD: 0, scrumCD: 0, dog: null, tape: [], raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, trafCD: 0, scrumCD: 0, dog: null, raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -5120,15 +5003,6 @@ function interactPoi(p) {
       '💨 LET THEM TAKE YOU', '🧘 Resist. This time.', which => { if (which === 'a') startRace(); });
     return;
   }
-  if (p.type === 'gulls') {
-    if (G.mini) return;
-    if (G.daily) { toast('🥪 The gulls respect the sortie. Nothing else, but the sortie, yes.'); sClick(); return; }
-    if (G.gullsCD > 0) { toast('🥪 The terrace is clear. Catering will lay another reception before long.'); sClick(); return; }
-    showChoice('THE TERRACE', 'The Gull Affair',
-      'The reception you just posed for left its platters out — and the SEAGULLS have noticed. Eight inbound, without shame.\n\nEach raider telegraphs its run. Be in its path. Every miss costs the nation a sandwich.',
-      '🐾 Close the airspace', '🚶 Let catering cope', which => { if (which === 'a') startGulls(); });
-    return;
-  }
   if (p.type === 'scrum') {
     if (G.mini) return;
     if (G.daily) { toast('⚡ Not on sortie day.'); sClick(); return; }
@@ -5178,7 +5052,7 @@ function interactPoi(p) {
     if (G.daily) { toast('🥂 No inspections on sortie day.'); sClick(); return; }
     if (G.canapeCD > 0) { toast('🥂 The line is clear. The chef has hidden the cucumber, in any case.'); sClick(); return; }
     showChoice('THE KITCHEN COUNTER', 'The Canapé Line',
-      'A reception is being plated along the counter, and nobody has thought to have it checked.\n\nSalmon, prawn and cheese may pass. Cucumber, onion and grapes may not.\n\nGet under the offending item and pounce it off the counter.',
+      'A reception is being plated along the trolley, and nobody has thought to have it checked.\n\n✓ LET PASS — salmon 🍣, prawn 🍤, cheese 🧀\n✕ POUNCE OFF — cucumber 🥒, onion 🧅, grapes 🍇\n\nStand under the offending item and pounce. A ring round an item means it is in reach.',
       '🥂 Assume quality control', '🚶 Let them poison themselves', which => { if (which === 'a') startCanape(); });
     return;
   }
@@ -5827,16 +5701,21 @@ function updateMouse(mo, dt, idx) {
       // only mice that actually got at the food provision the Rat King:
       // cheese-carriers always, opportunists only down in the pantry itself.
       // (An ordinary escape upstairs stings once, not three times.)
-      if (!G.daily && (T.carry || (G.mapId === 'basement' && Math.random() < 0.4))) {
+      const stole = !G.daily && (T.carry || (G.mapId === 'basement' && Math.random() < 0.4));
+      if (stole) {
         G.larder++;
         toast(T.carry
           ? '🧀 The quiet one made it home WITH the cheddar. Somewhere below, the Rat King applauds. (Larder: ' + G.larder + ')'
           : STEAL_LINES[G.larder % STEAL_LINES.length].replace('{n}', G.larder));
         tone(340, 220, 0.14, 'triangle', 0.05);
       }
-      const escPen = (G.press.active && DIFF().pressPen ? 6 : 2);
-      G.approval = Math.max(0, G.approval - escPen);
-      addFloat(G.larry.x, G.larry.y - 26, '−' + escPen + '% approval', '#ff8080');
+      // approval answers to PERFORMANCE, not attrition: a mouse that simply
+      // wandered off is not a failure of state. Only a theft costs you.
+      if (stole) {
+        const escPen = (G.press.active && DIFF().pressPen ? 4 : 2);
+        G.approval = Math.max(0, G.approval - escPen);
+        addFloat(G.larry.x, G.larry.y - 26, '−' + escPen + '% — it got away WITH something', '#ff8080');
+      }
       if (G.press.active) { G.press.bads++; }
       if (G.daily) {
         G.daily.escaped++; G.daily.combo = 0;
@@ -5927,79 +5806,6 @@ function unstickLarry() {
       if (x < TILE || y < TILE || x >= (m.w - 1) * TILE || y >= (m.h - 1) * TILE) continue;
       if (circleFreeOn(m, x, y, 5)) { L.x = x; L.y = y; return; }
     }
-  }
-}
-
-/* ---------- RED TAPE: the bureaucracy, made cuttable ----------
-   When a "cut the red tape" task is live, a trail of actual red tape strips
-   unrolls down the ground-floor Corridor. Walk over or pounce a strip to
-   slash it — a paper tear, a ✂️ counter, and one less piece of government.
-   (The yarn balls are just toys again; they never were the tape.) */
-const TAPE_SPOTS = [ // down the Corridor, hall end to the Cabinet Room door
-  // (the hall-end strip stays two tiles clear of the front door — slashing
-  //  bureaucracy should never accidentally put you on the doorstep)
-  [21.5, 31], [21.6, 29], [22.4, 27], [22, 24.5], [21.5, 22], [22.5, 19], [22, 16], [22.3, 13],
-];
-function syncTape() {
-  const active = G.brief && G.brief.def.kind === 'yarn' && G.mapId === 'ground' && !G.daily;
-  if (!active) { G.tape = []; return; }
-  const remaining = G.brief.def.n - G.brief.prog;
-  G.tape = TAPE_SPOTS.slice(0, Math.max(0, remaining)).map(([x, y], i) => ({
-    x: (x + 0.5) * TILE, y: (y + 0.5) * TILE, i,
-    spd: 12 + hash2(x * 7, y * 3) * 8,       // the spool feeds each strip at its own rate
-    sway: hash2(y * 5, x * 11) * 6.3,
-    flee: 0, taught: false,
-  }));
-}
-function updateTape(dt) {
-  if (!G.tape || !G.tape.length) return;
-  const L = G.larry;
-  for (let i = G.tape.length - 1; i >= 0; i--) {
-    const t = G.tape[i];
-    // the spool never stops feeding: every strip creeps up the Corridor toward
-    // the Cabinet Room door, and a strip that gets there is simply reissued
-    t.flee = Math.max(0, t.flee - dt);
-    t.y -= (t.flee > 0 ? t.spd * 3 : t.spd) * dt;
-    t.x += Math.sin(t.y * 0.05 + t.sway) * 9 * dt + (t.flee > 0 ? Math.sign(t.x - L.x) * 34 * dt : 0);
-    t.x = clamp(t.x, 21.2 * TILE, 23.4 * TILE);
-    if (t.y < 11.5 * TILE) {                            // filed. Bureaucracy is a cycle.
-      addFloat(t.x, t.y + 4, 'filed!', '#b9b2a2');
-      t.y = 32.4 * TILE;
-    }
-    const d = dist(t.x, t.y, L.x, L.y);
-    if (d < 16 && L.pounceT > 0) {                      // CLAWS OUT — the only thing that cuts
-      G.tape.splice(i, 1);
-      addParticle(t.x, t.y, '#cf2b3a', 7, 30);
-      const prog = G.brief ? G.brief.prog + 1 : 0;
-      addFloat(t.x, t.y - 10, '✂️ ' + prog + '/8', '#ffe8b8');
-      tone(1400, 500, 0.05, 'square', 0.05);            // the tear
-      tone(900, 300, 0.06, 'square', 0.04, 0.05);
-      briefEvent('yarn');
-      if (!G.brief) { G.tape = []; break; }              // task done: the corridor is clear
-    } else if (d < 12 && t.flee <= 0 && L.moving) {      // brushed past: the ribbon whips away
-      t.flee = 0.7;
-      if (!t.taught) { t.taught = true; addFloat(t.x, t.y - 9, 'claws out!', '#ffd98a'); }
-      tone(1200, 900, 0.04, 'sine', 0.03);
-    }
-  }
-}
-function drawTape() {
-  for (const t of G.tape || []) {
-    const wob = Math.sin(t.y * 0.05 + t.sway);
-    ctx.save();
-    ctx.translate(t.x, t.y);
-    ctx.rotate(1.57 + wob * 0.45);                                   // lying along the Corridor, never quite straight
-    ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(-8, 3, 16, 2);
-    ctx.fillStyle = t.flee > 0 ? '#e8434f' : '#cf2b3a'; ctx.fillRect(-8, -2, 16, 5);
-    ctx.fillStyle = '#a31f2e'; ctx.fillRect(-8, 2, 16, 1);
-    ctx.fillStyle = '#f0e3c0';                                       // OFFICIAL, in tiny print
-    ctx.fillRect(-6, 0, 2, 1); ctx.fillRect(-2, 0, 2, 1); ctx.fillRect(2, 0, 2, 1);
-    ctx.restore();
-    ctx.save();                                                      // the loose end, still unspooling
-    ctx.translate(t.x + wob * 2, t.y + 10);
-    ctx.rotate(wob * 0.9);
-    ctx.fillStyle = '#b9202f'; ctx.fillRect(-2, 0, 4, 5);
-    ctx.restore();
   }
 }
 
@@ -7096,7 +6902,6 @@ function switchMap(id, x, y) {
   G.camX = clamp(x - VW / 2, 0, Math.max(0, m.w * TILE - VW));
   G.camY = clamp(y - VH / 2, 0, Math.max(0, m.h * TILE - VH));
   G.region = '';
-  syncTape(); // a live red-tape task re-lays its strips when you arrive on the floor
   // a decorated cat gets invited home — the van waits outside
   if (id === 'street' && G.honours.has('garter') && !G.homecoming && !G.daily) {
     toast('🚐 A Battersea van waits at the kerb, engine idling. The driver tips his cap. They\'d love to see you, you know.');
@@ -7576,13 +7381,11 @@ function update(dt) {
   updatePostWatch(dt);
   updateSupper(dt);
   updateDog(dt);
-  updateTape(dt);
   updateRace(dt);
   updateAGM(dt);
   updateMoles(dt);
   updateGauntlet(dt);
   updateProtocol(dt);
-  updateGulls(dt);
   updateClimb(dt);
   updateSled(dt);
   updateCanape(dt);
@@ -7881,7 +7684,6 @@ function draw() {
     ctx.fillStyle = '#33261a'; ctx.fillRect(b.x, b.y, 1, 2);
   }
 
-  drawTape();
   if (G.mini && G.mini.type === 'post') drawPostWatch();
   if (G.mini && G.mini.type === 'supper') drawSupper();
   if (G.mini && G.mini.type === 'race') drawRace();
@@ -7889,7 +7691,6 @@ function draw() {
   if (G.mini && G.mini.type === 'moles') drawMoles();
   if (G.mini && G.mini.type === 'gauntlet') drawGauntlet();
   if (G.mini && G.mini.type === 'dot') drawProtocol();
-  if (G.mini && G.mini.type === 'gulls') drawGulls();
   if (G.mini && G.mini.type === 'climb') drawClimb();
   if (G.mini && G.mini.type === 'canape') drawCanape();
   if (G.mini && G.mini.type === 'marble') drawMarble();
@@ -8641,7 +8442,7 @@ const POCKET_HOME = {
 const MINI_CD = {
   marble: 'marbleCD', sled: 'sledCD', bus: 'busCD', traf: 'trafCD', canape: 'canapeCD',
   post: 'postCD', supper: 'supperCD', race: 'raceCD', agm: 'agmCD', moles: 'molesCD',
-  climb: 'climbCD', gulls: 'gullsCD', scrum: 'scrumCD',
+  climb: 'climbCD', scrum: 'scrumCD',
 };
 function abandonMini() {
   if (!G.mini) return;

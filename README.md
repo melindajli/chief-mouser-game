@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Sixteen mini games — and the Brief asks for every one
+## Fourteen mini games — and the Brief asks for every one
 
 - **Post Watch** — the eleven o'clock delivery fires across the Entrance
   Hall: get under each item and POUNCE. Bills fly low and fast, parcels
@@ -61,7 +61,7 @@ the front door having no outside handle:
   table, and the floor is the enemy
 - **The Canapé Line** — a state reception is being plated unsupervised.
   Salmon, prawn and cheese may pass; cucumber, onion and grapes may not.
-  Get under the offending item and pounce it off the trolley
+  The rule stays on screen and a ring tells you what is in reach
 - **The Midnight Zoomies** — ten paw-print gates around the whole ground
   floor at ludicrous speed; gold pace earns The 3 A.M. Protocol
 - **The Pigeon AGM** — grandmother's footsteps at the pond: creep while
@@ -77,8 +77,6 @@ the front door having no outside handle:
   the Rat King)
 - **The Red Dot Protocol** — MI-Paw's dream construct: 45 seconds, one
   dot, and only a landed pounce counts (unlocked by running the Under-Road)
-- **The Gull Affair** — eight seagulls strafe the garden-party sandwiches;
-  read the telegraph, lead the target, close the airspace
 - **The Descent** — a behind-the-cat run down the Grand Staircase on your own
   cushion: steer, hop the ministers, the press pack, the fans and the hoover,
   collect kippers on the good line, and reach the bottom without apologising
@@ -104,7 +102,7 @@ statute. No further questions.)
   biggest escalations delivered by a breathless aide, in person
 - **The Morning List & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
-- 40 honours on a proper honours board, a List of Mischief, hidden secrets,
+- 39 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won
