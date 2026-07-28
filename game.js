@@ -3065,7 +3065,11 @@ function drawBus() {
    never been meaningfully challenged, and panic is contagious: pounce into
    a cluster and the fright spreads bird to bird, so the whole square can go
    up from one well-placed leap. Chain it. The Admiral is watching. */
-const TRAF_SPREAD = 34, TRAF_CHAIN = 30;
+// The invite promises that one good leap can empty the square. At 30px on a
+// 21-tile field it could not: the best possible chain was ~7 and clearing it
+// took thirty separate pounces. Panic now carries — and decays per generation,
+// so a cascade off a tight cluster is spectacular and a lazy one fizzles.
+const TRAF_SPREAD = 36, TRAF_CHAIN = 58, TRAF_DECAY = 0.88;
 function startTrafalgar() {
   switchMap('square', 11.5 * TILE, 12.5 * TILE);
   const birds = [];
@@ -3116,7 +3120,7 @@ function updateTrafalgar(dt) {
     M.pending.splice(i, 1);
     for (const b of M.birds) {
       if (b.up) continue;
-      if (dist(b.x, b.y, p.x, p.y) < TRAF_CHAIN) { trafScare(b, M, p.chain); M.chainT = 1.1; }
+      if (dist(b.x, b.y, p.x, p.y) < TRAF_CHAIN * Math.pow(TRAF_DECAY, p.chain)) { trafScare(b, M, p.chain); M.chainT = 1.1; }
     }
   }
   for (const b of M.birds) {
@@ -3124,6 +3128,12 @@ function updateTrafalgar(dt) {
     if (b.up) {
       b.t += dt;
       b.x += b.vx * dt; b.y += b.vy * dt; b.vy -= 26 * dt;   // away, and up
+      // pigeons are not frightened for long. Clear the square, do not nibble it.
+      if (b.t > 9 && M.t > 4) {
+        b.up = false; b.t = 0; M.up--;
+        b.x = (2 + Math.random() * 19) * TILE; b.y = (2 + Math.random() * 11) * TILE;
+        addParticle(b.x, b.y, '#c9cfda', 3, 18);
+      }
     } else {
       b.peck += dt;
       if (Math.random() < dt * 0.35) { b.x += (Math.random() - 0.5) * 5; b.y += (Math.random() - 0.5) * 5; }
@@ -3860,10 +3870,10 @@ function updateSupper(dt) {
     M.next -= dt;
     if (M.next <= 0) {
       M.spawned++;
-      M.next = 1.3 + Math.random() * 1.4;
+      M.next = Math.max(0.55, 1.15 - M.spawned * 0.06) + Math.random() * 0.5;
       M.scraps.push({
-        x: (22.3 + Math.random() * 4.4) * TILE, y: 5.2 * TILE,
-        vy: 26 + Math.random() * 26, kind: (Math.random() * SCRAP_KINDS.length) | 0,
+        x: (21.4 + Math.random() * 6.2) * TILE, y: 5.2 * TILE,
+        vy: 44 + Math.random() * 40, kind: (Math.random() * SCRAP_KINDS.length) | 0,
         landed: false, caught: false,
       });
       tone(900 + Math.random() * 300, 700, 0.05, 'sine', 0.04); // a wobble at the table edge
