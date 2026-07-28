@@ -489,10 +489,19 @@ function buildPerson(suit, hat) {
   if (hat === 'chef') { srect(s, 5, 0, 7, 3, '#f4f1ea'); srect(s, 4, 3, 9, 1, '#e2ded2'); }
   else if (hat === 'police') { sell(s, 8, 2.4, 3.4, 2.6, '#22252e'); srect(s, 7, 3, 3, 1, '#c9a227'); }
   else if (hat === 'photog') {
+    // drawn from life: two pairs of sunglasses (one worn, one parked), a red
+    // lanyard, and a camera large enough to be visible from across a street
     sell(s, 8, 3.2, 3.9, 2.4, hair);
-    srect(s, 5.5, 2, 5, 1.3, '#f2efe8');                                   // sunglasses, parked on the head
-    srect(s, 6, 11, 4, 3, '#1b1d24'); sp(s, 8, 12, '#7ab6d8');             // the camera, always up
-    srect(s, 6, 9, 1, 2, '#2a2d36'); srect(s, 9, 9, 1, 2, '#2a2d36');      // its strap
+    srect(s, 4.6, 1.4, 6.8, 1.4, '#f2efe8');                               // the spare pair, up on the head
+    srect(s, 4.6, 1.4, 6.8, 0.5, '#cfc8b8');
+    srect(s, 4.8, 4.4, 6.4, 1.8, '#1b1d24');                               // and the pair he is actually wearing
+    sp(s, 6.2, 4.8, '#4a6478'); sp(s, 9.4, 4.8, '#4a6478');                // a glint in each lens
+    srect(s, 5.6, 8.6, 1.1, 4.2, '#a8323c');                               // the lanyard, over both shoulders
+    srect(s, 9.3, 8.6, 1.1, 4.2, '#a8323c');
+    srect(s, 5.6, 12.4, 4.8, 1, '#a8323c');
+    srect(s, 5.2, 12.9, 5.6, 4.2, '#1b1d24');                              // the camera, always up
+    srect(s, 5.2, 12.9, 5.6, 1, '#333a45');
+    srect(s, 7.2, 14, 1.8, 1.8, '#4a6478'); sp(s, 7.6, 14.4, '#9fd0e8');   // the lens
   }
   else sell(s, 8, 3.2, 3.9, 2.4, hair);
   srect(s, 5, 18, 3, 4, suit); srect(s, 9, 18, 3, 4, suit);                // legs
@@ -505,7 +514,7 @@ const P_VISITOR = buildPerson('#5a5f6b'), P_GUARD = buildPerson('#2b2f3a', 'poli
   P_AIDE = buildPerson('#4a5568'), P_CHEF = buildPerson('#c9c5ba', 'chef'),
   P_BUTLER = buildPerson('#23242a'), P_GARDENER = buildPerson('#4e6b3c'),
   P_WORKER = buildPerson('#5c86a0'), P_PRESS = buildPerson('#8a7a5c'),
-  P_PHOTOG = buildPerson('#3a4a58', 'photog');
+  P_PHOTOG = buildPerson('#cfc7b2', 'photog');   // the pale jacket, so he reads at a glance
 // the Cabinet, for when it is in session: an assortment of serious suits
 const P_MIN1 = buildPerson('#3d4a63'), P_MIN2 = buildPerson('#54443c'), P_MIN3 = buildPerson('#425562');
 // seats round the boat table (ground map): four up the far side, three near
@@ -1701,6 +1710,14 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
       'Hold that. HOLD that. …Perfect.',
       'Four hundred frames of you today. Not one bad one. It\'s almost unfair.',
       'The politicians wave. You blink. Guess which one sells the calendar.',
+      'More of a lover than a fighter, you. Sells better anyway.',
+      'Foreign leader due at eleven. You\'ll be out at ten to. You always are.',
+      'Most fawned-over cat in Britain. Least impressed. Both at once.',
+      'Turn your back on me. Go on. …There. Over the shoulder, like a film star.',
+      'Best photo-bomber in Westminster, and nobody has ever briefed you on it.',
+      'Fifteen years. You have outlasted three of my cameras.',
+      'You are very good at what you do. What you do is lounge.',
+      'They think they\'re here for the door. I stopped pretending years ago.',
     ] },
     { x: 13, y: 5, sprite: 'officer', rect: [12, 5, 15, 6], quips: [
       'Morning. Mind the step.',
@@ -6623,12 +6640,28 @@ function garterScene(onDone) {
    Keyed by npc sprite + map (or cat name); each plays once per career and
    frames that character's side of the house — their quest hook, in dialogue. */
 const MEETINGS = {
-  'photog@street': () => [
-    { who: PHOTOG_NAME(), text: 'Don\'t mind me. Fifteen years on this pavement — the door and I are past small talk.' },
-    { who: PHOTOG_NAME(), text: 'Prime Ministers give speeches. You give one look, and it leads every front page. I just point the camera at the constant.' },
-    { who: 'LARRY', text: '(You sit. You settle. You permit the shot. Somewhere, an editor clears space above the fold.)' },
-    { who: PHOTOG_NAME(), text: 'Perfect. Same time tomorrow. Neither of us is going anywhere.' },
-  ],
+  'photog@street': () => {
+    const steps = [
+      { who: PHOTOG_NAME(), text: 'Don\'t mind me. Fifteen years on this pavement — the door and I are past small talk.' },
+      { who: PHOTOG_NAME(), text: 'Prime Ministers give speeches. You give one look, and it leads every front page. I just point the camera at the constant.' },
+      { who: 'LARRY', text: '(You turn your back on him. Deliberately. Then look round over one shoulder. Also deliberately.)' },
+      { who: PHOTOG_NAME(), text: 'THAT. Over the shoulder, like a film star. You know exactly what you\'re doing, and you always have.' },
+    ];
+    // once he is a real credited partner, the scene offers a way to his work
+    if (PARTNER.live && PARTNER.kofi) {
+      steps.push({
+        who: PHOTOG_NAME(),
+        text: 'Fifteen years of you are on my shelves, if you ever want to see how you\'ve aged. Which is: not at all.',
+        choice: [
+          ['📷 See his photographs', () => window.open(PARTNER.kofi, '_blank', 'noopener')],
+          ['🐾 Back to work', () => { }],
+        ],
+      });
+    } else {
+      steps.push({ who: PHOTOG_NAME(), text: 'Perfect. Same time tomorrow. Neither of us is going anywhere.' });
+    }
+    return steps;
+  },
   'guard@ground': () => [
     { who: 'THE GUARD', text: 'Chief Mouser. Heard you\'d been appointed. The door is mine; the house is yours. That\'s the arrangement.' },
     { who: 'THE GUARD', text: 'Quick tour: radiator under the window, letterbox at eleven. The tourists are here for you, not the door.' },
