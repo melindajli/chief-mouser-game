@@ -1667,12 +1667,6 @@ MAPS.square = makeMap('square', 24, 16, (m, set, rect) => {
 });
 
 // --- The roof of the 11, which does not stop for cats ---
-MAPS.bus = makeMap('bus', 13, 70, (m, set, rect) => {
-  rect(1, 1, 11, 68, 'z');
-  m.regions = [[1, 1, 11, 68, 'The 11 Bus']];
-  m.mouseCap = () => 0;
-});
-
 // --- The Marble Hall: freshly polished, and therefore a problem ---
 MAPS.marble = makeMap('marble', 13, 11, (m, set, rect) => {
   rect(1, 1, 11, 9, 'c');
@@ -1732,7 +1726,6 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
   m.pois = [
     { x: 11, y: 5, emoji: '📸', type: 'text', texts: TXT_DOORSTEP },
     { x: 3, y: 6, emoji: '🚐', type: 'homecoming' },   // the Battersea van, on its rounds
-    { x: 17, y: 6, emoji: '🚌', type: 'bus' },         // the 11, at the stop, engine running
     { x: 14, y: 12, emoji: '🕊', type: 'traf' },       // the tour coach, hourly to the square
     { x: 6, y: 7, emoji: '⚡', type: 'scrum' },        // the pack, at his pitch
   ];
@@ -1815,7 +1808,6 @@ const HONOURS = [
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
   { id: 'muse', name: 'The Photographer\'s Muse', hint: 'Give him six clean frames in one scrum, and barely a flash on you.' },
   { id: 'square', name: 'The Square Is Clear', hint: 'Put up every last pigeon in Trafalgar Square.' },
-  { id: 'conductor', name: 'No Fare, No Bother', hint: 'Ride the 11 the whole way without touching a thing.' },
   { id: 'polished', name: 'The Polished Floor', hint: 'Cross all three Marble Hall rooms in par.' },
   { id: 'quality', name: 'Quality Control', hint: 'A perfect Canapé Line: every salmon taken, every onion left alone.' },
   { id: 'sledder', name: 'The Descent', hint: 'Ride your cushion down the Grand Staircase without touching a soul.' },
@@ -1947,7 +1939,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, pond: 1, nip: 1, gauntlet: 1, dot: 1, climb: 1, summit: 1, fox: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1, scrum: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, pond: 1, nip: 1, gauntlet: 1, dot: 1, climb: 1, summit: 1, fox: 1, sled: 1, canape: 1, marble: 1, traf: 1, scrum: 1 };
 
 /* ---------- THE MIDNIGHT ZOOMIES: the whole house is the racetrack ----------
    Every cat knows the moment: the legs decide before the brain does. A course
@@ -2060,7 +2052,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { race: '💨', pond: '🐟', nip: '🌿', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', traf: '🕊', scrum: '⚡' };
+const GAME_MARKS = { race: '💨', pond: '🐟', nip: '🌿', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', traf: '🕊', scrum: '⚡' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -2429,17 +2421,14 @@ function startSled() {
 // The stairs used to have four canned reactions. Everyone on them now has a
 // mouth: the line belongs to the person you hit, not to the cat.
 const SLED_QUIPS = {
-  minister: ['MINISTER: "That was the CAT."', 'MINISTER: "I was NOT briefed on a cat."',
-    'MINISTER: "Nobody films this."', 'MINISTER: "I have a statement at four."',
-    'MINISTER: "This is a resigning matter. For him."', 'MINISTER: "Was that in the brief?"',
-    'MINISTER: "I am fine. The trousers are not."', 'MINISTER: "Carry on. Obviously."'],
-  press: ['PRESS: "GOT IT."', 'PRESS: "Can he do that again?"', 'PRESS: "That is the front page."',
-    'PRESS: "Any comment from the cat?"', 'PRESS: "CAT DOWN. CAT DOWN."',
-    'PRESS: "Hold the fold, he\'s moving."'],
-  fan: ['VISITOR: "IT\'S HIM!"', 'VISITOR: "I flew here for this."', 'VISITOR: "Worth every penny."',
-    'VISITOR: "He TOUCHED me."', 'VISITOR: "Nobody at home will believe this."'],
-  hoover: ['THE HOOVER: WWWWRRRRRRR', '(the hoover does not negotiate)',
-    '(the hoover wins. the hoover always wins.)', 'THE HOOVER: — and it is still going —'],
+  minister: ['"That was the CAT."', '"I was NOT briefed on a cat."', '"Nobody films this."',
+    '"I have a statement at four."', '"A resigning matter. For him."', '"Was that in the brief?"',
+    '"I am fine. The trousers are not."', '"Carry on. Obviously."'],
+  press: ['"GOT IT."', '"Can he do that again?"', '"That is the front page."',
+    '"Comment from the cat?"', '"CAT DOWN. CAT DOWN."', '"Hold the fold, he\'s moving."'],
+  fan: ['"IT\'S HIM!"', '"I flew here for this."', '"Worth every penny."',
+    '"He TOUCHED me."', '"Nobody will believe this."'],
+  hoover: ['WWWWRRRRRRR', '(it does not negotiate)', '(the hoover always wins)', '(still going)'],
 };
 // a clean hop reads better if it escalates: three in a row is a run, not a fluke
 const SLED_HOPS = ['OVER!', 'AGAIN!', 'CLEAN x3', 'UNTOUCHED x4', 'DIPLOMATIC x5', 'STATE VISIT x6'];
@@ -2651,7 +2640,11 @@ function drawSled() {
   ctx.fillStyle = M.bumps ? '#ffd98a' : '#9fe8a0';
   ctx.fillText(M.t.toFixed(1) + 's   🐟' + M.kippers + (M.bumps ? '   ✕' + M.bumps : ''), W / 2, H - 7);
   if (M.msg) {   // said at the moment of impact, and it must be readable over a crowd
-    ctx.font = '11px monospace';
+    let fs = 11;                       // ...and it must FIT, on a phone too
+    ctx.font = fs + 'px monospace';
+    while (fs > 6 && ctx.measureText(M.msg.text).width > W - 18) {
+      fs -= 1; ctx.font = fs + 'px monospace';
+    }
     ctx.globalAlpha = Math.min(1, M.msg.t * 3);
     const mw = ctx.measureText(M.msg.text).width + 10;
     ctx.fillStyle = 'rgba(12,10,20,0.8)';
@@ -2969,247 +2962,6 @@ function drawMarble() {
   ctx.fillStyle = M.moves > R.par ? '#ffd98a' : '#9fe8a0';
   ctx.fillText(txt, hx, hy + 1);
   void L;
-}
-
-/* ---------- THE 11 BUS: Chief Mouser, upper deck, outside ----------
-   The 11 runs past the end of the street and a cat on the roof of it sees
-   more of London than any Prime Minister ever has. Two verbs, not one:
-   POUNCE to clear what is on the roof with you, and HOLD the pounce to
-   flatten under what the city swings at your head. Both, in a hurry. */
-const BUS_LANES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
-function buildBusRoute() {
-  const hz = [], pk = [];
-  let lastOver = false;
-  for (let y = 10; y <= 62; y += 5) {   // five tiles between rows: time to READ the next one
-    // never two overheads running — the cost here is switching verb, not reacting
-    const overhead = !lastOver && Math.random() < 0.34;
-    lastOver = overhead;
-    if (overhead) {                                   // a bridge, a bough, a signal gantry: DUCK
-      hz.push({ y, over: true, kind: pick(['bridge', 'bough', 'gantry']), hit: false });
-      continue;
-    }
-    const gap = 3 + ((Math.random() * 7) | 0);
-    for (const x of BUS_LANES) {
-      if (Math.abs(x - gap) <= 1) continue;
-      if (Math.random() < 0.55) hz.push({ x, y, over: false, kind: pick(['aerial', 'vent', 'pigeon']), hit: false });
-    }
-    if (Math.random() < 0.5) pk.push({ x: gap, y: y - 1, got: false });
-  }
-  return { hz, pk };
-}
-function startBus() {
-  const r = buildBusRoute();
-  switchMap('bus', 6.5 * TILE, 2.5 * TILE);
-  G.mini = { type: 'bus', t: 0, spd: 96, hz: r.hz, pk: r.pk, kippers: 0, bumps: 0, clears: 0, spin: 0, msg: null };
-  toast('🚌 POUNCE to leap. HOLD to flatten under the bridges.', 'now');
-  tone(240, 400, 0.2, 'square', 0.05);
-}
-const BUS_OOF = { bridge: 'MIND YOUR HEAD', bough: 'LEAVES', gantry: 'CLANG', aerial: 'AERIAL!', vent: 'OOF', pigeon: 'EXCUSE ME' };
-function busBump(h) {
-  const M = G.mini;
-  M.bumps++;
-  M.spd = Math.max(88, M.spd * 0.6);
-  M.spin = 0.7;
-  M.msg = { text: BUS_OOF[h.kind] || 'OOF', t: 0.8, c: '#ff8080' };
-  addParticle(G.larry.x, G.larry.y, '#cfc8b8', 8, 40);
-  tone(250, 150, 0.16, 'square', 0.06);
-}
-function updateBus(dt) {
-  if (G.busCD > 0) G.busCD -= dt;
-  const M = G.mini;
-  if (!M || M.type !== 'bus') return;
-  const L = G.larry;
-  M.t += dt;
-  if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
-  M.spd = Math.min(182, M.spd + 7 * dt);   // fast enough to thrill, slow enough to read
-  if (M.spin > 0) { M.spin -= dt; L.cvx *= 0.86; }
-  L.cvy = 0;
-  const ny = L.y + (M.spin > 0 ? M.spd * 0.45 : M.spd) * dt;
-  if (circleFree(L.x, ny, 5)) L.y = ny;
-  L.x = clamp(L.x, 1.7 * TILE, 11.3 * TILE);
-  const leaping = L.pounceT > 0, flat = L.charging;   // holding the pounce presses you to the roof
-  for (const h of M.hz) {
-    if (h.hit) continue;
-    const hy = (h.y + 0.5) * TILE;
-    if (Math.abs(hy - L.y) > 10) continue;
-    if (h.over) {                                     // spans the whole roof: only flattening saves you
-      h.hit = true;
-      if (flat) { M.clears++; M.msg = { text: 'UNDER IT', t: 0.6, c: '#9fe8a0' }; tone(600, 900, 0.07, 'triangle', 0.05); }
-      else busBump(h);
-      continue;
-    }
-    if (Math.abs((h.x + 0.5) * TILE - L.x) > 11) continue;
-    h.hit = true;
-    if (leaping) { M.clears++; M.msg = { text: 'OVER IT', t: 0.6, c: '#9fe8a0' }; tone(700, 1050, 0.07, 'triangle', 0.05); }
-    else busBump(h);
-  }
-  for (const q of M.pk) {
-    if (q.got) continue;
-    if (dist((q.x + 0.5) * TILE, (q.y + 0.5) * TILE, L.x, L.y) < 13) {
-      q.got = true; M.kippers++;
-      M.msg = { text: '🐟 +1', t: 0.5, c: '#ffe8b8' };
-      tone(900, 1300, 0.07, 'triangle', 0.06);
-    }
-  }
-  if (L.y > 66 * TILE) finishBus();
-}
-function finishBus() {
-  const M = G.mini;
-  G.mini = null;
-  G.busCD = 110 + Math.random() * 50;
-  const t = M.t, clean = M.bumps === 0;
-  const isBest = !G.busBest || t < G.busBest;
-  if (isBest) G.busBest = t;
-  const fish = (clean ? 5 : M.bumps <= 2 ? 4 : M.bumps <= 4 ? 3 : 2) + M.kippers;
-  G.fish += fish; G.xp += 12 + M.kippers * 2;
-  if (clean) earnHonour('conductor');
-  briefEvent('bus');
-  miniResult('THE 11 BUS',clean ? '🚌 THE WHOLE ROUTE, UNTOUCHED — ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. London went under you. +' + fish + ' 🐟'
-    : M.bumps <= 2 ? '🚌 Rode it in ' + t.toFixed(1) + 's' + (isBest ? ', NEW BEST' : '') + '. ' + M.bumps + (M.bumps === 1 ? ' low bridge' : ' low bridges') + ' disagreed, 🐟' + M.kippers + ' collected. +' + fish + ' 🐟'
-      : '🚌 ' + t.toFixed(1) + 's, and most of the street furniture. You have seen London. It has seen you. +' + fish + ' 🐟');
-  [523, 659, 784, clean ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
-  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
-  save();
-  startFade(() => switchMap('street', 10.5 * TILE, 6.5 * TILE));
-  updateHUD();
-}
-function drawBus() {
-  const M = G.mini, L = G.larry;
-  ctx.setTransform(ZOOM, 0, 0, ZOOM, 0, 0);
-  const W = VW, H = VH, hor = H * 0.34;
-  const camX = L.x * 0.72 + 6.5 * TILE * 0.28;
-  const latK = (0.44 * W) / (5 * TILE);
-  const proj = (wx, wy) => {
-    const z = Math.max(12, (wy - L.y) + SLED_BACK);
-    const s = SLED_BACK / z;
-    return { x: W / 2 + (wx - camX) * latK * s, y: hor + 0.48 * H * s, s };
-  };
-  const FAR = 30 * TILE, X0 = 1.2 * TILE, X1 = 11.8 * TILE;
-  // London, going past: sky, then a terrace of buildings either side
-  const sky = ctx.createLinearGradient(0, 0, 0, hor + 4);
-  sky.addColorStop(0, '#232a46'); sky.addColorStop(0.55, '#5b4f6b'); sky.addColorStop(1, '#c98d6a');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, hor + 4);
-  // two layers of city, the far one drifting slower — and the lights are on
-  for (const [depth, tint, sp] of [[0.55, '#2a2740', 13], [1, '#332f4a', 26]]) {
-    for (let i = 0; i < 11; i++) {
-      const f = ((i * 61 - M.t * sp) % 100 + 100) % 100;
-      const bw2 = W * (0.07 + (i % 4) * 0.02), bh2 = H * (0.04 + (i % 5) * 0.028) * depth;
-      const bx2 = (f / 100) * (W + 80) - 40, by2 = hor - bh2;
-      ctx.fillStyle = tint;
-      ctx.fillRect(bx2, by2, bw2, bh2);
-      if (depth === 1) {                                  // lit windows on the near row
-        ctx.fillStyle = 'rgba(255,206,130,0.5)';
-        for (let wy = by2 + 4; wy < hor - 4; wy += 7)
-          for (let wx = bx2 + 3; wx < bx2 + bw2 - 3; wx += 6)
-            if ((wx + wy + i) % 3) ctx.fillRect(wx, wy, 2, 3);
-      }
-    }
-  }
-  // the roof of the 11, in red
-  const far = { l: proj(X0, L.y + FAR), r: proj(X1, L.y + FAR) };
-  const near = { l: proj(X0, L.y - 60), r: proj(X1, L.y - 60) };
-  ctx.fillStyle = '#8e1f2b';
-  ctx.beginPath(); ctx.moveTo(far.l.x, far.l.y); ctx.lineTo(far.r.x, far.r.y);
-  ctx.lineTo(near.r.x, near.r.y); ctx.lineTo(near.l.x, near.l.y); ctx.closePath(); ctx.fill();
-  // the street below and either side, so the roof is not floating in a void
-  ctx.fillStyle = '#1d2030';
-  ctx.beginPath(); ctx.moveTo(0, hor); ctx.lineTo(far.l.x, far.l.y); ctx.lineTo(near.l.x, near.l.y); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(W, hor); ctx.lineTo(far.r.x, far.r.y); ctx.lineTo(near.r.x, near.r.y); ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-  for (let t = Math.floor((L.y - 60) / TILE); t * TILE < L.y + FAR; t++) {
-    if (t % 2) continue;
-    for (const wx of [X0 - 16, X1 + 16]) {            // lamp posts and lit windows, going past
-      const a = proj(wx, t * TILE);
-      if (a.y < hor + 1 || a.s < 0.1) continue;
-      ctx.fillStyle = 'rgba(60,66,86,0.9)';
-      ctx.fillRect(a.x - 1.2 * a.s, a.y - 34 * a.s, 2.4 * a.s, 34 * a.s);
-      ctx.fillStyle = 'rgba(255,214,140,' + (0.25 + 0.4 * a.s).toFixed(3) + ')';
-      ctx.fillRect(a.x - 3 * a.s, a.y - 38 * a.s, 6 * a.s, 4 * a.s);
-    }
-  }
-  const t0 = Math.floor((L.y - 60) / TILE);
-  for (let t = t0; t * TILE < L.y + FAR; t++) {       // roof ribs, rushing at you
-    const a = proj(X0, t * TILE), b = proj(X1, t * TILE);
-    if (a.y < hor + 0.4) continue;
-    ctx.strokeStyle = 'rgba(0,0,0,' + (0.08 + 0.26 * a.s).toFixed(3) + ')';
-    ctx.lineWidth = Math.max(0.4, 1.4 * a.s);
-    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-  }
-  const things = [];
-  for (const h of M.hz) if (!h.hit && h.y * TILE > L.y - 20 && h.y * TILE < L.y + FAR) things.push(h);
-  for (const q of M.pk) if (!q.got && q.y * TILE > L.y - 20 && q.y * TILE < L.y + FAR) things.push(q);
-  things.sort((a, b) => b.y - a.y);
-  for (const o of things) {
-    const isPk = o.got !== undefined;
-    if (o.over) {                                     // the overhead: a bar clean across the roof
-      const a = proj(X0 - 6, (o.y + 0.5) * TILE), b = proj(X1 + 6, (o.y + 0.5) * TILE);
-      const h2 = 30 * a.s;
-      ctx.globalAlpha = Math.min(1, a.s * 3.2);
-      ctx.fillStyle = o.kind === 'bough' ? '#3f6a3a' : o.kind === 'gantry' ? '#59606c' : '#6b5442';
-      ctx.fillRect(a.x, a.y - h2 - 5 * a.s, b.x - a.x, Math.max(1.5, 7 * a.s));
-      if (o.kind === 'bough') { ctx.fillStyle = '#4f8046'; ctx.fillRect(a.x, a.y - h2 - 9 * a.s, b.x - a.x, Math.max(1, 4 * a.s)); }
-      ctx.globalAlpha = 1;
-      continue;
-    }
-    const pr2 = proj((o.x + 0.5) * TILE, (o.y + 0.5) * TILE);
-    if (pr2.y < hor) continue;
-    const k = pr2.s * 2.3;
-    ctx.globalAlpha = Math.min(1, pr2.s * 3.2);
-    if (isPk) {
-      ctx.font = Math.max(4, 11 * k) + 'px serif'; ctx.textAlign = 'center';
-      ctx.fillText('🐟', pr2.x, pr2.y - 6 * k + Math.sin(M.t * 4 + o.x) * 2 * k);
-    } else if (o.kind === 'pigeon') {
-      ctx.drawImage(PIGEON_SPRITE, pr2.x - 6 * k, pr2.y - 10 * k, 12 * k, 10 * k);
-    } else if (o.kind === 'vent') {
-      ctx.fillStyle = '#59606c'; ctx.fillRect(pr2.x - 5 * k, pr2.y - 7 * k, 10 * k, 7 * k);
-      ctx.fillStyle = '#3d434d'; ctx.fillRect(pr2.x - 5 * k, pr2.y - 7 * k, 10 * k, 1.6 * k);
-    } else {
-      ctx.fillStyle = '#2a2f38'; ctx.fillRect(pr2.x - 1 * k, pr2.y - 17 * k, 2 * k, 17 * k);
-      ctx.fillStyle = '#7b8492'; ctx.fillRect(pr2.x - 5 * k, pr2.y - 18 * k, 10 * k, 1.6 * k);
-    }
-    ctx.globalAlpha = 1;
-  }
-  // an overhead is the one place HOLD means something different from everywhere
-  // else in the game, so it says so, on approach, every time
-  const soon = M.hz.find(h => h.over && !h.hit && h.y * TILE > L.y && h.y * TILE - L.y < 10 * TILE);
-  const me = proj(L.x, L.y);
-  const flat = L.charging;
-  ctx.save();
-  ctx.translate(me.x, me.y);
-  ctx.rotate(clamp(L.cvx * 0.0016, -0.2, 0.2) + (M.spin > 0 ? Math.sin(M.t * 22) * 0.2 : 0));
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath(); ctx.ellipse(0, 2, 20, 5, 0, 0, 7); ctx.fill();
-  ctx.scale(1.75, flat ? 0.95 : 1.75);                // flattened: the whole point of the verb
-  drawCat(CAT_IMGS.larry, L.pounceT > 0 ? 'pawUp' : flat ? 'sit' : 'standUp', L.pounceT > 0 ? 1 : 0, 0, 2);
-  ctx.restore();
-  if (M.spd > 150) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.13)'; ctx.lineWidth = 1;
-    for (let i = 0; i < 7; i++) {
-      const f = ((i * 53 + (M.t * 420)) % 100) / 100;
-      const sx = W / 2 + (i - 3) * W * 0.14 * (0.4 + f);
-      ctx.beginPath(); ctx.moveTo(sx, hor + f * (H - hor) * 0.7); ctx.lineTo(sx, hor + f * (H - hor) * 0.7 + 10 + f * 26); ctx.stroke();
-    }
-  }
-  if (soon) {
-    ctx.font = '11px monospace'; ctx.textAlign = 'center';
-    const hint = flat ? 'FLAT — hold it' : 'HOLD to flatten';
-    const hw = ctx.measureText(hint).width + 12;
-    ctx.fillStyle = flat ? 'rgba(20,60,26,0.85)' : 'rgba(60,45,10,0.85)';
-    ctx.fillRect(W / 2 - hw / 2, H * 0.52 - 11, hw, 16);
-    ctx.fillStyle = flat ? '#9fe8a0' : '#ffd98a';
-    ctx.fillText(hint, W / 2, H * 0.52);
-  }
-  ctx.font = '9px monospace'; ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(12,10,20,0.72)'; ctx.fillRect(W / 2 - 46, H - 16, 92, 13);
-  ctx.fillStyle = M.bumps ? '#ffd98a' : '#9fe8a0';
-  ctx.fillText(M.t.toFixed(1) + 's   🐟' + M.kippers + (M.bumps ? '   ✕' + M.bumps : ''), W / 2, H - 7);
-  if (M.msg) {
-    ctx.font = '11px monospace';
-    ctx.globalAlpha = Math.min(1, M.msg.t * 3);
-    const mw = ctx.measureText(M.msg.text).width + 10;
-    ctx.fillStyle = 'rgba(12,10,20,0.8)'; ctx.fillRect(W / 2 - mw / 2, H * 0.70 - 10, mw, 14);
-    ctx.fillStyle = M.msg.c; ctx.fillText(M.msg.text, W / 2, H * 0.70);
-    ctx.globalAlpha = 1;
-  }
 }
 
 /* ---------- TRAFALGAR SQUARE: the pigeon capital, cleared ----------
@@ -4308,8 +4060,6 @@ const CAMPAIGN = [
     why: 'The pack is three deep on the pavement and every one of them wants you mid-blink. Go out and give them nothing — except the one who has stood there fifteen years and asks properly. Give HIM the shot.' },
   { text: 'Clear Trafalgar Square', kind: 'traf', n: 1, where: 'the Street, the tour coach',
     why: 'The pond pigeons take their orders from Trafalgar Square, where a great many birds have never once been challenged. Go and challenge them. Panic spreads on its own — you need only start it in the right place.' },
-  { text: 'Ride the 11 to the end of the route', kind: 'bus', n: 1, where: 'the Street, at the stop',
-    why: 'The mice are riding the buses. Of course they are — free transport, and nobody checks. Take the 11 yourself, roof-side, and see the route the way they see it. Mind the low bridges; London does not.' },
   { text: 'Cross the Marble Hall (3 rooms)', kind: 'marble', n: 1, where: 'the Entrance Hall',
     why: 'The hall has been polished to a standard nobody asked for and a cat cannot cross it in a straight line. Learn it anyway — three rooms, stopping on the rug each time. If the mice can run that floor and you cannot, we have a problem.' },
   { text: 'Vet the reception canapés (14)', kind: 'canape', n: 1, where: 'the Kitchen counter',
@@ -4372,7 +4122,7 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', pond: 'pond', nip: 'nip', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', traf: 'traf', scrum: 'scrum' };
+const BRIEF_POI = { scrap: 'supper', pond: 'pond', nip: 'nip', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', traf: 'traf', scrum: 'scrum' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
@@ -4381,7 +4131,6 @@ const BRIEF_ARM = {
   sled: () => { G.sledCD = 0; },
   canape: () => { G.canapeCD = 0; },
   marble: () => { G.marbleCD = 0; },
-  bus: () => { G.busCD = 0; },
   traf: () => { G.trafCD = 0; },
   scrum: () => { G.scrumCD = 0; },
   scrap: () => { G.supperCD = 0; },
@@ -4493,6 +4242,13 @@ const sClick = () => tone(900, 700, 0.05, 'square', 0.05);
 const sLaser = () => tone(1200, 2400, 0.15, 'sawtooth', 0.05);
 const sStairs = () => { tone(300, 200, 0.1, 'triangle', 0.06); tone(260, 180, 0.1, 'triangle', 0.06, 0.12); };
 // feline delights: the stuttering bird-chatter, a happy trill/mrrp, a stretch groan
+// Larry's actual voice. "puffed…" was a status message wearing a cat costume,
+// and it fired on EVERY tired pounce, so you read it constantly. These rotate,
+// and the ones that fire often are rate-limited.
+const SAY_TIRED = ['mrrrp…', 'hhff…', 'mrow…', 'nnnh…', 'prrt…', '…hff'];
+const SAY_PLEASED = ['mrrp!', 'prrt!', 'chirrup!', 'mrow!', 'brrp!'];
+const SAY_WAKE = ['mrrrrow…', '*stretches*', 'prrrp…', 'nnnyah…'];
+const sTired = () => { tone(420, 300, 0.22, 'sine', 0.04); };
 const sChatter = () => { for (let i = 0; i < 6; i++) tone(1500 + Math.random() * 260, 1380, 0.03, 'square', 0.028, i * 0.055); };
 const sTrill = () => { tone(680, 1120, 0.12, 'sine', 0.05); tone(1120, 900, 0.1, 'sine', 0.03, 0.1); };
 const sStretch = () => { tone(480, 760, 0.36, 'sine', 0.05); };
@@ -4716,7 +4472,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, trafCD: 0, scrumCD: 0, dog: null, raceCD: 0, raceBest: 0, pondCD: 0, catnipCD: 0,
+  mini: null, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, trafCD: 0, scrumCD: 0, dog: null, raceCD: 0, raceBest: 0, pondCD: 0, catnipCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -4729,7 +4485,7 @@ const G = {
   laser: null,
   toolCD: {}, zoomiesT: 0, sonarT: 0, sonarRingT: -1, nv: false, superArmed: false, shake: 0,
   press: { active: false, t: 0, cd: 35, catches: 0, bads: 0 }, paps: [],
-  nearPoi: null, nearChat: null, napping: false, approvalExplained: false, tinExplained: false, napPos: null, catAnim: null, idleAnim: null,
+  nearPoi: null, nearChat: null, napping: false, approvalExplained: false, tinExplained: false, lastFish: undefined, pressIntroIn: 0, napPos: null, catAnim: null, idleAnim: null,
   secretsFound: new Set(), brief: null, briefCD: 14, lastBrief: null, briefStage: 0, catchTimes: [], isNight: false,
   honours: new Set(), nightCatches: 0, briefsDone: 0, ratKingCD: 45, hitstop: 0, flash: 0,
   escapes: 0, snowing: false,
@@ -4798,7 +4554,7 @@ function save() {
     // never persist a pocket map as the current map: the shelter, the
     // Under-Road and the dream void have no exits (visits are scripted
     // round-trips) — a reload mid-visit would strand the Chief Mouser there
-    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'nipdream' || G.mapId === 'pondside' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'bus' || G.mapId === 'square');
+    const atShelter = G.intro.phase === 'done' && (G.mapId === 'shelter' || G.mapId === 'underroad' || G.mapId === 'dreamvoid' || G.mapId === 'nipdream' || G.mapId === 'pondside' || G.mapId === 'heights' || G.mapId === 'stairs' || G.mapId === 'marble' || G.mapId === 'square');
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       level: G.level, xp: G.xp, catches: G.catches, pm: G.pm, pmDays: G.pmDays, pmCount,
       bowtie: G.bowtie, introDone: G.intro.phase === 'done', mapId: atShelter ? 'street' : G.mapId,
@@ -5272,15 +5028,6 @@ function interactPoi(p) {
       '🕊 Get on the coach', '🚶 Let them have it', which => { if (which === 'a') startTrafalgar(); });
     return;
   }
-  if (p.type === 'bus') {
-    if (G.mini) return;
-    if (G.daily) { toast('🚌 Not on sortie day. The 11 will come round again.'); sClick(); return; }
-    if (G.busCD > 0) { toast('🚌 You have just missed one. There will be three along shortly.'); sClick(); return; }
-    miniChoice('bus', 'THE STOP, END OF THE STREET', 'The 11 Bus',
-      'The 11 idles at the stop with its engine running and nobody watching the roof.\n\nPOUNCE to leap what is up there with you. HOLD the pounce to flatten under the low bridges.\n\nNo fare is payable by the Chief Mouser.',
-      '🚌 Get on the roof', '🚶 Wait for a taxi', which => { if (which === 'a') startBus(); });
-    return;
-  }
   if (p.type === 'record') {
     if (G.mini) return;
     showChoice('THE REFERENCE SHELF', 'The Official Record',
@@ -5588,7 +5335,11 @@ function doPounce(power = 0) {
   G.stam = Math.max(0, G.stam - (8 + power * 10));
   if (tired) {
     L.pounceT *= 0.7;
-    addFloat(L.x, L.y - 18, 'puffed…', '#a8c8d8');
+    if ((G.tiredCD || 0) <= 0) {
+      addFloat(L.x, L.y - 18, pick(SAY_TIRED), '#a8c8d8');
+      sTired();
+      G.tiredCD = 4.5;
+    }
   }
   L.pounceCD = (G.zoomiesT > 0 ? 0.25 : has('zoomies') ? 0.7 : 1.15) * (tired ? 1.5 : 1);
   const v = joyVec();
@@ -6434,6 +6185,10 @@ function catchMouse(i) {
   }
   G.mice.splice(i, 1);
   G.catches++;
+  if (Math.random() < 0.35) {   // he tells you about it, the way they do
+    addFloat(G.larry.x + 6, G.larry.y - 22, pick(SAY_PLEASED), '#d6bce0');
+    sTrill();
+  }
   G.fish += mo.type === 'ratking' ? 5 + G.larder : mo.type === 'rat' ? 2 : 1;
   if (mo.type === 'raider') { // the cheddar comes home
     G.fish += 2;
@@ -6996,8 +6751,6 @@ const MINI_RULES = {
               goal: 'Fill the frame three times without being caught by a flash.' },
   traf:     { how: 'Walk into the flock and POUNCE. Panic is contagious: a leap into a cluster spreads bird to bird.',
               goal: 'Clear the square. One well-placed pounce can empty most of it at once.' },
-  bus:      { how: 'POUNCE to leap whatever is up on the roof with you. HOLD the pounce button to FLATTEN and pass under the low bridges.',
-              goal: 'Ride to the end of the route without being swept off.' },
   marble:   { how: 'Nudge a direction and you SLIDE until something stops you — the floor has just been polished, so there is no steering mid-slide.',
               goal: 'Come to rest on the rug. Three rooms, each generated fresh.' },
   canape:   { how: 'POUNCE the salmon, prawn and cheese off the trolley — those are yours. LET the cucumber, onion and grapes go past: onion and grapes are poison to a cat, and nobody needs a cucumber.',
@@ -7160,7 +6913,8 @@ function visitorReaches() {
             G.intro.phase = 'done';
             G.visitor = null;
             pressFlashes(11 * TILE, 6.5 * TILE);        // a beat of flashes, live, before the questions
-            setTimeout(beginPressIntro, 750);
+            // a blind timer here would stomp whatever else surfaced in the gap
+            G.pressIntroIn = 0.75;
           });
         });
     });
@@ -7234,6 +6988,8 @@ function wakeUp() {
   G.napping = false;
   G.napPos = null;
   G.napKind = null; G.radT = 0;
+  addFloat(G.larry.x, G.larry.y - 18, pick(SAY_WAKE), '#d6bce0');
+  sStretch();
   toast(pick(TXT_WAKE));
 }
 
@@ -7299,11 +7055,16 @@ function update(dt) {
   if (G.intro.phase === 'done' && !G.daily) {
     // the number had been sliding all game with nothing ever explaining it, and
     // no consequence at the bottom — so say what it is, once, when it first dips
-    // the tin starts counting from the first mouse and never said what it was
-    // counting toward — so explain it the moment the number first matters
-    if (G.fish > 0 && !G.tinExplained && storyClear() && !G.cardQueue.length) {
-      G.tinExplained = true; save();
-      kipperGuide();
+    // Explain the tin the first time it visibly GOES UP in front of you — not
+    // merely the first time it is non-zero, because you arrive at No. 10 already
+    // holding five, which fired this card into the doorstep press conference.
+    if (!G.tinExplained && G.pressIntroIn <= 0) {
+      if (G.lastFish === undefined) G.lastFish = G.fish;
+      else if (G.fish > G.lastFish && storyClear() && !G.cardQueue.length) {
+        G.tinExplained = true; save();
+        kipperGuide();
+      }
+      G.lastFish = G.fish;
     }
     if (G.approval < 42 && !G.approvalExplained && !SCENE && !G.mini && !G.paused && !G.cardQueue.length) {
       G.approvalExplained = true; save();
@@ -7347,7 +7108,7 @@ function update(dt) {
   if (G.stam < 25 && L.moving && Math.random() < dt * 0.7) addFloat(L.x + 6, L.y - 14, '~', '#a8c8d8');
   if (G.stam < 25 && !G.tiredHint) {
     G.tiredHint = true;
-    toast('💤 Larry is puffed — pounces fall short. A nap spot (or the food bowl) restores his bounce.');
+    toast('💤 Larry is worn out — his pounces are falling short. A nap spot (or the food bowl) puts the spring back.');
   }
 
   // a SUMMONS: politics interrupts, attendance is not optional
@@ -7468,7 +7229,14 @@ function update(dt) {
   } else if (!G.napping && !G.catAnim && L.idleT > 3 && Math.random() < dt * 0.14) {
     G.idleAnim = { name: pick(['wash', 'wash', 'yawn']), t: 0 };  // a groom or a yawn
   }
+  if (G.pressIntroIn > 0) {
+    G.pressIntroIn -= dt;
+    // wait for a clear frame: the doorstep is the first thing you should see
+    if (G.pressIntroIn <= 0 && storyClear() && !G.cardQueue.length) { G.pressIntroIn = 0; beginPressIntro(); }
+    else if (G.pressIntroIn <= 0) G.pressIntroIn = 0.2;   // try again shortly
+  }
   G.chatterCD = Math.max(0, (G.chatterCD || 0) - dt);
+  G.tiredCD = Math.max(0, (G.tiredCD || 0) - dt);
   G.affCD = Math.max(0, (G.affCD || 0) - dt);
   if (!G.napping && !G.catAnim && !G.paused) {
     // The involuntary chatter at prey. The real thing does it at ANYTHING it
@@ -7701,7 +7469,6 @@ function update(dt) {
   updateSled(dt);
   updateCanape(dt);
   updateMarble(dt);
-  updateBus(dt);
   updateTrafalgar(dt);
   updateScrum(dt);
   updateSummit(dt);
@@ -7779,7 +7546,6 @@ function draw() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   if (G.mini && G.mini.type === 'sled') { drawSled(); return; } // the Descent draws its own world
   if (G.mini && G.mini.type === 'nip') { drawNip(); return; }   // and so does the dream
-  if (G.mini && G.mini.type === 'bus') { drawBus(); return; }   // so does the 11
 
   ctx.setTransform(ZOOM, 0, 0, ZOOM, -camX * ZOOM, -camY * ZOOM);
 
@@ -8787,15 +8553,15 @@ bindBtn(document.getElementById('mischiefClose'), () => {
 // Maps with no exits of their own. Anything that PLACES the player must send
 // them somewhere real instead — a save, a save code, or a dev URL param that
 // lands here would otherwise strand a career with no way out but a reload.
-const POCKET_MAPS = new Set(['shelter', 'underroad', 'dreamvoid', 'nipdream', 'pondside', 'heights', 'stairs', 'marble', 'bus', 'square', 'market']);
+const POCKET_MAPS = new Set(['shelter', 'underroad', 'dreamvoid', 'nipdream', 'pondside', 'heights', 'stairs', 'marble', 'square', 'market']);
 const POCKET_HOME = {
   marble: ['ground', 26.5, 29.5], stairs: ['ground', 5.5, 15.5],
-  bus: ['street', 10.5, 6.5], square: ['street', 10.5, 6.5],
+  square: ['street', 10.5, 6.5],
   underroad: ['basement', 26.5, 16.5], dreamvoid: ['ground', 15.5, 23.5], nipdream: ['ground', 13.5, 6.5], pondside: ['ground', 40.5, 7.5],
   heights: ['ground', 5.5, 19.5],
 };
 const MINI_CD = {
-  marble: 'marbleCD', sled: 'sledCD', bus: 'busCD', traf: 'trafCD', canape: 'canapeCD',
+  marble: 'marbleCD', sled: 'sledCD', traf: 'trafCD', canape: 'canapeCD',
  supper: 'supperCD', race: 'raceCD', pond: 'pondCD', nip: 'catnipCD',
   climb: 'climbCD', scrum: 'scrumCD',
 };

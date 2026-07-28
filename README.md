@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Thirteen mini games — and the Brief asks for every one
+## Twelve mini games — and the Brief asks for every one
 
 - **The Doorstep Scrum** — the press pack fires at anything that moves and a
   cat caught mid-blink is tomorrow's unflattering front page. Stay out of
@@ -87,9 +87,6 @@ the front door having no outside handle:
 - **Trafalgar Square** — sixty birds who have never been meaningfully
   challenged. Panic is contagious: pounce into a cluster and the fright
   spreads bird to bird, so one good leap can empty the whole square
-- **The 11 Bus** — roof-side through London, and the only game with two
-  verbs: POUNCE to leap what is up there with you, HOLD to flatten under
-  the low bridges. No fare is payable by the Chief Mouser
 - **The Marble Hall** — the floor has just been polished, so a cat who
   commits to a direction is going that way until something stops them.
   Three rooms, generated fresh and machine-checked solvable; stop on the rug
@@ -106,7 +103,7 @@ statute. No further questions.)
   biggest escalations delivered by a breathless aide, in person
 - **The Morning List & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
-- 38 honours on a proper honours board, a List of Mischief, hidden secrets,
+- 37 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won
