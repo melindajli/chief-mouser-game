@@ -108,7 +108,10 @@ statute. No further questions.)
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won
-- Donate kippers home to Battersea. Obviously.
+- Donate kippers home to Battersea. Obviously. Larry was a real Battersea cat,
+  so the game also points at the real charity — from the pause menu, and once
+  in the story, after the fifth parcel goes home. The game is not affiliated
+  with Battersea and speaks only for itself.
 
 ## Play locally
 

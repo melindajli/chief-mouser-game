@@ -42,6 +42,9 @@ const DAYLEN = 200;
 // properly, set live: true and fill in his details.
 const PARTNER = { live: false, name: '', kofi: '' };
 const PHOTOG_NAME = () => PARTNER.live && PARTNER.name ? PARTNER.name : 'THE PHOTOGRAPHER';
+// Larry really was a Battersea cat. This game is not affiliated with them —
+// but they are real, and they are still doing it.
+const BATTERSEA_URL = 'https://donate.battersea.org.uk/appeals/default/';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 // pick a random entry, never the same one twice in a row — repeated lines
@@ -5284,6 +5287,19 @@ function interactPoi(p) {
         toast(pick(TXT_DONATE) + ' (+3% approval)');
         [523, 659, 784].forEach((f, i) => tone(f, f, 0.12, 'sine', 0.05, i * 0.1));
         if (G.donated >= 5) earnHonour('patron');
+        // the fifth parcel is the moment to mention that the place is real
+        if (G.donated === 5) {
+          playScene([
+            { who: 'LARRY', text: '(Five parcels home. You were a stray with strong opinions about a cardboard box, and somebody there did the paperwork anyway.)' },
+            {
+              who: 'BATTERSEA', text: 'The kippers in this game are imaginary. Battersea is not — Larry came through their doors in 2011, and they are still doing it for thousands more.',
+              choice: [
+                ['🏠 Open their donation page', () => window.open(BATTERSEA_URL, '_blank', 'noopener')],
+                ['🐾 Back to work', () => { }],
+              ],
+            },
+          ]);
+        }
         save();
         updateHUD();
       });
@@ -8449,6 +8465,13 @@ function openSaveBox() {
   sClick();
 }
 bindBtn(document.getElementById('menuSave'), openSaveBox);
+bindBtn(document.getElementById('menuBattersea'), () => {
+  showChoice('BATTERSEA DOGS & CATS HOME', 'The Real One',
+    'Larry was a stray who came through Battersea in 2011, and they are still doing that for thousands of dogs and cats a year.\n\nThis game has nothing to do with them and speaks only for itself — but they are real, and the kippers in here are not.',
+    '🏠 Open their donation page', '🐾 Back to work',
+    which => { if (which === 'a') window.open(BATTERSEA_URL, '_blank', 'noopener'); });
+});
+
 // the support button appears only once the partnership is live
 if (PARTNER.live) {
   const mb = document.getElementById('menuSupport');
