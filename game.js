@@ -3732,13 +3732,13 @@ const MINI_HUD_Y = 62;
    pop-up now: the bed drops you into a dream, Larry sits down, and things that
    are not there come at him out of the dark. The only verb is POUNCE, and the
    only question is WHEN. Nothing else in the house is a timing game. */
-const NIP_TIME = 45, NIP_GOLD = 22;
+const NIP_TIME = 45, NIP_GOLD = 16;
 const NIP_RING = 26;                      // the strike ring, in px from the cat
-const NIP_HIT = 12;                       // how far off the ring still connects
-const NIP_PERFECT = 5;                    // ...and how close to it is exactly right
+const NIP_HIT = 16;                       // how far off the ring still connects
+const NIP_PERFECT = 7;                    // ...and how close to it is exactly right
 // A bad swipe has to cost something or the whole game is "hold pounce": miss,
 // and the paw is committed for half a second while the dream keeps coming.
-const NIP_LOCK = 0.5;
+const NIP_LOCK = 0.3;
 const NIP_SEEN = ['🦋', '🐟', '🐭', '🕊', '🍃', '🦋', '🐟'];
 const NIP_NICE = ['PURR', 'YES', 'GOT IT', 'MINE', 'DREAMY', 'EXQUISITE'];
 function startNip() {
@@ -3747,7 +3747,7 @@ function startNip() {
     type: 'nip', t: 0, T: NIP_TIME, hits: 0, perfect: 0, misses: 0,
     combo: 0, best: 0, visitors: [], next: 1.0, wasPouncing: false, msg: null, hue: 0, lockT: 0,
   };
-  toast('🌿 Sit still. Pounce each one as it crosses the ring.', 'now');
+  toast('🌿 Sit still. When a ring turns GREEN on yours, pounce.', 'now');
   sTrill();
 }
 function nipSpawn() {
@@ -3755,9 +3755,9 @@ function nipSpawn() {
   const a = Math.random() * Math.PI * 2;
   // they always take the same time to arrive, so the rhythm stays honest even
   // as the dream speeds up — later ones simply start further out and fly harder
-  const travel = Math.max(0.85, 1.9 - M.t * 0.022);
+  const travel = Math.max(1.15, 2.4 - M.t * 0.02);
   const r0 = 108;
-  M.visitors.push({ a, r: r0, sp: (r0 - NIP_RING) / travel, em: pick(NIP_SEEN), spin: Math.random() * 7, dead: false });
+  M.visitors.push({ a, r: r0, sp: (r0 - NIP_RING) / travel, em: pick(NIP_SEEN), spin: Math.random() * 7, dead: false, ping: false });
 }
 function nipCentre() { return { x: 7.5 * TILE, y: 5.5 * TILE }; }
 function nipSay(text, c) { G.mini.msg = { text, c, t: 0.65 }; }
@@ -3772,11 +3772,19 @@ function updateNip(dt) {
   L.x = C.x; L.y = C.y; L.cvx = 0; L.cvy = 0;
   L.pounceCD = 0;                            // a rhythm game may never eat your input
   M.next -= dt;
-  if (M.next <= 0) { nipSpawn(); M.next = Math.max(0.42, 1.0 - M.t * 0.012); }
+  // never more than three in the air: a swarm converging from random angles
+  // is not a rhythm, it is a hailstorm
+  if (M.next <= 0 && M.visitors.filter(v => !v.dead).length < 3) {
+    nipSpawn(); M.next = Math.max(0.62, 1.35 - M.t * 0.012);
+  } else if (M.next <= 0) M.next = 0.2;
   for (const v of M.visitors) {
     if (v.dead) continue;
     v.r -= v.sp * dt;
     v.spin += dt * 3;
+    if (!v.ping && Math.abs(v.r - NIP_RING) <= NIP_HIT) {
+      v.ping = true;                         // it is takeable NOW — audible, not just visible
+      tone(880, 880, 0.04, 'sine', 0.03);
+    }
     if (v.r <= 6) {                          // it got all the way to your nose
       v.dead = true;
       M.misses++; M.combo = 0;
@@ -3874,6 +3882,11 @@ function drawNip() {
   for (const v of M.visitors) {
     if (v.dead) continue;
     const x = C.x + Math.cos(v.a) * v.r, y = C.y + Math.sin(v.a) * v.r;
+    // its approach ring: press when this lands on the strike ring
+    const inBand = Math.abs(v.r - NIP_RING) <= NIP_HIT;
+    ctx.strokeStyle = inBand ? 'rgba(159,232,160,0.9)' : 'rgba(255,232,184,0.30)';
+    ctx.lineWidth = inBand ? 1.6 : 1;
+    ctx.beginPath(); ctx.arc(C.x, C.y, v.r, 0, 7); ctx.stroke();
     const k = 1 - Math.min(1, (v.r - NIP_RING) / 90);        // looms as it closes
     ctx.globalAlpha = 0.35 + k * 0.65;
     ctx.font = Math.round(9 + k * 6) + 'px serif';
@@ -4405,12 +4418,12 @@ function nextPM() { pmCount++; return 'PM #' + pmCount; }
 function exitReason(idx) { return PM_EXITS[(idx - 1) % PM_EXITS.length]; }
 
 const GADGETS = {
-  zoomies: { name: '👟 Bureaucratic Zoomies', desc: 'Go-faster booties from the security detail. TAP 👟 for a three-second burst of ludicrous speed (pounce recharges almost instantly while it lasts). Costs 2 🐟.' },
-  whiskers: { name: '📡 Sonic Whiskers', desc: 'Standard MI-Paw issue. TAP 📡 to send out a sonar pulse that reveals every mouse on the floor for a few seconds — even through walls. Costs 2 🐟.' },
-  collar: { name: '🎀 Diplomatic Collar', desc: 'A gift from a visiting delegation. TAP 🎀 to charm every nearby mouse — they stop dead, utterly besotted. (Nearby mice also flee a little slower, always.) Costs 3 🐟.' },
-  laser: { name: '🔴 Laser Pointer of State', desc: 'Requisitioned from the Cabinet Room. TAP 🔴 to deploy the red dot; mice cannot resist it. (You can. Obviously. Mostly.) Costs 2 🐟.' },
+  zoomies: { name: '👟 Bureaucratic Zoomies', desc: 'Go-faster booties from the security detail. TAP 👟 for a three-second burst of ludicrous speed (pounce recharges almost instantly while it lasts). Costs 4 🐟.' },
+  whiskers: { name: '📡 Sonic Whiskers', desc: 'Standard MI-Paw issue. TAP 📡 to send out a sonar pulse that reveals every mouse on the floor for a few seconds — even through walls. Costs 5 🐟.' },
+  collar: { name: '🎀 Diplomatic Collar', desc: 'A gift from a visiting delegation. TAP 🎀 to charm every nearby mouse — they stop dead, utterly besotted. (Nearby mice also flee a little slower, always.) Costs 6 🐟.' },
+  laser: { name: '🔴 Laser Pointer of State', desc: 'Requisitioned from the Cabinet Room. TAP 🔴 to deploy the red dot; mice cannot resist it. (You can. Obviously. Mostly.) Costs 4 🐟.' },
   monocle: { name: '🌙 Night-Vision Monocle', desc: "MI-Paw's finest. TAP 🌙 to toggle night vision — nights (and the Cellar) look brighter and mice glow. Very dignified. Free to wear." },
-  cape: { name: '🦸 Ceremonial Cape', desc: 'By Appointment. Mice are worth DOUBLE XP, always. TAP 🦸 to arm a SUPER POUNCE: your next pounce flies further and catches everything near the landing. Costs 4 🐟.' },
+  cape: { name: '🦸 Ceremonial Cape', desc: 'By Appointment. Mice are worth DOUBLE XP, always. TAP 🦸 to arm a SUPER POUNCE: your next pounce flies further and catches everything near the landing. Costs 9 🐟.' },
 };
 
 const FLAVOUR = [
@@ -5403,12 +5416,12 @@ function doLaser() {
 // so what the tin says it costs is always what it actually costs.
 const TIN = { chef: 4, gardener: 3, battersea: 10, portrait: [25, 60, 120] };
 const TOOLS = [
-  { key: 'zoomies', emoji: '👟', cd: 10, cost: 2, use: () => { G.zoomiesT = 3; addParticle(G.larry.x, G.larry.y + 4, '#e9c46a', 8, 40); tone(300, 900, 0.25, 'sawtooth', 0.06); } },
-  { key: 'whiskers', emoji: '📡', cd: 12, cost: 2, use: () => { G.sonarT = 5; G.sonarRingT = 0; tone(900, 1500, 0.2, 'sine', 0.07); tone(900, 1500, 0.2, 'sine', 0.04, 0.25); } },
-  { key: 'collar', emoji: '🎀', cd: 14, cost: 3, use: () => { let n = 0; for (const mo of G.mice) if (dist(mo.x, mo.y, G.larry.x, G.larry.y) < 95) { mo.state = 'charmed'; mo.stateT = 3; n++; } addParticle(G.larry.x, G.larry.y, '#e77', 10, 60); tone(600, 900, 0.18, 'triangle', 0.07); tone(900, 1200, 0.18, 'triangle', 0.05, 0.2); if (n) addFloat(G.larry.x, G.larry.y - 18, n + ' charmed!', '#f0a5b5'); } },
-  { key: 'laser', emoji: '🔴', cd: 8, cost: 2, use: doLaser },
+  { key: 'zoomies', emoji: '👟', cd: 10, cost: 4, use: () => { G.zoomiesT = 3; addParticle(G.larry.x, G.larry.y + 4, '#e9c46a', 8, 40); tone(300, 900, 0.25, 'sawtooth', 0.06); } },
+  { key: 'whiskers', emoji: '📡', cd: 12, cost: 5, use: () => { G.sonarT = 5; G.sonarRingT = 0; tone(900, 1500, 0.2, 'sine', 0.07); tone(900, 1500, 0.2, 'sine', 0.04, 0.25); } },
+  { key: 'collar', emoji: '🎀', cd: 14, cost: 6, use: () => { let n = 0; for (const mo of G.mice) if (dist(mo.x, mo.y, G.larry.x, G.larry.y) < 95) { mo.state = 'charmed'; mo.stateT = 3; n++; } addParticle(G.larry.x, G.larry.y, '#e77', 10, 60); tone(600, 900, 0.18, 'triangle', 0.07); tone(900, 1200, 0.18, 'triangle', 0.05, 0.2); if (n) addFloat(G.larry.x, G.larry.y - 18, n + ' charmed!', '#f0a5b5'); } },
+  { key: 'laser', emoji: '🔴', cd: 8, cost: 4, use: doLaser },
   { key: 'monocle', emoji: '🌙', cd: 0, use: () => { G.nv = !G.nv; sClick(); }, isOn: () => G.nv },
-  { key: 'cape', emoji: '🦸', cd: 15, cost: 4, use: () => { G.superArmed = true; tone(200, 500, 0.3, 'square', 0.06); addFloat(G.larry.x, G.larry.y - 18, 'SUPER POUNCE ARMED', '#ffd98a'); }, isOn: () => G.superArmed },
+  { key: 'cape', emoji: '🦸', cd: 15, cost: 9, use: () => { G.superArmed = true; tone(200, 500, 0.3, 'square', 0.06); addFloat(G.larry.x, G.larry.y - 18, 'SUPER POUNCE ARMED', '#ffd98a'); }, isOn: () => G.superArmed },
 ];
 function useTool(t) {
   if (!G.running || G.paused || !has(t.key)) return;
@@ -6768,7 +6781,7 @@ const MINI_RULES = {
   pond:     { how: 'You walk the bank; the water is not walkable. Fish run deep as shadows, and a RIPPLE spreads where one is about to surface — RUN ROUND TO IT, because you can only take a fish you are standing beside. The ring around you is your reach. POUNCE once the fish is inside it.',
               goal: 'Six fish. The banner tells you which of the four things is true: WATCH, RUN, TOO FAR, or POUNCE. Leaping when nothing is up puts you in the pond.' },
   catnip:   { how: 'You do not move at all — Larry sits down and the dream comes to him. Things drift in out of the dark toward the glowing RING around you. POUNCE the moment one crosses that ring: on it is perfect, early is a miss, and anything that reaches your nose is gone.',
-              goal: 'Consecutive hits build a run, and the dream gets quicker the longer it lasts. Swipe at nothing and your paw is committed for half a second while everything keeps coming — this cannot be played by mashing.' },
+              goal: 'Each one drags a ring inward: POUNCE when its ring lands on yours — it turns green and chimes the moment it is takeable. Consecutive hits build a run. Swipe when nothing is in range and your paw is committed for a moment, so this cannot be played by mashing.' },
   supper:   { how: 'Scraps fall from the table above. Get UNDERNEATH each one before it lands — the floor is the enemy, not the clock.',
               goal: 'Catch four before they hit the tiles.' },
   gauntlet: { how: 'Six lanes of rat patrol between you and the stolen larder. Move when a lane is clear; POUNCE to cross a gap in one go.',
