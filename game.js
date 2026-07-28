@@ -491,10 +491,8 @@ function buildPerson(suit, hat) {
   else if (hat === 'photog') {
     // drawn from life: two pairs of sunglasses (one worn, one parked), a red
     // lanyard, and a camera large enough to be visible from across a street
-    sell(s, 8, 3.2, 3.9, 2.4, hair);
-    srect(s, 4.6, 1.4, 6.8, 1.4, '#f2efe8');                               // the spare pair, up on the head
-    srect(s, 4.6, 1.4, 6.8, 0.5, '#cfc8b8');
-    srect(s, 4.8, 4.4, 6.4, 1.8, '#1b1d24');                               // and the pair he is actually wearing
+    sell(s, 8, 3.2, 3.9, 2.4, '#1c1a1c');                                  // black hair, as worn
+    srect(s, 4.8, 4.4, 6.4, 1.8, '#1b1d24');                               // and the sunglasses, always on
     sp(s, 6.2, 4.8, '#4a6478'); sp(s, 9.4, 4.8, '#4a6478');                // a glint in each lens
     srect(s, 5.6, 8.6, 1.1, 4.2, '#a8323c');                               // the lanyard, over both shoulders
     srect(s, 9.3, 8.6, 1.1, 4.2, '#a8323c');
@@ -1740,6 +1738,7 @@ MAPS.street = makeMap('street', 22, 15, (m, set, rect) => {
   m.mouseCap = () => 3;
 });
 
+const NPC_TITLES = { worker: 'THE CIVIL SERVANT', guard: 'THE GUARD', aide: 'THE AIDE', chef: 'THE CHEF', butler: 'THE BUTLER', gardener: 'THE GARDENER', press: 'THE PRESS', officer: 'THE OFFICER', photog: 'THE PHOTOGRAPHER' };
 const NPC_SPRITES = { worker: P_WORKER, guard: P_GUARD, aide: P_AIDE, chef: P_CHEF, butler: P_BUTLER, gardener: P_GARDENER, press: P_PRESS, officer: P_GUARD, photog: P_PHOTOG };
 const SECRET_TOTAL = Object.values(MAPS).reduce((n, m) => n + m.pois.filter(p => p.type === 'secret').length, 0);
 
@@ -4419,7 +4418,7 @@ const G = {
   laser: null,
   toolCD: {}, zoomiesT: 0, sonarT: 0, sonarRingT: -1, nv: false, superArmed: false, shake: 0,
   press: { active: false, t: 0, cd: 35, catches: 0, bads: 0 }, paps: [],
-  nearPoi: null, napping: false, napPos: null, catAnim: null, idleAnim: null,
+  nearPoi: null, nearChat: null, napping: false, napPos: null, catAnim: null, idleAnim: null,
   secretsFound: new Set(), brief: null, briefCD: 14, lastBrief: null, briefStage: 0, catchTimes: [], isNight: false,
   honours: new Set(), nightCatches: 0, briefsDone: 0, ratKingCD: 45, hitstop: 0, flash: 0,
   escapes: 0, snowing: false,
@@ -5233,6 +5232,14 @@ function doPounce(power = 0) {
     // in play still wins the tap (you were plainly hunting)
     const dp = dist(L.x, L.y, (G.nearPoi.x + 0.5) * TILE, (G.nearPoi.y + 0.5) * TILE);
     if (dp < 15 || !G.mice.some(mo => dist(mo.x, mo.y, L.x, L.y) < 55)) { interactPoi(G.nearPoi); return; }
+  }
+  if (power === 0 && G.nearChat && !SCENE && !G.mini && !G.paused
+      && !G.mice.some(mo => dist(mo.x, mo.y, L.x, L.y) < 55)) {
+    const n = G.nearChat;
+    n.quipCD = 10;                       // he has just said it; let the ambient line rest
+    const who = n.sprite === 'photog' ? PHOTOG_NAME() : (NPC_TITLES[n.sprite] || 'THEY');
+    playScene([{ who, text: pick(n.quips) }]);
+    return;
   }
   if (L.pounceCD > 0 || L.pounceT > 0) return;
   L.superP = G.superArmed;
@@ -7286,8 +7293,20 @@ function update(dt) {
       const d = dist(L.x, L.y, (p.x + 0.5) * TILE, (p.y + 0.5) * TILE);
       if (d < bd) { bd = d; G.nearPoi = p; }
     }
+    // …and anyone standing about with something to say. Ambient quips are
+    // easy to miss; this makes talking to somebody a thing you can DO.
+    G.nearChat = null;
+    if (!G.nearPoi && !G.mini && !SCENE) {
+      let cd = 26;
+      for (const n of G.npcs) {
+        if (!n.quips || !n.quips.length) continue;
+        const d = dist(L.x, L.y, n.x, n.y);
+        if (d < cd) { cd = d; G.nearChat = n; }
+      }
+    }
     const btn = document.getElementById('btnPounce');
-    const want = G.napping ? '⏰' : G.nearPoi && !G.mice.some(mo => dist(mo.x, mo.y, L.x, L.y) < 55) ? G.nearPoi.emoji : '🐾';
+    const busy = G.mice.some(mo => dist(mo.x, mo.y, L.x, L.y) < 55);
+    const want = G.napping ? '⏰' : (G.nearPoi && !busy) ? G.nearPoi.emoji : (G.nearChat && !busy) ? '💬' : '🐾';
     if (btn.textContent !== want) btn.textContent = want;
   }
   L.pounceCD = Math.max(0, L.pounceCD - dt);
@@ -7656,6 +7675,15 @@ function draw() {
     ctx.fillStyle = '#5c4126'; ctx.fillRect(b.x + 2, b.y + 5, 6, 3);
   }
 
+  if (G.nearChat && !G.nearPoi && !G.napping) {
+    const n = G.nearChat, bob3 = Math.sin(G.time * 4) * 1.5;
+    const hint = (IS_TOUCH ? 'TAP 💬' : 'SPACE');
+    ctx.font = '7px monospace'; ctx.textAlign = 'center';
+    const hw2 = ctx.measureText(hint).width + 6;
+    ctx.fillStyle = 'rgba(20,16,32,0.82)';
+    ctx.fillRect(n.x - hw2 / 2, n.y - 27 + bob3, hw2, 9);
+    ctx.fillStyle = '#ffe8b8'; ctx.fillText(hint, n.x, n.y - 20 + bob3);
+  }
   // interaction prompt above a nearby point of interest
   if (G.nearPoi && !G.napping) {
     const p = G.nearPoi;
@@ -8298,6 +8326,7 @@ function openMenu() {
     + (G.lives ? '   🐾 life ' + (G.lives + 1) : '') + dayLines;
   // a New Life unlocks once the Garter is conferred (the L17 finale)
   document.getElementById('menuLife').classList.toggle('hidden', !(G.honours.has('garter') && !G.daily));
+  document.getElementById('menuQuit').classList.toggle('hidden', !G.mini);
   menuLabels();
   document.getElementById('menuRestart').textContent = 'Restart from Battersea';
   document.getElementById('menuWrap').classList.remove('hidden');
@@ -8535,6 +8564,35 @@ bindBtn(document.getElementById('mischiefClose'), () => {
   G.paused = false;
   sClick();
 });
+/* Some mini games live on pocket maps with no doors — the Marble Hall has no
+   timer either — so without this there is no way out of a run you cannot
+   finish except reloading the page. Every game can now be walked away from. */
+const POCKET_HOME = {
+  marble: ['ground', 26.5, 29.5], stairs: ['ground', 5.5, 15.5],
+  bus: ['street', 10.5, 6.5], square: ['street', 10.5, 6.5],
+  underroad: ['basement', 26.5, 16.5], dreamvoid: ['ground', 15.5, 23.5],
+  heights: ['ground', 5.5, 19.5],
+};
+const MINI_CD = {
+  marble: 'marbleCD', sled: 'sledCD', bus: 'busCD', traf: 'trafCD', canape: 'canapeCD',
+  post: 'postCD', supper: 'supperCD', race: 'raceCD', agm: 'agmCD', moles: 'molesCD',
+  climb: 'climbCD', gulls: 'gullsCD',
+};
+function abandonMini() {
+  if (!G.mini) return;
+  const t = G.mini.type;
+  G.mini = null;
+  document.getElementById('menuWrap').classList.add('hidden');
+  menuOpen = false; G.paused = false;
+  if (MINI_CD[t]) G[MINI_CD[t]] = 45;   // a pause, so quitting is not a way to reroll
+  if (t === 'photo') { G.summons = null; G.summonsCD = 90; }
+  const home = POCKET_HOME[G.mapId];
+  if (home) startFade(() => switchMap(home[0], home[1] * TILE, home[2] * TILE));
+  toast('🏳️ Left it there. It will keep.');
+  sClick(); updateHUD(); save();
+}
+bindBtn(document.getElementById('menuQuit'), abandonMini);
+
 // ---------- Nine Lives: prestige, feline edition ----------
 // After the Garter, a New Life restarts the climb — level, gadgets and the
 // campaign reset — while everything EARNED endures: honours, secrets,
