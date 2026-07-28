@@ -4119,6 +4119,17 @@ const CAMPAIGN = [
     why: 'The siege spills outdoors; every wall of the house is being tested at once. Hold the Garden — catch two — and hold the line. They will not find it undefended while you draw breath.' },
 ];
 const BRIEF_LOOP_FROM = 10; // once the campaign is done, cycle the "siege" tail forever
+// When the next beat is gated, the holding brief names the gate. Without this
+// the campaign silently stops: the Under-Road brief waits on the Rat King, who
+// only appears down in the Cellar, and nothing ever said so.
+const HOLDING_BRIEFS = {
+  gauntlet: { holding: true, text: 'Find what rules below the Cellar', kind: 'catch', n: 2, where: 'the Cellar, downstairs',
+    why: 'The tunnel brief cannot be issued while the Under-Road is sealed, and it stays sealed until whatever sits at the bottom of this house has been dealt with personally. Go down to the Cellar and WAIT for it. It only shows itself to a cat who is standing there.' },
+  dot: { holding: true, text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2, where: 'anywhere in the house',
+    why: 'MI-Paw will not open the construct to you until you have run the Under-Road at least once. Until then: patrols.' },
+  treaty: { holding: true, text: 'Settle the Under-Road first', kind: 'catch', n: 2, where: 'the crack in the Cellar wall',
+    why: 'There is a summit outstanding beneath this house, and no more tunnel work will be authorised until terms are signed. The crack in the Cellar wall is expecting you.' },
+};
 const HOLDING_BRIEF = { holding: true, text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2, where: 'anywhere in the house',
   why: 'The picture below is still forming. Keep the pressure on while it clears — catch two more on your rounds.' };
 // swift mice spawn from lv3, tricksters lv5, Very Still Mice lv7
@@ -4168,14 +4179,29 @@ const BRIEF_ARM = {
 };
 function newBrief() {
   const len = CAMPAIGN.length;
+  {
+    // A scene beat spends itself the moment briefStage advances. If anything is
+    // already on screen the scene cannot play, and the beat would be lost for
+    // good — so wait for a clear moment instead and let briefCD try again.
+    const peek = G.briefStage < len ? G.briefStage
+      : BRIEF_LOOP_FROM + (G.briefStage - BRIEF_LOOP_FROM) % (len - BRIEF_LOOP_FROM);
+    if (BRIEF_SCENES[peek] !== undefined && G.briefStage === peek && !G.daily
+        && G.intro.phase === 'done' && (SCENE || G.paused || G.mini || G.cardQueue.length)) {
+      G.briefCD = 2.5;
+      return;
+    }
+  }
   const idx = G.briefStage < len ? G.briefStage
     : BRIEF_LOOP_FROM + (G.briefStage - BRIEF_LOOP_FROM) % (len - BRIEF_LOOP_FROM);
   let def = CAMPAIGN[idx];
   // if the next story beat needs a mouse we can't spawn yet, hold it and run a
   // holding-pattern patrol instead — the campaign never skips a beat
   let firstPass = false;
-  if (!briefPossible(def)) def = HOLDING_BRIEF;
-  else { firstPass = G.briefStage === idx; G.briefStage++; }
+  if (!briefPossible(def)) {
+    // name the gate where we can, so a held campaign never looks like a bug
+    def = (def.kind === 'gauntlet' && G.coronation && !G.treaty) ? HOLDING_BRIEFS.treaty
+      : HOLDING_BRIEFS[def.kind] || HOLDING_BRIEF;
+  } else { firstPass = G.briefStage === idx; G.briefStage++; }
   G.brief = { def, prog: 0 };
   if (BRIEF_ARM[def.kind]) BRIEF_ARM[def.kind]();
   if (firstPass && BRIEF_SCENES[idx] !== undefined && !G.daily && G.intro.phase === 'done' && !SCENE && !G.mini && !G.paused) {
@@ -4671,7 +4697,7 @@ function goalEvent(kind, info = {}) {
   else if (kind === 'escape') DAY.stats.escape++;
   else if (kind === 'brief') DAY.stats.brief++;
   else if (kind === 'fish') DAY.stats.fish += info.n || 1;
-  else if (kind === 'palm') DAY.stats.palm = DAY.stats.palm || 0;
+  else if (kind === 'palm') DAY.stats.palm = (DAY.stats.palm || 0) + 1;
   let changed = false;
   for (const g of DAY.goals) {
     if (g.prog >= g.n) continue;
@@ -6280,6 +6306,8 @@ function queueBeat(level) {
   // night's sleep. Only the level-3 beat defers (the dawn handler re-queues it);
   // later pmChange beats fire on their level regardless, so none are ever lost.
   if (b.pmChange && level === 3 && pmCount <= 1 && Math.floor(G.time / DAYLEN) < 1 && !G.daily) return;
+  // a New Life restarts the climb, but you are only knighted once
+  if (b.finale && G.honours.has('garter')) return;
   let body = b.body, newPM = null;
   if (b.pmChange) {
     const old = G.pm;
