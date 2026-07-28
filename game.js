@@ -4521,6 +4521,10 @@ const has = g => {
 // while Larry is still waiting to be adopted.
 function bumpApproval(delta, note, colour) {
   if (G.intro.phase !== 'done') return;
+  // The house carries on behind a mini game — mice still spawn on the map you
+  // left, and still get away. Being marked down for a mouse you could not
+  // possibly have caught, while stood at a canapé trolley, is just noise.
+  if (G.mini || SCENE) return;
   G.approval = clamp(G.approval + delta, 0, 100);
   if (note) addFloat(G.larry.x, G.larry.y - 26, note, colour || (delta < 0 ? '#ff8080' : '#9fe8a0'));
 }
