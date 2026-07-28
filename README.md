@@ -48,11 +48,8 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Fourteen mini games — and the Brief asks for every one
+## Thirteen mini games — and the Brief asks for every one
 
-- **Post Watch** — the eleven o'clock delivery fires across the Entrance
-  Hall: get under each item and POUNCE. Bills fly low and fast, parcels
-  need a charged leap, and the junk mail is a trap
 - **The Doorstep Scrum** — the press pack fires at anything that moves and a
   cat caught mid-blink is tomorrow's unflattering front page. Stay out of
   their flashes; when the photographer who asks properly frames a shot, get

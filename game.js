@@ -1316,7 +1316,7 @@ MAPS.ground = makeMap('ground', 48, 36, (m, set, rect) => {
   m.pois.push(
     { x: 19, y: 32, emoji: '🎤', type: 'text', texts: TXT_LECTERN },
     { x: 24, y: 32, emoji: '☂️', type: 'text', texts: TXT_UMBRELLA },
-    { x: 21, y: 33, emoji: '📮', type: 'post', texts: TXT_LETTERBOX },
+    { x: 21, y: 33, emoji: '📮', type: 'text', texts: TXT_LETTERBOX },
     { x: 20, y: 27, emoji: '💨', type: 'race' },
     { x: 26, y: 29, emoji: '✨', type: 'marble' },      // the hall, freshly polished   // the zoomies, when they take you
     { x: 24, y: 26, emoji: '🎖️', type: 'honours' },
@@ -1757,7 +1757,6 @@ const HONOURS = [
   { id: 'garter', name: 'Order of the Garter (Feline Div.)', hint: 'Serve with continued excellence. The Palace is watching.' },
   { id: 'vanity', name: 'Patron of the Arts (Self-Portraits)', hint: 'Commission every tier of your own portrait.' },
   { id: 'newlife', name: 'Nine Lives (One Spent Well)', hint: 'Begin a New Life. Cats are issued nine.' },
-  { id: 'post8', name: 'Postmaster General (Feline Div.)', hint: 'A perfect Post Watch: eight for eight.' },
   { id: 'patron', name: 'Friend of Battersea', hint: 'Send five parcels home.', test: () => (G.donated || 0) >= 5 },
   { id: 'home', name: 'Local Cat Made Good', hint: 'Go home again, decorated.' },
   { id: 'incident', name: 'The Incident Was Handled', hint: 'Hold your ground when the dog comes to the garden.' },
@@ -1902,7 +1901,7 @@ function drawKnock(kn) {
 // one button, many games: any pounce input routes to the active TAP game.
 // Movement games (suppers, races, the stalk, the gallery) keep real walking
 // and pouncing — there, moving IS the game.
-const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, climb: 1, summit: 1, fox: 1, post: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1, scrum: 1 };
+const MOVE_MINIS = { supper: 1, race: 1, agm: 1, moles: 1, gauntlet: 1, dot: 1, climb: 1, summit: 1, fox: 1, sled: 1, canape: 1, marble: 1, bus: 1, traf: 1, scrum: 1 };
 
 /* ---------- THE MIDNIGHT ZOOMIES: the whole house is the racetrack ----------
    Every cat knows the moment: the legs decide before the brain does. A course
@@ -2015,7 +2014,7 @@ function drawRace() {
    Secrets stay hidden until you stumble on them — that's their charm. But the
    mini games are headline content, so their spots carry a soft, bobbing badge
    you can see across the room. Locked doors show nothing. */
-const GAME_MARKS = { post: '📮', race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', traf: '🕊', scrum: '⚡' };
+const GAME_MARKS = { race: '💨', agm: '🐦', moles: '🎯', supper: '🍝', gauntlet: '🕳️', protocol: '🔴', climb: '📚', sled: '🛋️', canape: '🥂', marble: '✨', bus: '🚌', traf: '🕊', scrum: '⚡' };
 function drawGameMarkers() {
   if (G.mini || !curMap().pois) return; // mid-game, the room speaks for itself
   const t = performance.now() / 1000;
@@ -3949,165 +3948,9 @@ function drawSupper() {
   ctx.fillStyle = '#ffe8b8';
   ctx.fillText(M.caught + '/' + M.total, 24 * TILE, 4.2 * TILE + 9);
 }
-function startPostWatch() {
-  G.mini = {
-    type: 'post', t: 0, next: 1.1, spawned: 0, total: 8,
-    letters: [], hit: 0, junk: 0, lock: 0, endT: 0,
-  };
-  toast('📮 Get under it, then POUNCE. Leave the junk mail.', 'now');
-  tone(200, 160, 0.06, 'square', 0.05); tone(200, 160, 0.06, 'square', 0.05, 0.1);
-}
 // four things come through that flap, and they do not fly alike: bills go
 // low and long, parcels drop like parcels, circulars dawdle — and one of
 // them you are supposed to let land.
-function makeMail(kind) {
-  const side = Math.random() < 0.5 ? -1 : 1;
-  const m = { x: POST_SLOT.x + (Math.random() - 0.5) * 10, y: POST_SLOT.y, age: 0, hit: false, landed: false, kind };
-  if (kind === 'bill') {        // second reminders travel fast and stay low
-    m.vx = side * (58 + Math.random() * 34); m.vy = -74; m.grav = 96; m.r = 21;
-    m.landY = (30.5 + Math.random() * 2.4) * TILE;
-  } else if (kind === 'parcel') { // heavy: only a charged leap will shift it
-    m.vx = side * (12 + Math.random() * 18); m.vy = -112; m.grav = 168; m.r = 25;
-    m.landY = (32 + Math.random() * 1.1) * TILE;
-  } else if (kind === 'junk') {   // a takeaway menu, fluttering, beneath you
-    m.vx = side * (54 + Math.random() * 38); m.vy = -74; m.grav = 112; m.r = 17;
-    m.landY = (30.8 + Math.random() * 2.1) * TILE;
-  } else {
-    m.vx = (Math.random() - 0.5) * 78; m.vy = -(84 + Math.random() * 40); m.grav = 170; m.r = 20;
-    m.landY = (31.4 + Math.random() * 1.6) * TILE;
-  }
-  return m;
-}
-const POST_SLOT = { x: 22 * TILE, y: 34 * TILE + 2 }; // the brass flap in the black door
-function postRattle() {
-  tone(210, 150, 0.05, 'square', 0.05); tone(190, 140, 0.05, 'square', 0.04, 0.08);
-  addParticle(POST_SLOT.x, POST_SLOT.y - 4, '#e9c46a', 2, 10);
-}
-function updatePostWatch(dt) {
-  if (G.postCD > 0) G.postCD -= dt;
-  const M = G.mini;
-  if (!M || M.type !== 'post') return;
-  M.t += dt;
-  M.lock = Math.max(0, M.lock - dt);
-  // the flap: real letters and decoy rattles
-  if (M.spawned < M.total) {
-    M.next -= dt;
-    if (M.next <= 0) {
-      postRattle();
-      const r = Math.random();
-      if (r < 0.13) {                  // a decoy rattle — the flap lies
-        M.next = 0.7 + Math.random() * 0.8;
-      } else if (r < 0.29) {           // junk mail, which does not count and must not be touched
-        M.letters.push(makeMail('junk'));
-        M.next = 0.9 + Math.random() * 0.9;
-      } else {
-        M.spawned++;
-        M.letters.push(makeMail(r < 0.52 ? 'bill' : r < 0.68 ? 'parcel' : 'letter'));
-        M.next = 1.0 + Math.random() * 1.2;
-      }
-    }
-  }
-  for (const l of M.letters) {
-    if (l.landed) continue;
-    l.age += dt;
-    l.x += l.vx * dt; l.y += l.vy * dt; l.vy += l.grav * dt;
-    if (l.kind === 'junk') l.vx *= (1 - dt * 1.3);  // circulars stall in the air, tempting you
-    if (l.vy > 0 && l.y >= l.landY) {
-      l.landed = true;
-      if (!l.hit && l.kind !== 'junk') addFloat(l.x, l.y - 8, 'delivered…', '#b9b2a2');
-    }
-  }
-  // interception is a matter of BEING THERE. Reach is the pounce, not the swipe.
-  const L = G.larry;
-  if (L.pounceT > 0 && M.lock <= 0) {
-    let best = null, bestD = 1e9;
-    for (const l of M.letters) {
-      if (l.hit || l.landed) continue;
-      const d = dist(L.x, L.y, l.x, l.y);
-      if (d < l.r && d < bestD) { best = l; bestD = d; }
-    }
-    if (best) postSwat(best);
-  }
-  // over when the full post has arrived and settled
-  if (M.spawned >= M.total && M.letters.every(l => l.landed)) {
-    M.endT += dt;
-    if (M.endT > 0.9) finishPostWatch();
-  }
-}
-function postSwat(l) {
-  const M = G.mini, L = G.larry;
-  if (l.kind === 'junk') {          // a takeaway menu. The streak dies of embarrassment.
-    l.hit = true; l.vx = (l.x < L.x ? -1 : 1) * 90; l.vy = -50;
-    M.junk++; M.streak = 0; M.lock = 0.45;
-    addFloat(l.x, l.y - 8, 'JUNK MAIL', '#b9b2a2');
-    addParticle(l.x, l.y, '#c9a7d8', 4, 22);
-    tone(240, 170, 0.09, 'square', 0.05);
-    return;
-  }
-  if (l.kind === 'parcel' && L.lastPower < 0.3) {  // a flick will not move a parcel
-    M.lock = 0.3;
-    addFloat(l.x, l.y - 8, 'too heavy — CHARGE it', '#ffd98a');
-    tone(300, 220, 0.07, 'sine', 0.05);
-    return;
-  }
-  l.hit = true;
-  l.vx = (l.x < L.x ? -1 : 1) * (130 + Math.random() * 60);
-  l.vy = -70;
-  M.hit++;
-  M.streak = (M.streak || 0) + 1;
-  const label = l.kind === 'parcel' ? 'SIGNED FOR!' : l.kind === 'bill' ? 'RETURN TO SENDER!' : 'SWAT!';
-  addFloat(l.x, l.y - 8, M.streak >= 2 ? label + ' ×' + M.streak : label, M.streak >= 4 ? '#ffd98a' : '#ffe8b8');
-  addParticle(l.x, l.y, '#efe9dc', 5 + M.streak, 30);
-  tone(900 + M.streak * 90, 500 + M.streak * 90, 0.06, 'triangle', 0.07); // the streak sings
-  briefEvent('post');
-}
-function finishPostWatch() {
-  const M = G.mini;
-  G.mini = null;
-  G.postCD = 90 + Math.random() * 60;
-  const h = M.hit;
-  const fish = h >= 8 ? 5 : h >= 6 ? 4 : h >= 4 ? 3 : h >= 2 ? 2 : 1;
-  G.fish += fish;
-  G.xp += h * 2; // interception is skilled work; the Box notices
-  if (h >= 8) earnHonour('post8');
-  miniResult('POST WATCH',h >= 8 ? '📮 EIGHT FOR EIGHT. The Royal Mail files a complaint. +' + fish + ' 🐟 +' + h * 2 + ' XP'
-    : h >= 6 ? '📮 ' + h + '/8 batted down. The post has been thoroughly vetted. +' + fish + ' 🐟 +' + h * 2 + ' XP'
-      : h >= 4 ? '📮 ' + h + '/8. A respectable interception rate. The letters will think twice. +' + fish + ' 🐟 +' + h * 2 + ' XP'
-        : '📮 ' + h + '/8. The post won this round. It will not be so lucky at the next delivery. +' + fish + ' 🐟' + (h ? ' +' + h * 2 + ' XP' : ''));
-  [659, 784, h >= 6 ? 1047 : 700].forEach((f, i) => tone(f, f, 0.1, 'triangle', 0.06, i * 0.08));
-  while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
-  updateHUD();
-}
-function drawPostWatch() {
-  const M = G.mini;
-  for (const l of M.letters) {
-    ctx.save();
-    ctx.translate(l.x, l.y);
-    if (!l.landed) ctx.rotate(clamp(l.vx * 0.004, -0.5, 0.5) + (l.kind === 'junk' ? Math.sin(l.age * 9) * 0.4 : 0));
-    if (l.kind === 'parcel') {                              // brown paper, string, heft
-      ctx.fillStyle = l.hit ? '#9c7b52' : '#b5915f';
-      ctx.fillRect(-5, -4, 10, 8);
-      ctx.fillStyle = '#7d6340'; ctx.fillRect(-5, -1, 10, 1); ctx.fillRect(-1, -4, 1, 8);
-    } else if (l.kind === 'junk') {                         // a garish circular, beneath your office
-      ctx.fillStyle = l.hit ? '#a98cb8' : '#c9a7d8';
-      ctx.fillRect(-5, -3, 10, 5);
-      ctx.fillStyle = '#8d6a9e'; ctx.fillRect(-4, -2, 8, 1); ctx.fillRect(-4, 0, 5, 1);
-    } else {
-      ctx.fillStyle = l.hit ? '#d8d3ca' : '#efe9dc';
-      ctx.fillRect(-4, -3, 8, 5);
-      ctx.strokeStyle = l.kind === 'bill' ? '#cf2b3a' : '#b9b2a2'; ctx.lineWidth = 1;
-      ctx.strokeRect(-3.5, -2.5, 7, 4);
-      ctx.beginPath(); ctx.moveTo(-3.5, -2.5); ctx.lineTo(0, 0); ctx.lineTo(3.5, -2.5); ctx.stroke();
-      if (!l.hit) { ctx.fillStyle = '#cf2b3a'; ctx.fillRect(1, -2, 2, 1); } // the stamp
-    }
-    ctx.restore();
-  }
-  ctx.font = '8px monospace'; ctx.textAlign = 'center';
-  ctx.fillStyle = 'rgba(12,10,20,0.65)';
-  ctx.fillRect(POST_SLOT.x - 16, POST_SLOT.y - 40, 32, 11);
-  ctx.fillStyle = '#ffe8b8';
-  ctx.fillText(M.hit + '/' + M.total, POST_SLOT.x, POST_SLOT.y - 31);
-}
 
 // ---------- Summons: politics barges in and demands a photograph ----------
 
@@ -4144,8 +3987,6 @@ const CAMPAIGN = [
     why: 'The Kitchen has fallen a SECOND time — and this time they came in numbers, brazen and drilled. Retake it. Clear three. They must learn there is no second chance with you.' },
   { text: 'Defend the flat (2 mice)', kind: 'catch', map: 'flat', n: 2, where: 'the flat, above No. 11',
     why: 'They are in the FLAT. Past the green door at the end of the First Floor landing, up where you SLEEP, where the good sofa is. This stopped being politics the moment they crossed the residence line. Catch two, and let the whole skirting-board world hear about it.' },
-  { text: 'Intercept the post (pounce 4 letters)', kind: 'post', n: 4, where: 'the Entrance Hall letterbox',
-    why: 'MI-Paw intercepts chatter from below: the mice are riding the eleven o\'clock post in padded envelopes. Take up position at the Entrance Hall letterbox and bat down four before they clear the doormat.' },
   { text: 'Attend a Kitchen Supper (catch 4 scraps)', kind: 'scrap', n: 4, where: 'the flat kitchen, above No. 11',
     why: 'The mice have been feasting on what the Prime Minister drops at supper — morale-critical crumbs, straight to the enemy. Up to the flat with you: sit under the little table and intercept four scraps before the floor does.' },
   { text: 'Disperse the Pigeon AGM', kind: 'agm', n: 1, where: 'the garden pond',
@@ -4219,7 +4060,7 @@ const LARRY_ACKS = [
 // leaving the player to wonder whether they've missed a location
 function briefWhere(d) { return d.where ? ' · 📍 ' + d.where : ''; }
 // which world marker a task sends you to — used to flag it on screen
-const BRIEF_POI = { scrap: 'supper', post: 'post', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', traf: 'traf', scrum: 'scrum' };
+const BRIEF_POI = { scrap: 'supper', agm: 'agm', bonk: 'moles', gauntlet: 'gauntlet', dot: 'protocol', race: 'race', climb: 'climb', sled: 'sled', canape: 'canape', marble: 'marble', bus: 'bus', traf: 'traf', scrum: 'scrum' };
 // a task that names a mini game clears its cooldown and lays on whatever the
 // game needs. The Red Box does not queue behind the routine.
 const BRIEF_ARM = {
@@ -4232,7 +4073,6 @@ const BRIEF_ARM = {
   traf: () => { G.trafCD = 0; },
   scrum: () => { G.scrumCD = 0; },
   scrap: () => { G.supperCD = 0; },
-  post: () => { G.postCD = 0; },
   agm: () => { G.agmCD = 0; },
   bonk: () => { G.molesCD = 0; },
 };
@@ -4563,7 +4403,7 @@ const G = {
   larry: { x: 11 * TILE, y: 10 * TILE, cvx: 0, cvy: 0, dir: 'down', flip: false, frame: 0, animT: 0, idleT: 0, pounceT: 0, pounceCD: 0, moving: false, px: 0, py: 1, charging: false, chargeT: 0, landT: 0, lastPower: 0, prevVX: 0, turnCD: 0 },
   mice: [], particles: [], floats: [], boxes: [], npcs: [], butterflies: [], toys: [], rivals: [],
   sceneNpcs: [], met: new Set(),
-  mini: null, postCD: 0, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, trafCD: 0, scrumCD: 0, dog: null, raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
+  mini: null, supperCD: 0, sledCD: 0, sledBest: 0, canapeCD: 0, marbleCD: 0, busCD: 0, busBest: 0, trafCD: 0, scrumCD: 0, dog: null, raceCD: 0, raceBest: 0, agmCD: 0, molesCD: 0,
   gauntletOpen: false, protocolOpen: false, gauntletBest: 0, protocolBest: 0, climbBest: 0,
   underroadWins: 0, coronation: false, treaty: false,
   kingSeen: false, kingDeposed: false, homecoming: false, auditAt: 0,
@@ -5336,15 +5176,6 @@ function interactPoi(p) {
         save();
         updateHUD();
       });
-    return;
-  }
-  if (p.type === 'post') {
-    if (G.mini) return;
-    if (G.daily) { toast('📮 The post can wait. You are on the clock, Chief Mouser.'); sClick(); return; }
-    if (G.postCD > 0) { toast(pick(p.texts)); sClick(); return; } // between deliveries, the flap is quiet
-    showChoice('THE ENTRANCE HALL', "The Eleven O'Clock Post",
-      'The post is due. Tradition demands it be inspected — at speed, with claws.\n\nGet UNDER each item and POUNCE it. Bills fly low and fast; parcels need a charged leap; the junk mail is a trap — let it land.',
-      '🐾 Take up position', '🚶 The mail can wait', which => { if (which === 'a') startPostWatch(); });
     return;
   }
   if (p.type === 'secret') {
@@ -7491,7 +7322,6 @@ function update(dt) {
   for (const t of G.toys) updateToy(t, dt);
   for (const c of G.rivals) updateRival(c, dt);
   updateKnocks(dt);
-  updatePostWatch(dt);
   updateSupper(dt);
   updateDog(dt);
   updateRace(dt);
@@ -7797,7 +7627,6 @@ function draw() {
     ctx.fillStyle = '#33261a'; ctx.fillRect(b.x, b.y, 1, 2);
   }
 
-  if (G.mini && G.mini.type === 'post') drawPostWatch();
   if (G.mini && G.mini.type === 'supper') drawSupper();
   if (G.mini && G.mini.type === 'race') drawRace();
   if (G.mini && G.mini.type === 'agm') drawAGM();
@@ -8559,7 +8388,7 @@ const POCKET_HOME = {
 };
 const MINI_CD = {
   marble: 'marbleCD', sled: 'sledCD', bus: 'busCD', traf: 'trafCD', canape: 'canapeCD',
-  post: 'postCD', supper: 'supperCD', race: 'raceCD', agm: 'agmCD', moles: 'molesCD',
+ supper: 'supperCD', race: 'raceCD', agm: 'agmCD', moles: 'molesCD',
   climb: 'climbCD', scrum: 'scrumCD',
 };
 function abandonMini() {
