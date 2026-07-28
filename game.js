@@ -1774,7 +1774,7 @@ const HONOURS = [
   { id: 'protocol', name: 'Protocol Zero', hint: 'Ten catches on the dot, in one session.' },
   { id: 'airspace', name: 'The Airspace Is Closed', hint: 'Turn back every gull at the garden reception.' },
   { id: 'fox', name: 'Vulpes Non Grata', hint: 'See off the fox — after dark, on the Street.' },
-  { id: 'muse', name: 'The Photographer\'s Muse', hint: 'Give him six clean frames in one scrum, untouched by the pack.' },
+  { id: 'muse', name: 'The Photographer\'s Muse', hint: 'Give him six clean frames in one scrum, and barely a flash on you.' },
   { id: 'square', name: 'The Square Is Clear', hint: 'Put up every last pigeon in Trafalgar Square.' },
   { id: 'conductor', name: 'No Fare, No Bother', hint: 'Ride the 11 the whole way without touching a thing.' },
   { id: 'polished', name: 'The Polished Floor', hint: 'Cross all three Marble Hall rooms in par.' },
@@ -3314,8 +3314,10 @@ function finishScrum() {
   const g = M.good;
   const fish = g >= 6 ? 6 : g >= 4 ? 4 : g >= 2 ? 3 : 2;
   G.fish += fish; G.xp += g * 3;
-  G.approval = clamp(G.approval + (g >= 4 ? 4 : 1) - Math.min(6, M.caught), 0, 100);
-  if (g >= 6 && M.caught === 0) earnHonour('muse');
+  // catches scale, so a good run is net positive: posing REQUIRES standing still
+  // and the pack fires ~70 times a round — a flat penalty punished playing well
+  G.approval = clamp(G.approval + (g >= 6 ? 6 : g >= 4 ? 4 : 1) - Math.min(5, Math.floor(M.caught / 5)), 0, 100);
+  if (g >= 6 && M.caught <= 3) earnHonour('muse');
   briefEvent('scrum');
   while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
   save(); updateHUD();
