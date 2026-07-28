@@ -48,7 +48,7 @@ the front door having no outside handle:
 - **The Garden** — half an acre, L-shaped, occasionally contested by the
   Foreign Office cat or (on the worst days) a dog
 
-## Sixteen mini games — and the Red Box asks for every one
+## Sixteen mini games — and the Brief asks for every one
 
 - **Post Watch** — the eleven o'clock delivery fires across the Entrance
   Hall: get under each item and POUNCE. Bills fly low and fast, parcels
@@ -100,9 +100,9 @@ statute. No further questions.)
 
 ## Everything else
 
-- A serialized Red Box campaign (the mice organise, then besiege) with the
+- A serialized campaign of briefs (the mice organise, then besiege) with the
   biggest escalations delivered by a breathless aide, in person
-- **The Morning Red Box & the Evening Paper** — three goals each real day;
+- **The Morning List & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
 - 40 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,

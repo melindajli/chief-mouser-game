@@ -1755,7 +1755,7 @@ const HONOURS = [
   { id: 'secrets', name: 'Official Historian', hint: 'Find every ✨ secret in the house.', test: () => G.secretsFound.size >= SECRET_TOTAL },
   { id: 'pm5', name: 'Outlasted Five PMs', hint: 'They come. They go. You remain — five times.', test: () => pmCount >= 5 },
   { id: 'night10', name: 'Night Stalker', hint: 'Ten catches after dark.', test: () => G.nightCatches >= 10 },
-  { id: 'briefs5', name: 'Model Employee', hint: 'Clear five Red Box tasks.', test: () => G.briefsDone >= 5 },
+  { id: 'briefs5', name: 'Model Employee', hint: 'Clear five briefs.', test: () => G.briefsDone >= 5 },
   { id: 'ratking', name: 'Deposer of the Rat King', hint: 'Depose whatever rules beneath the Cellar.' },
   { id: 'box', name: 'If It Fits, You Sits', hint: 'A cardboard box. You know what to do.' },
   { id: 'decade', name: 'The Institution', hint: 'Outlast ten Prime Ministers.', test: () => pmCount >= 10 },
@@ -4213,7 +4213,7 @@ function briefPossible(d) {
 // wherever you are, and delivers the news breathlessly. Routine tasks stay
 // as Red Box toasts — an aide sprinting in for every errand would wear thin.
 const BRIEF_SCENES = {
-  0: 'There you are. Your first Red Box, Chief Mouser — yes, the cat gets one now. No, I don\'t make the rules. Increasingly I suspect YOU make the rules.',
+  0: 'There you are — your first brief, Chief Mouser. The Cabinet Office sends the cat orders now. No, I don\'t make the rules. Increasingly I suspect YOU make the rules.',
   6: 'There is a FOX. On the STREET. At NIGHT. The officer won\'t say he\'s frightened, but he has texted his mum. Please.',
   9: 'Upstairs. UPSTAIRS. They\'ve crossed onto the State Floor — where the ambassadors— where the CHANDELIERS— just. Please. Quickly.',
   11: 'The Kitchen has fallen AGAIN. They came back in formation, Chief Mouser. In FORMATION. The chef is beside himself. Both of him are furious.',
@@ -4266,11 +4266,11 @@ function newBrief() {
       { who: 'THE AIDE', text: BRIEF_SCENES[idx], do: () => tone(500, 700, 0.15, 'triangle', 0.06) },
       { who: 'THE AIDE', text: def.why },
       { who: 'LARRY', text: pick(LARRY_ACKS) },
-    ], () => { toast('📕 TASK: ' + def.text + briefWhere(def)); updateHUD(); });
+    ], () => { toast('📕 BRIEF: ' + def.text + briefWhere(def)); updateHUD(); });
   } else {
     // toasts are headlines: the objective only. The long briefings live in
     // the milestone scenes, where the player sets the reading pace.
-    toast('📕 NEW TASK: ' + def.text + briefWhere(def));
+    toast('📕 NEW BRIEF: ' + def.text + briefWhere(def));
     tone(500, 700, 0.15, 'triangle', 0.06);
   }
   syncTape(); // red-tape tasks lay their strips down the Corridor immediately
@@ -4292,7 +4292,7 @@ function briefEvent(kind, info = {}) {
     G.xp += 30;
     G.fish += 3;
     G.briefsDone++;
-    toast('📕 TASK COMPLETE — +30 XP · +3 🐟');
+    toast('📕 BRIEF COMPLETE — +30 XP · +3 🐟');
     goalEvent('brief');
     sLevel();
     while (G.xp >= xpNeed(G.level)) { G.xp -= xpNeed(G.level); G.level++; queueBeat(G.level); }
@@ -4659,7 +4659,7 @@ const DAY_KEY = 'larry-day-v1';
 const DAY_GOALS = [
   { id: 'mice', text: 'Catch {n} mice', n: 8, kind: 'catch' },
   { id: 'night', text: 'Catch {n} mice after dark', n: 2, kind: 'catch', night: true },
-  { id: 'briefs', text: 'Clear {n} Red Box tasks', n: 2, kind: 'brief' },
+  { id: 'briefs', text: 'Clear {n} briefs', n: 2, kind: 'brief' },
   { id: 'naps', text: 'Take {n} dignified naps', n: 2, kind: 'nap' },
   { id: 'press', text: 'Send the press home happy', n: 1, kind: 'press', min: 3 },
   { id: 'swift', text: 'Catch {n} swift brown mice', n: 2, kind: 'catch', type: 'swift', min: 3 },
@@ -4729,7 +4729,7 @@ function initDay() {
   if (IS_GOTCHA_DAY) { lines.push('🎉 And it is your Gotcha Day — hired 15 Feb 2011, on merit. The kitchen sends up 10 🐟.'); G.fish += 10; }
   lines.push(DAY.streak > 0 ? '🔥 Streak: ' + DAY.streak + ' day' + (DAY.streak === 1 ? '' : 's') + '. The papers are counting.'
     : streakLost ? 'The streak has lapsed. The nation, graciously, forgets.' : 'Finish all three and the Evening Paper prints something flattering.');
-  showCard('THE MORNING RED BOX', 'Today at No. 10', lines.join('\n'), null, null);
+  showCard('THE MORNING LIST', 'Today at No. 10', lines.join('\n'), null, null);
 }
 function updateDayHUD() {
   const el = document.getElementById('daybox');
@@ -4772,7 +4772,7 @@ function goalEvent(kind, info = {}) {
     if (G.isNight && !G.mini) eveningPaper();
     else {
       DAY.pending = true;
-      toast('📦 The Red Box is CLEARED. The Evening Paper has everything it needs — it goes to print at dusk.');
+      toast('📦 Today\'s list is CLEARED. The Evening Paper has everything it needs — it goes to print at dusk.');
       tone(659, 659, 0.12, 'triangle', 0.06); tone(880, 880, 0.12, 'triangle', 0.06, 0.14);
       updateDayHUD();
     }
@@ -4796,7 +4796,7 @@ function eveningPaper() {
     '📕 ' + s.brief + ' briefs cleared · 🐟 ' + s.fish + ' kippers banked\n' +
     '📊 Approval ' + (apd >= 0 ? '+' : '') + apd + '% on the day' +
     (s.palm ? '\n🎩 Palmerston: ' + s.palm + ' mice poached. Noted. Filed. Unforgiven.' : '') +
-    (G.brief ? '\n\n📕 Tomorrow\'s Red Box, already on the desk: "' + G.brief.def.text + '"' : '') +
+    (G.brief ? '\n\n📕 Tomorrow\'s brief, already on the desk: "' + G.brief.def.text + '"' : '') +
     '\n\n🔥 Streak: ' + DAY.streak + ' day' + (DAY.streak === 1 ? '' : 's') + ' with the box cleared.' +
     '\n\nReward: +6 🐟 · +25 XP. Larry may now nap with a completely clear conscience.';
   showCard('THE EVENING PAPER', '"' + pick(heads) + '"', body, null, () => {
@@ -6729,7 +6729,7 @@ const MEETINGS = {
     { who: 'THE AIDE', text: 'Oh good. The cat. Wonderful. Do NOT sit on the morning briefing — that is the ONLY copy of the morning briefing.' },
     { who: 'LARRY', text: '(You look at the briefing. You look at the aide. You look back at the briefing.)' },
     { who: 'THE AIDE', text: '…I will make a copy.' },
-    { who: 'THE AIDE', text: 'The Red Box has taken an interest in you. Tasks from the very top. There\'s tuna in it. Budgets permitting.' },
+    { who: 'THE AIDE', text: 'You\'ll be getting briefs now. Orders from the very top, for the cat. There\'s tuna in it. Budgets permitting.' },
   ],
   'gardener@ground': () => [
     { who: 'THE GARDENER', text: 'Afternoon. Mind the begonias. Everything else out here is negotiable.' },
@@ -7099,7 +7099,7 @@ function updateHUD() {
   if (G.brief) {
     const d = G.brief.def;
     // a persistent, labelled objective in the corner: finish it to get the next
-    bEl.textContent = '📕 TASK: ' + d.text + (d.n > 1 ? ' (' + G.brief.prog + '/' + d.n + ')' : '')
+    bEl.textContent = '📕 BRIEF: ' + d.text + (d.n > 1 ? ' (' + G.brief.prog + '/' + d.n + ')' : '')
       + (d.where ? '\n📍 ' + d.where : '');   // never make the player hunt for the room
     bEl.classList.remove('hidden');
   } else bEl.classList.add('hidden');
@@ -8588,7 +8588,7 @@ function beginNewLife() {
   menuOpen = false;
   const next = (G.lives || 0) + 2; // lives=0 means life 1: the next is life 2
   showChoice('THE NINTH LIFE PROTOCOL', 'Life ' + next + ' of Nine',
-    'Cats are issued nine lives; you have been using this one since Battersea. Begin another?\n\nThe level, the gadgets and the Red Box campaign reset — a fresh climb, a fresh war with the mice. Everything EARNED remains: the honours, the secrets, the mischief, the bow ties, every portrait on the staircase (including, obviously, yours), and the streak.\n\nOld lives leave their mark: each one sharpens the instincts (+8% XP, forever) and the kitchen starts you better provisioned. The mice will not know what has hit them. Again.',
+    'Cats are issued nine lives; you have been using this one since Battersea. Begin another?\n\nThe level, the gadgets and the campaign reset — a fresh climb, a fresh war with the mice. Everything EARNED remains: the honours, the secrets, the mischief, the bow ties, every portrait on the staircase (including, obviously, yours), and the streak.\n\nOld lives leave their mark: each one sharpens the instincts (+8% XP, forever) and the kitchen starts you better provisioned. The mice will not know what has hit them. Again.',
     '🐾 Begin Life ' + next, '🛋️ Remain, for now', which => {
       if (which !== 'a') { G.paused = false; return; }
       G.lives = (G.lives || 0) + 1;
