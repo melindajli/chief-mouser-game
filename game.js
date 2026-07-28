@@ -4652,7 +4652,7 @@ const DAY_KEY = 'larry-day-v1';
 const DAY_GOALS = [
   { id: 'mice', text: 'Catch {n} mice', n: 8, kind: 'catch' },
   { id: 'night', text: 'Catch {n} mice after dark', n: 2, kind: 'catch', night: true },
-  { id: 'briefs', text: 'Clear {n} briefs from the Red Box', n: 2, kind: 'brief' },
+  { id: 'briefs', text: 'Clear {n} Red Box tasks', n: 2, kind: 'brief' },
   { id: 'naps', text: 'Take {n} dignified naps', n: 2, kind: 'nap' },
   { id: 'press', text: 'Send the press home happy', n: 1, kind: 'press', min: 3 },
   { id: 'swift', text: 'Catch {n} swift brown mice', n: 2, kind: 'catch', type: 'swift', min: 3 },
@@ -4683,7 +4683,7 @@ function initDay() {
     updateDayHUD();
     if (!DAY.doneAll) {
       const done = DAY.goals.filter(g => g.prog >= g.n).length;
-      toast('📦 The Red Box, resumed: ' + done + '/3 done today.');
+      toast('📦 Today\'s list, resumed: ' + done + '/3 done.');
     }
     return;
   }
@@ -4729,7 +4729,13 @@ function updateDayHUD() {
   if (!el) return;
   if (!DAY || G.daily || G.intro.phase !== 'done') { el.classList.add('hidden'); return; }
   const done = DAY.goals.filter(g => g.prog >= g.n).length;
-  let txt = DAY.doneAll ? '📦 ✓ day well governed · 🔥 ' + DAY.streak : '📦 Red Box ' + done + '/3';
+  // the three items belong ON SCREEN. Hiding them behind the pause menu made a
+  // bare x/3 look broken for anyone who had not gone looking for the list.
+  let txt;
+  if (DAY.doneAll) txt = '📦 ✓ day well governed · 🔥 ' + DAY.streak;
+  else txt = '📦 Today ' + done + '/3\n' + DAY.goals.map(g =>
+    (g.prog >= g.n ? '✓ ' : '· ') + g.text.replace('{n}', g.n) + (g.n > 1 ? ' (' + Math.min(g.prog, g.n) + '/' + g.n + ')' : '')
+  ).join('\n');
   el.textContent = txt;
   el.classList.remove('hidden');
 }
@@ -4751,7 +4757,7 @@ function goalEvent(kind, info = {}) {
     changed = true;
     if (g.prog >= g.n) {
       const done = DAY.goals.filter(x => x.prog >= x.n).length;
-      if (done < 3) toast('📦 Red Box: ' + g.text + ' ✓ (' + done + '/3)');
+      if (done < 3) toast('📦 ' + g.text + ' ✓ (' + done + '/3 today)');
     }
   }
   if (changed && !DAY.doneAll && !DAY.pending && DAY.goals.every(g => g.prog >= g.n)) {
@@ -5314,7 +5320,7 @@ function interactPoi(p) {
     if (G.daily) { toast('📮 The post can wait. You are on the clock, Chief Mouser.'); sClick(); return; }
     if (G.postCD > 0) { toast(pick(p.texts)); sClick(); return; } // between deliveries, the flap is quiet
     showChoice('THE ENTRANCE HALL', "The Eleven O'Clock Post",
-      'The post is due. Tradition demands it be inspected — at speed, with claws.\n\nTap as each letter pops through. Beware the decoy rattles.',
+      'The post is due. Tradition demands it be inspected — at speed, with claws.\n\nGet UNDER each item and POUNCE it. Bills fly low and fast; parcels need a charged leap; the junk mail is a trap — let it land.',
       '🐾 Take up position', '🚶 The mail can wait', which => { if (which === 'a') startPostWatch(); });
     return;
   }
@@ -7414,7 +7420,13 @@ function update(dt) {
     const m = curMap();
     const tx = Math.floor(L.x / TILE), ty = Math.floor(L.y / TILE);
     const tr = m.transitions.find(t => t.x === tx && t.y === ty);
-    if (tr && !G.wasOnTrans && G.transCD <= 0 && G.fadeDir === 0) {
+    if (tr && !G.wasOnTrans && G.transCD <= 0 && G.fadeDir === 0 && G.mini) {
+      // the letterbox is one tile from the front door and the scrum is played on
+      // the pavement: without this, chasing a letter or dodging a flash walks you
+      // out of your own mini game and ends it with no score at all
+      G.transCD = 1.2;
+      toast('🚪 Not mid-game. Finish it, or give up from the menu (Esc).', 'now');
+    } else if (tr && !G.wasOnTrans && G.transCD <= 0 && G.fadeDir === 0) {
       sStairs();
       G.transCD = 99;
       startFade(() => switchMap(tr.to, (tr.tx + 0.5) * TILE, (tr.ty + 0.5) * TILE));
