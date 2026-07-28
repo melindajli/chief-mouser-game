@@ -6628,6 +6628,27 @@ function heraldScene(onDone) {
 }
 
 /* ---------- The introduction: every new PM is brought to meet Larry ---------- */
+// The aide's opener and the tribute were HARDCODED, so PM #2 and PM #3 said
+// them word for word. Both are pools now — and the whole ceremony shortens as
+// the vans keep coming, because a joke told every ninety seconds needs air.
+const AIDE_INTROS = [
+  'Prime Minister — before the boxes, before the Cabinet, before anything: this is Larry. Chief Mouser. He was here first, and he will be here after.',
+  'Prime Minister, the Chief Mouser. Protocol is that you are introduced to HIM. I did not write the protocol. I merely enforce it.',
+  'Before we go in: Larry. Chief Mouser to the Cabinet Office. Permanent. In the technical sense, and also the other one.',
+  'Prime Minister — Larry. He has met all of your predecessors. He has opinions about most of them.',
+];
+const AIDE_INTROS_LATER = [
+  'Prime Minister. Larry. You two will get on, or you won\'t. It rarely matters.',
+  'This is Larry. You know the arrangement by now — or you will.',
+  'Larry. Chief Mouser. Yes, again. He does not move.',
+];
+const PM_TRIBUTES = [
+  'I brought— they said to bring— here. Tribute. Tuna-adjacent.',
+  'They briefed me to bring something. This is… fish. Of a sort. For you.',
+  'I was told not to arrive empty-handed. I have not arrived empty-handed.',
+  'A gift. For the— yes. Right. Here.',
+  'Somebody in the car said you accept kippers. I did not question it.',
+];
 const NEWPM_LINES = [
   'So this is— hello. Hello, cat. Do I shake the— what do I shake?',
   'They briefed me on the nuclear codes, and then, at considerably greater length, on you.',
@@ -6653,11 +6674,11 @@ function pmMeetScene(newPM, onDone) {
   sceneGuest(P_VISITOR, tx - 2, ty, false);   // the new tenant, still holding a box lid
   sceneGuest(P_AIDE, tx + 2, ty, true);       // the aide who has done this before
   playScene([
-    { who: 'THE AIDE', text: 'Prime Minister — before the boxes, before the Cabinet, before anything: this is Larry. Chief Mouser. He was here first, and he will be here after.' },
+    { who: 'THE AIDE', text: pick(pmCount > 4 ? AIDE_INTROS_LATER : AIDE_INTROS) },
     { who: newPM.toUpperCase(), text: pick(NEWPM_LINES) },
     { who: 'LARRY', text: pick(LARRY_VERDICTS) },
     {
-      who: newPM.toUpperCase(), text: 'I brought— they said to bring— here. Tribute. Tuna-adjacent.', do: () => {
+      who: newPM.toUpperCase(), text: pick(PM_TRIBUTES), do: () => {
         G.fish += 2;
         addFloat(L.x, L.y - 18, '+2 🐟', '#8fd4e8');
         tone(500, 800, 0.15, 'triangle', 0.06);
@@ -6665,7 +6686,7 @@ function pmMeetScene(newPM, onDone) {
       },
     },
     { who: 'THE AIDE', text: pick(AIDE_CLOSERS) },
-  ], onDone);
+  ].filter((_, i) => pmCount <= 4 || i === 0 || i === 3), onDone);   // by the fifth, just the handshake and the tuna
 }
 
 /* ---------- The King rises, and the King falls (once each, in person) ---------- */
