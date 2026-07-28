@@ -31,7 +31,7 @@ canvas#game { position:fixed; inset:0; width:100vw; height:100vh; image-renderin
 /* Overlays */
 .overlay { position:fixed; inset:0; z-index:20; display:flex; align-items:center; justify-content:center;
   background:rgba(6,6,14,.7); backdrop-filter:blur(3px); }
-#card { width:min(480px, 88vw); background:linear-gradient(180deg,#17141f,#100d17); border:2px solid rgba(255,215,150,.35);
+#card { width:min(480px, 88vw); max-height:92vh; overflow-y:auto; background:linear-gradient(180deg,#17141f,#100d17); border:2px solid rgba(255,215,150,.35);
   border-radius:14px; padding:22px 20px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,.6); }
 #cardKicker { font-size:8px; letter-spacing:2px; color:#c98d2c; margin-bottom:12px; }
 #card h2 { font-size:13px; line-height:1.6; color:#ffe8b8; margin-bottom:14px; }

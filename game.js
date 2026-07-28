@@ -4348,7 +4348,11 @@ let musicOn = true, musNext = 0, musStep = 0;
 // jitter, especially when a toast pops at the same moment. Opt back in via the
 // pause menu; the choice persists in its own key (survives dailies + restarts).
 let shakeOn = false;
-try { shakeOn = localStorage.getItem('larry-shake') === 'on'; } catch (e) { }
+try {
+  shakeOn = localStorage.getItem('larry-shake') === 'on';
+  muted = localStorage.getItem('larry-mute') === 'on';
+  if (localStorage.getItem('larry-music') === 'off') musicOn = false;
+} catch (e) { }
 // THE HOUSE THEME — a gentle two-phrase chiptune lullaby built on the Larry
 // motif (G C E D). Phrase one states the motif and settles; phrase two answers
 // an octave down and resolves home. A soft sine bass walks C–Am–G underneath.
@@ -8165,6 +8169,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 }
 function toggleMute() {
   muted = !muted;
+  try { localStorage.setItem('larry-mute', muted ? 'on' : 'off'); } catch (e) { }
   document.getElementById('btnMute').textContent = muted ? '🔇' : '🔊';
   menuLabels();
 }
@@ -8196,6 +8201,9 @@ function openMenu() {
   menuLabels();
   document.getElementById('menuRestart').textContent = 'Restart from Battersea';
   document.getElementById('menuWrap').classList.remove('hidden');
+  // only now, with the panel laid out: it otherwise remembers where you
+  // scrolled to and reopens with Resume above the top edge
+  const mEl = document.getElementById('menu'); if (mEl) mEl.scrollTop = 0;
   sClick();
 }
 function closeMenu() {
@@ -8207,7 +8215,7 @@ function closeMenu() {
 bindBtn(document.getElementById('btnMenu'), () => { audio(); menuOpen ? closeMenu() : openMenu(); });
 bindBtn(document.getElementById('menuResume'), closeMenu);
 bindBtn(document.getElementById('menuSound'), toggleMute);
-bindBtn(document.getElementById('menuMusic'), () => { musicOn = !musicOn; menuLabels(); sClick(); });
+bindBtn(document.getElementById('menuMusic'), () => { musicOn = !musicOn; try { localStorage.setItem('larry-music', musicOn ? 'on' : 'off'); } catch (e) { } menuLabels(); sClick(); });
 bindBtn(document.getElementById('menuShake'), () => {
   shakeOn = !shakeOn;
   try { localStorage.setItem('larry-shake', shakeOn ? 'on' : 'off'); } catch (e) { }
@@ -8403,11 +8411,12 @@ function openSaveBox() {
 }
 // Any panel can be dismissed three ways now — its ✕, a click on the dark
 // backdrop, or Escape — because a long list used to bury its only way out.
-const DISMISSABLE = ['mapWrap', 'mischiefWrap', 'honoursWrap', 'saveWrap', 'photoWrap'];
+const DISMISSABLE = ['menuWrap', 'mapWrap', 'mischiefWrap', 'honoursWrap', 'saveWrap', 'photoWrap'];
 function closeOverlay(id) {
   const el = document.getElementById(id);
   if (!el || el.classList.contains('hidden')) return false;
   el.classList.add('hidden');
+  if (id === 'menuWrap') menuOpen = false;   // keep the Escape toggle honest
   G.paused = !!SCENE;          // a scene behind it keeps the world held
   sClick();
   return true;
