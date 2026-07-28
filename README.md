@@ -61,14 +61,17 @@ the front door having no outside handle:
   The rule stays on screen and a ring tells you what is in reach
 - **The Midnight Zoomies** — ten paw-print gates around the whole ground
   floor at ludicrous speed; gold pace earns The 3 A.M. Protocol
-- **The Pigeon AGM** — grandmother's footsteps at the pond: creep while
-  they peck, FREEZE when they look
+- **The Pond** — ornamental fish, bought at public expense, in a pond you
+  are technically responsible for. They run deep and surface for about a
+  second: hold still until the ripple, then commit. Leap at nothing and you
+  go in — and everything down there stays down a while afterwards
 - **The Fox Incident** — the real story: past midnight on the Street,
   something long, low, and amber. Advance while it paces; when it lunges,
   DO NOT MOVE. Hold three stands and it blinks first
-- **The Cellar Chorus** — five mouseholes sing a phrase from the Rat
-  King's songbook; learn it, then answer it hole by hole, on foot. The
-  only thing in the building that asks you to remember
+- **The Catnip Incident** — a bed nobody admits to planting. For forty-five
+  seconds the steering is not entirely yours and every so often Larry simply
+  goes over, legs up. The moths find this riveting, which is the only reason
+  it is winnable. The one game in the house that plays you back
 - **The Under-Road** — Act Two of the war: a smuggling tunnel below the
   Cellar, six lanes of rat patrol, one stolen larder (unlocked by deposing
   the Rat King)
@@ -99,7 +102,7 @@ statute. No further questions.)
   biggest escalations delivered by a breathless aide, in person
 - **The Morning List & the Evening Paper** — three goals each real day;
   the paper prints at dusk with your numbers, a headline, and your streak
-- 39 honours on a proper honours board, a List of Mischief, hidden secrets,
+- 38 honours on a proper honours board, a List of Mischief, hidden secrets,
   dreams, gadgets from Bureaucratic Zoomies to the Ceremonial Cape, bow ties,
   seasonal weather, a generative chiptune score that rests between passes —
   and Nine Lives prestige when the Garter is won
