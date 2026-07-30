@@ -2161,6 +2161,10 @@ function updateFox(dt) {
       tone(260, 160, 0.1, 'sawtooth', 0.05); // the growl drops
     }
   } else if (M.phase === 'tell' && M.phT <= 0) {
+    // a pounce launched in good faith under ADVANCE must be allowed to LAND
+    // before FREEZE is enforced — and landing momentum is not a flinch
+    if (L.pounceT > 0) { M.phT = 0.05; return; }
+    L.cvx = 0; L.cvy = 0; M.lx = L.x; M.ly = L.y;
     M.phase = 'lunge'; M.phT = 0.6;
     tone(500, 200, 0.12, 'sawtooth', 0.06);
   } else if (M.phase === 'lunge') {
@@ -2299,6 +2303,10 @@ function updateClimb(dt) {
   M.t += dt;
   for (const [i, tLeft] of M.gone) { const nt = tLeft - dt; if (nt <= 0) M.gone.delete(i); else M.gone.set(i, nt); }
   const L = G.larry;
+  // the ground-floor pounce cooldown (1.15s, worse tired) forces a dwell
+  // LONGER than the upper shelves' tip window — obeying "don't linger" was
+  // physically impossible. On the bookcase the paw resets faster than that.
+  if (L.pounceCD > 0.45) L.pounceCD = 0.45;
   const li = climbLedgeAt(L.x, L.y);
   if (li >= 0) {
     const l = CLIMB_LEDGES[li];
@@ -2306,9 +2314,10 @@ function updateClimb(dt) {
     if (l.wob) {
       const st = (M.stand.get(li) || 0) + dt;
       M.stand.set(li, st);
-      // The higher the shelf, the less it wants you on it. A full pounce needs
-      // 0.53s to wind up, so nothing here may drop below that: an urgent window
-      // is difficulty, a window shorter than the charge is just a broken game.
+      // The higher the shelf, the less it wants you on it. The true floor on
+      // dwell is max(capped cooldown 0.45s, full charge 0.53s) ≈ 0.53s — a
+      // window under THAT is not difficulty, it is a broken game. 0.68 leaves
+      // a real reaction margin over the minimum.
       const tip = l.y <= 12 ? 0.68 : 0.85;
       if (st > tip * 0.45 && Math.random() < dt * 8) addParticle(L.x, (l.y + 0.5) * TILE, '#c9a26a', 1, 8); // creaking dust
       if (st > tip) {
@@ -2694,7 +2703,6 @@ function updateCanape(dt) {
   M.t += dt;
   if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
   if (M.spawned < M.total) {
-    M.lockT = Math.max(0, M.lockT - dt);
   M.next -= dt;
     if (M.next <= 0) {
       M.spawned++;
@@ -3589,7 +3597,7 @@ function startPond() {
     const sp = pondSpot();
     fish.push({ x: sp.x, y: sp.y, tx: sp.x, ty: sp.y, state: 'deep', t: 1.2 + Math.random() * 2.6, hue: i });
   }
-  G.mini = { type: 'pond', t: 0, T: FISH_TIME, caught: 0, misses: 0, soakT: 0, landed: false, fish };
+  G.mini = { type: 'pond', t: 0, T: FISH_TIME, caught: 0, misses: 0, soakT: 0, landed: false, justTook: false, fish };
   toast('🐟 Ripple = run round to it. Pounce only when it is inside your ring.', 'now');
   tone(420, 620, 0.14, 'sine', 0.05);
 }
@@ -3623,7 +3631,12 @@ function updatePond(dt) {
       f.y += (f.ty - f.y) * Math.min(1, dt * 5);
       if (f.t <= 0) { f.state = 'up'; f.t = 1.25; tone(880, 1100, 0.05, 'sine', 0.03); }
     } else if (f.state === 'up') {
-      if (f.t <= 0) { pondDive(f, 1.6 + Math.random() * 2.4); }
+      if (f.t <= 0) {
+        // a pounce already mid-air at the fish gets the frame it was promised:
+        // the banner said NOW when it launched. Once only.
+        if (!f.grace && (L.pounceT > 0 || L.landT > 0) && dist(f.x, f.y, L.x, L.y) < 30) { f.grace = true; f.t = 0.12; }
+        else pondDive(f, 1.6 + Math.random() * 2.4);
+      }
     }
   }
   const pouncing = L.pounceT > 0 || L.landT > 0;
@@ -3631,6 +3644,7 @@ function updatePond(dt) {
     for (const f of M.fish) {
       if (f.state !== 'up' || dist(f.x, f.y, L.x, L.y) > 20) continue;
       M.caught++;
+      M.justTook = true;                         // this pounce SUCCEEDED: its landing is not a miss
       G.fish++;                                  // a fish is a kipper: the tin fills as you fish
       for (let i = 0; i < 8; i++) addParticle(f.x, f.y, '#8fc4e8', 3, 30);
       addFloat(L.x, L.y - 22, '+1 🐟', '#8fd4e8');
@@ -3645,7 +3659,10 @@ function updatePond(dt) {
       && L.y > POND.y0 * TILE - 4 && L.y < POND.y1 * TILE + 4;
     const got = M.fish.some(f => f.state === 'up' && dist(f.x, f.y, L.x, L.y) <= 20);
     const anyUp = M.fish.some(f => f.state === 'up');
-    if (!got && (hitWater || nearPond(L))) {
+    // A catch mid-flight dives its fish instantly — so by TOUCHDOWN there was
+    // often nothing up, and this block scored the landing as "leapt at nothing":
+    // a soak per successful catch. Success is not a miss.
+    if (!M.justTook && !got && (hitWater || nearPond(L))) {
       if (anyUp) {
         // there WAS a fish and you were simply not next to it. Teaching distance
         // should not cost the whole pond, or the miss reads as arbitrary.
@@ -3660,7 +3677,7 @@ function updatePond(dt) {
         for (const f of M.fish) pondDive(f, 2.4 + Math.random() * 2.2);   // every fish gone, slow to return
       }
     }
-  } else if (L.landT <= 0 && L.pounceT <= 0) M.landed = false;
+  } else if (L.landT <= 0 && L.pounceT <= 0) { M.landed = false; M.justTook = false; }
   if ((M.T -= dt) <= 0) finishPond();
 }
 function pondDive(f, wait) {
@@ -3807,6 +3824,7 @@ function updateNip(dt) {
   if (M.msg) { M.msg.t -= dt; if (M.msg.t <= 0) M.msg = null; }
   // he is sitting down. He is not going anywhere. That is the whole point.
   L.x = C.x; L.y = C.y; L.cvx = 0; L.cvy = 0;
+  M.lockT = Math.max(0, M.lockT - dt);   // the committed paw comes back
   L.pounceCD = 0;                            // a rhythm game may never eat your input
   M.next -= dt;
   // never more than three in the air: a swarm converging from random angles
@@ -4139,6 +4157,8 @@ const HOLDING_BRIEFS = {
     why: 'The tunnel brief cannot be issued while the Under-Road is sealed, and it stays sealed until whatever sits at the bottom of this house has been dealt with personally. Go down to the Cellar and WAIT for it. It only shows itself to a cat who is standing there.' },
   dot: { holding: true, text: 'Keep up the patrols — catch 2 mice', kind: 'catch', n: 2, where: 'anywhere in the house',
     why: 'MI-Paw will not open the construct to you until you have run the Under-Road at least once. Until then: patrols.' },
+  pond: { holding: true, text: 'Patrol while the DOG is out — catch 2 mice', kind: 'catch', n: 2, where: 'anywhere indoors',
+    why: 'The garden brief is drafted, but there is a DOG out there today and the Cabinet Office will not put your dignity at risk for fish. Keep the pressure on indoors; the order goes out the moment the garden is yours again.' },
   night: { holding: true, text: 'Patrol until dark — catch 2 mice', kind: 'catch', n: 2, where: 'anywhere in the house, until dusk',
     why: 'The next brief is a night operation and it is, at present, broad daylight. Keep the rounds up. The moment the lamps go on, the real order comes through.' },
   treaty: { holding: true, text: 'Settle the Under-Road first', kind: 'catch', n: 2, where: 'the crack in the Cellar wall',
@@ -4156,6 +4176,9 @@ function briefPossible(d) {
   // a night operation issued at ten in the morning just reads as a broken
   // objective: hold it back and let the holding patrol run until dusk
   if (d.night && !G.isNight) return false;
+  // the pond and the catnip bed both hard-refuse while the PM's dog has the
+  // garden — so on a DOG_VISIT day those briefs must not be issued at all
+  if ((d.kind === 'pond' || d.kind === 'nip') && DOG_VISIT) return false;
   return true;
 }
 // the campaign's biggest escalations arrive in person: the aide finds you,
@@ -4191,6 +4214,8 @@ const BRIEF_ARM = {
   scrap: () => { G.supperCD = 0; },
   pond: () => { G.pondCD = 0; },
   nip: () => { G.catnipCD = 0; },
+  gauntlet: () => { G.gauntletCD = 0; },
+  dot: () => { G.protocolCD = 0; },
 };
 function newBrief() {
   const len = CAMPAIGN.length;
@@ -4215,8 +4240,9 @@ function newBrief() {
   if (!briefPossible(def)) {
     // name the gate where we can, so a held campaign never looks like a bug
     def = def.night ? HOLDING_BRIEFS.night
-      : (def.kind === 'gauntlet' && G.coronation && !G.treaty) ? HOLDING_BRIEFS.treaty
-        : HOLDING_BRIEFS[def.kind] || HOLDING_BRIEF;
+      : (def.kind === 'pond' || def.kind === 'nip') && DOG_VISIT ? HOLDING_BRIEFS.pond
+        : (def.kind === 'gauntlet' && G.coronation && !G.treaty) ? HOLDING_BRIEFS.treaty
+          : HOLDING_BRIEFS[def.kind] || HOLDING_BRIEF;
   } else { firstPass = G.briefStage === idx; G.briefStage++; }
   G.brief = { def, prog: 0 };
   if (BRIEF_ARM[def.kind]) BRIEF_ARM[def.kind]();
@@ -4760,11 +4786,13 @@ function goalEvent(kind, info = {}) {
     }
   }
   if (changed && !DAY.doneAll && !DAY.pending && DAY.goals.every(g => g.prog >= g.n)) {
-    // the box is cleared, but a paper prints at dusk, not the moment the ink dries
-    if (G.isNight && !G.mini) eveningPaper();
+    // the box is cleared, but a paper prints at dusk, not the moment the ink
+    // dries — and never into the same frame as a mini's RESULT card, which
+    // shares the one card slot and would paint straight over it
+    if (G.isNight && storyClear() && !G.cardQueue.length) eveningPaper();
     else {
       DAY.pending = true;
-      toast('📦 Today\'s list is CLEARED. The Evening Paper has everything it needs — it goes to print at dusk.');
+      if (!G.isNight) toast('📦 Today\'s list is CLEARED. The Evening Paper has everything it needs — it goes to print at dusk.');
       tone(659, 659, 0.12, 'triangle', 0.06); tone(880, 880, 0.12, 'triangle', 0.06, 0.14);
       updateDayHUD();
     }
@@ -6812,7 +6840,7 @@ function maybeShowCard() {
    knows which button does what before the clock starts. */
 const MINI_RULES = {
   race:     { how: 'Run through the paw-print gates IN ORDER. POUNCE to dash between them.',
-              goal: 'All ten gates before the clock runs out. Gold pace earns The 3 A.M. Protocol.' },
+              goal: 'All ten gates. Nothing times you out — the only opponent is your own best, and gold pace earns The 3 A.M. Protocol.' },
   scrum:    { how: 'Stay OUT of the red rings — those are flashes about to go off. When the GOLD FRAME appears, stand inside it and hold still until it fills.',
               goal: 'Fill the frame three times without being caught by a flash.' },
   traf:     { how: 'Walk into the flock and POUNCE. Panic is contagious: a leap into a cluster spreads bird to bird.',
@@ -6826,13 +6854,13 @@ const MINI_RULES = {
   climb:    { how: 'HOLD the pounce button to CHARGE, then release — the shelves are too far apart for a flick, and a full charge clears two of them at once. Wobbly shelves tip if you linger.',
               goal: 'Reach the perch at the top before the clock runs out. Falling costs you time, not lives.' },
   protocol: { how: 'POUNCE at the dot. Only a LANDED pounce counts — walking into it does nothing. It relocates faster every time you touch it.',
-              goal: 'Eight catches in forty-five seconds.' },
+              goal: 'Eight catches clears the Brief. Ten in one session earns Protocol Zero — the terminal does not expect that.' },
   pond:     { how: 'You walk the bank; the water is not walkable. Fish run deep as shadows, and a RIPPLE spreads where one is about to surface — RUN ROUND TO IT, because you can only take a fish you are standing beside. The ring around you is your reach. POUNCE once the fish is inside it.',
               goal: 'Six fish. The banner tells you which of the four things is true: WATCH, RUN, TOO FAR, or POUNCE. Leaping when nothing is up puts you in the pond.' },
   catnip:   { how: 'You do not move at all — Larry sits down and the dream comes to him. Things drift in out of the dark toward the glowing RING around you. POUNCE the moment one crosses that ring: on it is perfect, early is a miss, and anything that reaches your nose is gone.',
               goal: 'Each one drags a ring inward: POUNCE when its ring lands on yours — it turns green and chimes the moment it is takeable. Consecutive hits build a run. Swipe when nothing is in range and your paw is committed for a moment, so this cannot be played by mashing.' },
   supper:   { how: 'Scraps fall from the table above. Get UNDERNEATH each one before it lands — the floor is the enemy, not the clock.',
-              goal: 'Catch four before they hit the tiles.' },
+              goal: 'Four scraps clears the Brief. All ten before the tiles is a perfect supper.' },
   gauntlet: { how: 'Six lanes of rat patrol between you and the stolen larder. Move when a lane is clear; POUNCE to cross a gap in one go.',
               goal: 'Reach the larder at the far end. Five seizures and the tunnel throws you out.' },
 };
@@ -7099,8 +7127,12 @@ function update(dt) {
   document.getElementById('clock').textContent = dark > 0.55 ? '🌙' : (G.snowing ? '❄️' : G.raining ? '🌧️' : '☀️');
 
   G.isNight = dark > 0.5;
+  // "one Incident per night" needs a NIGHT to end: without this reset a single
+  // forfeit blocked the fox — and the whole single-queue campaign — for the session
+  if (!G.isNight && G.foxTonight) G.foxTonight = false;
   // dusk falls: a held Evening Paper goes to print (waits out any mini game)
-  if (G.isNight && DAY && DAY.pending && !DAY.doneAll && !G.daily && !G.mini && G.intro.phase === 'done') eveningPaper();
+  if (G.isNight && DAY && DAY.pending && !DAY.doneAll && !G.daily && G.intro.phase === 'done'
+    && storyClear() && !G.cardQueue.length) eveningPaper();   // waits out minis, scenes, fades and arenas
   G.rainT -= dt;
   if (G.rainT <= 0) {
     const r = Math.random();
