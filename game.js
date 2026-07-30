@@ -3149,11 +3149,28 @@ function updateScrum(dt) {
   M.next -= dt;
   if (M.next <= 0) {
     const near = Math.random() < 0.6;   // most of them are aiming AT you
-    M.flashes.push({
+    const fl = {
       x: near ? clamp(L.x + (Math.random() - 0.5) * 46, 3 * TILE, 18 * TILE) : (3 + Math.random() * 15) * TILE,
       y: near ? clamp(L.y + (Math.random() - 0.5) * 40, 5 * TILE, 9.4 * TILE) : (5 + Math.random() * 4.4) * TILE,
       r: 20 + Math.random() * 10, tel: 0.72, fired: 0,
-    });
+    };
+    // Nobody shoots INTO a colleague's shot. Without this, "hold still here"
+    // and "be somewhere else" landed on the same tile and the game was lost
+    // the moment you obeyed it: 60% of flashes aim at Larry, and Larry is
+    // required to be stationary in the frame for 0.85 seconds.
+    if (M.frame) {
+      const d = dist(fl.x, fl.y, M.frame.x, M.frame.y);
+      const keep = M.frame.r + fl.r + 6;
+      if (d < keep) {
+        const a = d > 0.001 ? Math.atan2(fl.y - M.frame.y, fl.x - M.frame.x) : Math.random() * 7;
+        fl.x = clamp(M.frame.x + Math.cos(a) * keep, 3 * TILE, 18 * TILE);
+        fl.y = clamp(M.frame.y + Math.sin(a) * keep, 5 * TILE, 9.4 * TILE);
+        // a cramped corner can leave nowhere legal on that bearing: skip rather
+        // than fire an unavoidable one
+        if (dist(fl.x, fl.y, M.frame.x, M.frame.y) < keep) fl.tel = -1;
+      }
+    }
+    if (fl.tel > 0) M.flashes.push(fl);
     M.next = Math.max(0.42, 1.05 - (42 - M.t) * 0.011);
     tone(1200, 1500, 0.03, 'sine', 0.025);
   }
@@ -3179,11 +3196,13 @@ function updateScrum(dt) {
     M.frameNext -= dt;
     if (M.frameNext <= 0) {
       M.called++;
-      M.frame = {
-        x: clamp((4 + Math.random() * 13) * TILE, 3 * TILE, 18 * TILE),
-        y: (5.4 + Math.random() * 3.6) * TILE,
-        r: 24, t: 3.2, held: 0,
-      };
+      let fx2, fy2, ok = false;
+      for (let tries = 0; tries < 14 && !ok; tries++) {   // 14 rolls, then take the least bad
+        fx2 = clamp((4 + Math.random() * 13) * TILE, 3 * TILE, 18 * TILE);
+        fy2 = (5.4 + Math.random() * 3.6) * TILE;
+        ok = !M.flashes.some(f2 => f2.tel > 0 && dist(f2.x, f2.y, fx2, fy2) < 24 + f2.r + 6);
+      }
+      M.frame = { x: fx2, y: fy2, r: 24, t: 3.2, held: 0 };
       scrumSay('“Larry — over here!”', '#ffe8b8');
       tone(700, 950, 0.09, 'triangle', 0.055);
     }
